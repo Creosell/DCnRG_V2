@@ -1,0 +1,7 @@
+test_results:
+  path: "/data"
+  path_to_file: "/data/test001.json"
+test_reports:
+  path: "/report"
+config_path:
+  path: "/config/"

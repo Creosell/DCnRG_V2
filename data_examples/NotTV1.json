@@ -1,0 +1,113 @@
+{
+  "SerialNumber": "NotTV1",
+  "DeviceConfiguration": "15iA",
+  "IsTV": false,
+  "MeasurementDateTime": "20250624_184822",
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": 0.308,
+      "y": 0.328,
+      "Lv": 152.6,
+      "T": 6771
+    },
+    {
+      "Location": "TopCenter",
+      "x": 0.309,
+      "y": 0.328,
+      "Lv": 145.2,
+      "T": 6744
+    },
+    {
+      "Location": "TopRight",
+      "x": 0.308,
+      "y": 0.328,
+      "Lv": 155.1,
+      "T": 6816
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": 0.308,
+      "y": 0.329,
+      "Lv": 152.1,
+      "T": 6750
+    },
+    {
+      "Location": "Center",
+      "x": 0.309,
+      "y": 0.328,
+      "Lv": 159.7,
+      "T": 6752
+    },
+    {
+      "Location": "MiddleRight",
+      "x": 0.308,
+      "y": 0.329,
+      "Lv": 153.2,
+      "T": 6772
+    },
+    {
+      "Location": "BottomLeft",
+      "x": 0.309,
+      "y": 0.328,
+      "Lv": 161.1,
+      "T": 6742
+    },
+    {
+      "Location": "BottomCenter",
+      "x": 0.308,
+      "y": 0.327,
+      "Lv": 166,
+      "T": 6828
+    },
+    {
+      "Location": "BottomRight",
+      "x": 0.307,
+      "y": 0.328,
+      "Lv": 157.3,
+      "T": 6822
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.648,
+      "y": 0.336,
+      "Lv": 34.1,
+      "T": -1
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.304,
+      "y": 0.63,
+      "Lv": 113.5,
+      "T": -1
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.152,
+      "y": 0.06,
+      "Lv": 12.7,
+      "T": -1
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.152,
+      "y": 0.06,
+      "Lv": 12.7,
+      "T": -1
+    },
+    {
+      "Location": "WhiteColor",
+      "x": 0.309,
+      "y": 0.328,
+      "Lv": 200,
+      "T": 6752
+    },
+    {
+      "Location": "BlackColor",
+      "x": 0.281,
+      "y": 0.292,
+      "Lv": 0.6183643,
+      "T": 9745
+    }
+  ]
+}

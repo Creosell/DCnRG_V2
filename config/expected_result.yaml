@@ -1,0 +1,72 @@
+
+main_tests:
+  Brightness:
+    min: 290
+    typ: 300
+    max: 320
+  Brightness_uniformaty:
+    min: 75
+    typ: 80
+    max: 85
+  Contrast:
+    min: 750.0
+    typ: 1000.0
+    max: 1260.0
+  Cg_rgb_area:
+    min: 65.00
+    typ: 70.0
+    max: 75.00
+  Cg_ntsc_area:
+    min: 65
+    typ: 70.0
+    max: 75
+  Cg_rgb:
+    min: 85
+    typ: 95.0
+    max: 96
+  Cg_ntsc:
+    min: 80
+    typ: 85
+    max: 86
+  Temperature:
+    min: 6000.0
+    typ: 6500.0
+    max: 7900.0
+  Delta_e:
+    min: 1
+    typ: 2
+    max: 3
+  Red_x:
+    min: 0.610
+    typ: 0.640
+    max: 0.670
+  Red_y:
+    min: 0.312
+    typ: 0.342
+    max: 0.372
+  Green_x:
+    min: 0.280
+    typ: 0.310
+    max: 0.340
+  Green_y:
+    min: 0.586
+    typ: 0.616
+    max: 0.646
+  Blue_x:
+    min: 0.102
+    typ: 0.132
+    max: 0.162
+  Blue_y:
+    min: 0.042
+    typ: 0.072
+    max: 0.102
+  White_x:
+    min: 0.275
+    typ: 0.305
+    max: 0.335
+  White_y:
+    min: 0.310
+    typ: 0.340
+    max: 0.370
+
+

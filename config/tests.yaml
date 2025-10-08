@@ -1,0 +1,57 @@
+Tests:
+  Full_test:
+    Brightness:
+      category: main
+      execute: true
+    Brightness_uniformity:
+      category: secondary
+      execute: false
+    Cg_srgb_by_area:
+      category: main
+      execute: true
+    Cg_ntsc_by_area:
+      category: main
+      execute: true
+    Cg_srgb:
+      category: main
+      execute: true
+    Cg_ntsc:
+      category: main
+      execute: true
+    Contrast:
+      category: main
+      execute: true
+    Temperature:
+      category: main
+      execute: true
+    Delat_e:
+      category: main
+      execute: true
+  Color_gamut:
+    Brightness:
+      category: main
+      execute: true
+    Brightness_uniformity:
+      category: secondary
+      execute: false
+    Cg_srgb_by_area:
+      category: main
+      execute: true
+    Cg_ntsc_by_area:
+      category: main
+      execute: true
+    Cg_srgb:
+      category: main
+      execute: false
+    Cg_ntsc:
+      category: main
+      execute: false
+    Contrast:
+      category: main
+      execute: true
+    Temperature:
+      category: main
+      execute: true
+    Delat_e:
+      category: main
+      execute: false

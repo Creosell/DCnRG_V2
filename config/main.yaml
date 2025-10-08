@@ -1,0 +1,10 @@
+Task:
+  test:
+    type: FullTest
+  color_space:
+    type: sRGB, NTSC
+  device:
+    type: Laptop-99XXX
+
+
+
