@@ -10,7 +10,7 @@ def json_report(
     sn=None,
     t=None,
     brightness=None,
-    brightness_uniformaty=None,
+    brightness_uniformity=None,
     cg_by_area_rgb=None,
     cg_by_area_ntsc=None,
     cg_rgb=None,
@@ -32,7 +32,7 @@ def json_report(
         "MeasurementDateTime": t,
         "Results": {
             "Brightness": brightness,
-            "BrightnessUniformity": brightness_uniformaty,
+            "BrightnessUniformity": brightness_uniformity,
             "CgByAreaRgb": cg_by_area_rgb,
             "CgByAreaNtsc": cg_by_area_ntsc,
             "CgRgb": cg_rgb,
@@ -96,41 +96,41 @@ def is_effectively_all_null_stat_package(pkg):
 
 def calculate_full_report(input_folder, output_file, device_name):
     # Deletion of old Typ*.json files (from original script)
-    directory = "test_reports"
-    pattern =     pattern = os.path.join(str(input_folder), f"{device_name}_*.json")
-    files_to_delete = glob.glob(pattern)
-    for file_path in files_to_delete:
-        try:
-            os.remove(file_path)
-            print(f"Deleted file: {file_path}")
-        except OSError as e:
-            print(f"Error deleting file {file_path}: {e}")
+
+    pattern = os.path.join(str(input_folder), f"{device_name}_*.json")
+    device_reports = glob.glob(pattern)
+    # files_to_delete = glob.glob(pattern)
+    # for file_path in files_to_delete:
+    #     try:
+    #         os.remove(file_path)
+    #         print(f"Deleted file: {file_path}")
+    #     except OSError as e:
+    #         print(f"Error deleting file {file_path}: {e}")
 
     aggregated_data = defaultdict(list)  # Stores lists of values for each key path
     all_keys_paths = set()  # Stores all unique flattened key paths encountered
     serial_numbers = []
 
-    for filename in os.listdir(input_folder):
-        if filename.endswith(".json"):
-            file_path = os.path.join(input_folder, filename)
+    for file in device_reports:
+        if file.endswith(".json"):
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
+                with open(file, "r", encoding="utf-8") as f:
                     data = json.load(f)
             except json.JSONDecodeError as e:
-                print(f"Error decoding JSON from file {file_path}: {e}. Skipping file.")
+                print(f"Error decoding JSON from file {file}: {e}. Skipping file.")
                 continue
             except Exception as e:
-                print(f"Error reading file {file_path}: {e}. Skipping file.")
+                print(f"Error reading file {file}: {e}. Skipping file.")
                 continue
 
             if "SerialNumber" in data and data["SerialNumber"] is not None:
                 serial_numbers.append(data["SerialNumber"])
             else:
-                print(f"Warning: 'SerialNumber' not found or is null in {file_path}.")
+                print(f"Warning: 'SerialNumber' not found or is null in {file}.")
 
             if "Results" not in data or not isinstance(data["Results"], dict):
                 print(
-                    f"Warning: 'Results' not found or not a dictionary in {file_path}. Skipping."
+                    f"Warning: 'Results' not found or not a dictionary in {file}. Skipping."
                 )
                 continue
 
@@ -359,7 +359,7 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
 
     # Mapping for YAML keys to JSON keys if they differ.
     json_key_mapping = {
-        "Brightness_uniformaty": "BrightnessUniformity",
+        "Brightness_uniformity": "BrightnessUniformity",
         "Cg_rgb_area": "CgByAreaRgb",
         "Cg_ntsc_area": "CgByAreaNtsc",
         "Cg_rgb": "CgRgb",
@@ -674,9 +674,12 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
 
     output_data = []
 
-    for filename in glob.glob(os.path.join(folder_path, "*.json")):
+    pattern = os.path.join(str(folder_path), f"{device_name}_*.json")
+    device_reports = glob.glob(pattern)
+
+    for file in device_reports:
         try:
-            with open(filename, "r") as json_file:
+            with open(file, "r") as json_file:
                 data = json.load(json_file)
                 serial_number = data.get("SerialNumber", "Unknown")
                 results = data.get("Results", {})
@@ -725,16 +728,16 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
                                 )
                         except (ValueError, TypeError):
                             print(
-                                f"Warning: Could not convert value to float in {filename} for key {key}. Skipping."
+                                f"Warning: Could not convert value to float in {file} for key {key}. Skipping."
                             )
                             continue
 
         except FileNotFoundError:
-            print(f"Error: JSON file not found: {filename}")
+            print(f"Error: JSON file not found: {file}")
         except json.JSONDecodeError as e:
-            print(f"Error: Could not decode JSON file {filename}: {e}")
+            print(f"Error: Could not decode JSON file {file}: {e}")
         except Exception as e:
-            print(f"An unexpected error occurred while processing {filename}: {e}")
+            print(f"An unexpected error occurred while processing {file}: {e}")
 
     try:
         with open(output_path, "w") as outfile:

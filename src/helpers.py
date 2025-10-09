@@ -51,7 +51,7 @@ def create_pdf(
 
     param_list = [
         ("Brightness", "Brightness"),
-        ("Brightness_uniformaty", "Brightness uniformity"),
+        ("Brightness_uniformity", "Brightness uniformity"),
         ("Cg_rgb_area", "Color Gamut RGB by Area"),
         ("Cg_ntsc_area", "Color Gamut NTSC by Area"),
         # ("Cg_rgb", "Color Gamut RGB"),
@@ -402,9 +402,6 @@ def archive_reports(device_name, timestamp, source_folders):
 
         print(f"Архив создан: {zip_path}")
         print(f"Всего файлов заархивировано: {files_added}")
-
-        #Опционально: удаляем исходные файлы после архивирования
-        remove_source_files(source_folders)
 
         return zip_path
 

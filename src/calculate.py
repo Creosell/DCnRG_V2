@@ -14,7 +14,7 @@ def area(p):
 
 
 def calculate_overlap_percentage(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6):
-    """Calculates the percentage of the area of the first triangle covered by the second triangle."""
+    """Calculates the percentage for area of the first triangle covered by the second triangle."""
     triangle1 = np.array([[x1, y1], [x2, y2], [x3, y3]])
     triangle2 = np.array([[x4, y4], [x5, y5], [x6, y6]])
 
@@ -35,7 +35,7 @@ def calculate_overlap_percentage(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6)
     else:
         intersection_area = intersection.area
 
-    # Calculate the percentage of the area of the first triangle covered by the second triangle
+    # Calculate the percentage for area of the first triangle covered by the second triangle
     overlap_percentage = (intersection_area / polygon1.area) * 100
 
     return overlap_percentage
@@ -96,7 +96,7 @@ def brightness(file, is_tv):
     }
 
 
-def brightness_uniformaty(brightness_value):
+def brightness_uniformity(brightness_value):
     """
     Рассчитывает равномерность яркости, используя минимальную яркость
     и яркость Center (uniformity_center_lv).
@@ -107,8 +107,8 @@ def brightness_uniformaty(brightness_value):
     if min_lv is None or center_lv is None or center_lv == 0.0:
         return 0.0
 
-    brightness_uniformaty_percent = (min_lv / center_lv) * 100
-    return brightness_uniformaty_percent
+    brightness_uniformity_percent = (min_lv / center_lv) * 100
+    return brightness_uniformity_percent
 
 
 def cg_by_area(file, color_space):

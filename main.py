@@ -17,11 +17,12 @@ DATA_FOLDER = Path("data")
 DEVICE_REPORTS = Path("device_reports")
 PDF_REPORTS_FOLDER = Path("pdf_reports")
 TEST_REPORTS_FOLDER = Path("test_reports")
-ARCHEVE_REPORTS = Path("report_archive")
+ARCHIVE_REPORTS = Path("report_archive")
+PICTURES_FOLDER = Path("pics")
 
 MAIN_CONFIG = Path("config") / "main.yaml"
 COLOR_SPACE_CONFIG = Path("config") / "color_space.yaml"
-COLOR_SPACE_PICTURE = Path("pics") / "space.png"
+COLOR_SPACE_PICTURE = Path("config") / "space.png"
 
 # Парсинг общих настроек
 RGB = parse.coordinate_sRGB(COLOR_SPACE_CONFIG)
@@ -29,6 +30,13 @@ NTSC = parse.coordinate_NTSC(COLOR_SPACE_CONFIG)
 COLOR_SPACE = parse.parse_yaml(MAIN_CONFIG, "Task", "color_space", "type")
 test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
 
+# Создание рабочих папок при их отсутствии
+DATA_FOLDER.mkdir(parents=True, exist_ok=True)
+DEVICE_REPORTS.mkdir(parents=True, exist_ok=True)
+PDF_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
+TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
+ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
+PICTURES_FOLDER.mkdir(parents=True, exist_ok=True)
 
 # Общий файл ожидаемых результатов (используется как запасной)
 EXPECTED_RESULT = Path("config") / "expected_result.yaml"
@@ -97,7 +105,7 @@ for current_device_name, file_list in device_groups.items():
             # --- ОБНОВЛЕННЫЙ РАСЧЕТ ЯРКОСТИ/РАВНОМЕРНОСТИ ---
             brightness_values = cal.brightness(file, is_tv_flag)  # Передаем флаг is_tv_flag
             brightness = brightness_values["typ"]  # Типовая (WhiteColor/Center)
-            brightness_uniformaty = cal.brightness_uniformaty(brightness_values)  # Использует Center
+            brightness_uniformity = cal.brightness_uniformity(brightness_values)  # Использует Center
 
             # --- ОБНОВЛЕННЫЙ РАСЧЕТ КОНТРАСТНОСТИ ---
             contrast = cal.contrast(file, is_tv_flag)  # Передаем флаг is_tv_flag
@@ -112,7 +120,7 @@ for current_device_name, file_list in device_groups.items():
                 sn=sn,
                 t=t,
                 brightness=brightness,
-                brightness_uniformaty=brightness_uniformaty,
+                brightness_uniformity=brightness_uniformity,
                 cg_by_area_rgb=cg_by_area[0],
                 cg_by_area_ntsc=cg_by_area[1],
                 cg_rgb=cg[0],
@@ -129,16 +137,16 @@ for current_device_name, file_list in device_groups.items():
             contrast = cal.contrast(file, is_tv_flag)
             r.json_report(sn=sn, t=t, contrast=contrast, output_folder=DEVICE_REPORTS, device_name=current_device_name)
 
-        if test == "BrightnessUniformaty":
+        if test == "BrightnessUniformity":
             brightness_values = cal.brightness(file, is_tv_flag)
             brightness = brightness_values["typ"]
-            brightness_uniformaty = cal.brightness_uniformaty(brightness_values)
+            brightness_uniformity = cal.brightness_uniformity(brightness_values)
             coordinates = parse.get_coordinates(file)
             r.json_report(
                 sn=sn,
                 t=t,
                 brightness=brightness,
-                brightness_uniformaty=brightness_uniformaty,
+                brightness_uniformity=brightness_uniformity,
                 coordinates=coordinates,
                 output_folder=DEVICE_REPORTS,
                 device_name=current_device_name
@@ -183,20 +191,14 @@ for current_device_name, file_list in device_groups.items():
         test,
     )
 
-    h.merge_pdfs(
-        (
-            current_pdf_report,
-            current_pdf_report_all,
-        ),
-        current_result,
-    )
+    h.merge_pdfs((current_pdf_report,current_pdf_report_all),current_result)
 
     print(f"Отчеты для {current_device_name} сохранены в {current_result}")
 
 # --- Шаг 3: Финальные шаги (Архивация и Очистка) ---
 print("\n--- Финализация и очистка ---")
 
-FOLDERS_TO_PROCESS = [DEVICE_REPORTS, PDF_REPORTS_FOLDER, TEST_REPORTS_FOLDER, DATA_FOLDER]
+FOLDERS_TO_PROCESS = [DEVICE_REPORTS, PDF_REPORTS_FOLDER, TEST_REPORTS_FOLDER, DATA_FOLDER, PICTURES_FOLDER]
 ARCHIVE_SUMMARY_NAME = "Full_Report_Summary"
 
 h.archive_reports(
@@ -205,4 +207,4 @@ h.archive_reports(
     FOLDERS_TO_PROCESS
 )
 
-#h.clear_folders(FOLDERS_TO_PROCESS)
+h.clear_folders(FOLDERS_TO_PROCESS)

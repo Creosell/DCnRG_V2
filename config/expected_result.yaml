@@ -4,7 +4,7 @@ main_tests:
     min: 290
     typ: 300
     max: 320
-  Brightness_uniformaty:
+  Brightness_uniformity:
     min: 75
     typ: 80
     max: 85
