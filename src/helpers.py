@@ -1,5 +1,4 @@
 import glob
-
 import src.calculate as cal
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
@@ -12,403 +11,335 @@ import json
 from PyPDF2 import PdfMerger
 import os
 import zipfile
-import shutil
-from datetime import datetime
 from pathlib import Path
 
 
 def pass_fail_color(result):
-    if result == "PASS":
-        data = green
-    elif result == "FAIL":
-        data = red
-    else:
-        data = "N/A"
-    return data
+    """
+    Возвращает цвет для статуса PASS/FAIL.
+    Использует словарное сопоставление вместо if/elif/else.
+    """
+    color_map = {
+        "PASS": green,
+        "FAIL": red
+    }
+    # Возвращаем цвет, или grey для "N/A" и других случаев
+    return color_map.get(result, grey)
 
 
 def parse_one_file(file_path):
-    with open(file_path, "r") as file:
-        data = json.load(file)
-    return data
+    """Загружает и возвращает данные из одного JSON файла."""
+    try:
+        with open(file_path, "r") as file:
+            data = json.load(file)
+        return data
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error reading/parsing file {file_path}: {e}")
+        return None
 
 
 def create_pdf(
-    input_file,
-    output_file,
-    RGB,
-    NTSC,
-    plot_picture,
-    color_space_pic,
-    min_fail,
-    test_type,
+        input_file,
+        output_file,
+        RGB,
+        NTSC,
+        plot_picture,
+        color_space_pic,
+        min_fail,
+        test_type,
 ):
-    indent1 = 0
-    indent2 = 0
-    i = 0
+    """
+    Генерирует PDF отчет из JSON файла с результатами теста.
+    Логика упрощена за счет использования циклов и уменьшения дублирования.
+    """
     pdf = canvas.Canvas(output_file, pagesize=letter)
     pdf.setFont("Helvetica", 11)
-    with open(input_file, "r") as f:
-        data = json.load(f)
+
+    try:
+        with open(input_file, "r") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error reading/parsing input file {input_file}: {e}")
+        return
+
+    # --- Первая страница: Текстовые результаты ---
+    pdf.drawString(250, 760, "Display Analysis Report")
+    pdf.setFont("Helvetica", 8)
+
+    # Заголовки таблицы и их позиции
+    headers = ["Param", "min act", "min exp", "avg act", "avg exp", "max act", "max exp", "STATUS"]
+    x_positions = [50, 200, 250, 300, 350, 400, 450, 500]
+    y_header = 730
+
+    for x, header in zip(x_positions, headers):
+        pdf.drawString(x, y_header, header)
 
     param_list = [
         ("Brightness", "Brightness"),
         ("Brightness_uniformity", "Brightness uniformity"),
         ("Cg_rgb_area", "Color Gamut RGB by Area"),
         ("Cg_ntsc_area", "Color Gamut NTSC by Area"),
-        # ("Cg_rgb", "Color Gamut RGB"),
-        # ("Cg_ntsc", "Clor Gamut NTSC"),
         ("Contrast", "Contrast"),
         ("Temperature", "Temperature"),
-        # ("Delta_e", "Color Uniformity"),
     ]
-    pdf.drawString(250, 760, "Display Analysis Report")
-    pdf.setFont("Helvetica", 8)
-    pdf.drawString(50, 730, "Param")
-    pdf.drawString(200, 730, "min act")
-    pdf.drawString(250, 730, "min exp")
-    pdf.drawString(300, 730, "avg act")
-    pdf.drawString(350, 730, "avg exp")
-    pdf.drawString(400, 730, "max act")
-    pdf.drawString(450, 730, "max exp")
-    pdf.drawString(500, 730, "STATUS")
 
-    # First page: Text results
-    for param_name, text in param_list:
-        avg_param = data.get(param_name).get("actual_values").get("avg")
-        min_param = data.get(param_name).get("actual_values").get("min")
-        max_param = data.get(param_name).get("actual_values").get("max")
-        avg_exp = data.get(param_name).get("expected_values").get("typ")
-        min_exp = data.get(param_name).get("expected_values").get("min")
-        max_exp = data.get(param_name).get("expected_values").get("max")
-        status = data.get(param_name).get("status")
-        pdf.drawString(50, 700 - indent2, f"{text}:")
-        pdf.drawString(205, 700 - indent2, f"{min_param}"[:6])
-        pdf.drawString(255, 700 - indent2, f"{min_exp}"[:6])
-        pdf.drawString(305, 700 - indent2, f"{avg_param}"[:6])
-        pdf.drawString(355, 700 - indent2, f"{avg_exp}"[:6])
-        pdf.drawString(405, 700 - indent2, f"{max_param}"[:6])
-        pdf.drawString(455, 700 - indent2, f"{max_exp}"[:6])
-        if status == "PASS":
-            pdf.setFillColor(green)
-        else:
-            pdf.setFillColor(red)
-        pdf.drawString(500, 700 - indent1, status)
+    y_start = 700
+    line_height = 20
+
+    # Вывод основных параметров в цикле
+    for i, (param_name, text) in enumerate(param_list):
+        param_data = data.get(param_name, {})
+        actual = param_data.get("actual_values", {})
+        expected = param_data.get("expected_values", {})
+        status = param_data.get("status", "N/A")
+
+        y_pos = y_start - i * line_height
+
+        # Список значений для вывода
+        values = [
+            actual.get("min"), expected.get("min"),
+            actual.get("avg"), expected.get("typ"),
+            actual.get("max"), expected.get("max"),
+        ]
+
+        pdf.drawString(50, y_pos, f"{text}:")
+
+        # Вывод значений с форматированием до 6 символов
+        for j, value in enumerate(values):
+            x_pos = x_positions[1] + j * 50 + 5
+            pdf.drawString(x_pos, y_pos, f"{value}"[:6])
+
+            # Статус с цветом
+        pdf.setFillColor(green if status == "PASS" else red)
+        pdf.drawString(500, y_pos, status)
         pdf.setFillColor(black)
-        indent1 += 20
-        indent2 += 20
 
-    if test_type == "Contrast":
-        pass
-    else:
-        coordinate_list = ["Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y"]
-        coordinates = []
-        for coordinate_name in coordinate_list:
-            coordinate = data.get(coordinate_name).get("actual_values").get("avg")
-            coordinates.append(coordinate)
+    # --- Координаты цвета и график ---
+    if test_type != "Contrast":
+        coordinate_names = ["Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y"]
+        # Лаконичное извлечение координат
+        coordinates = [data.get(name, {}).get("actual_values", {}).get("avg") for name in coordinate_names]
         x1, y1, x2, y2, x3, y3 = coordinates
+
         cal.plot_color_space(
             RGB, NTSC, x1, y1, x2, y2, x3, y3, plot_picture, color_space_pic
         )
 
-        pdf.drawString(50, 500, "Color cordinates")
+        # Начальная позиция для таблицы
+        y_table_start = y_start - len(param_list) * line_height - line_height * 2
+        pdf.drawString(50, y_table_start, "Color coordinates")
 
-        # Extract min/max/avg values in a compact way
         colors = ["Red", "Green", "Blue", "White"]
-        metrics = {}
+        table_data = [["Color", "min", "typ", "max", "status"]]
 
+        # Создание данных для таблицы координат в цикле
         for color in colors:
-            metrics[color] = {
-                "x_min": data.get(f"{color}_x").get("actual_values").get("min"),
-                "x_max": data.get(f"{color}_x").get("actual_values").get("max"),
-                "y_min": data.get(f"{color}_y").get("actual_values").get("min"),
-                "y_max": data.get(f"{color}_y").get("actual_values").get("max"),
-                "x_status": data.get(f"{color}_x").get("status"),
-                "y_status": data.get(f"{color}_y").get("status"),
-            }
-            if color == "White":
-                metrics[color].update(
-                    {
-                        "x_avg": data.get(f"{color}_x").get("actual_values").get("avg"),
-                        "y_avg": data.get(f"{color}_y").get("actual_values").get("avg"),
-                        "x_status": data.get(f"{color}_x").get("status"),
-                        "y_status": data.get(f"{color}_y").get("status"),
-                    }
-                )
+            x_data = data.get(f"{color}_x", {})
+            y_data = data.get(f"{color}_y", {})
 
-        # Define the table data
-        table_data = [
-            ["Color", "min", "typ", "max", "status"],
-            [
-                "Red X",
-                f"{metrics['Red']['x_min']}",
-                f"{x1:.4f}",
-                f"{metrics['Red']['x_max']}",
-                f"{metrics['Red']['x_status']}",
-            ],
-            [
-                "Red Y",
-                f"{metrics['Red']['y_min']}",
-                f"{y1:.4f}",
-                f"{metrics['Red']['y_max']}",
-                f"{metrics['Red']['y_status']}",
-            ],
-            [
-                "Green X",
-                f"{metrics['Green']['x_min']}",
-                f"{x2:.4f}",
-                f"{metrics['Green']['x_max']}",
-                f"{metrics['Green']['x_status']}",
-            ],
-            [
-                "Green Y",
-                f"{metrics['Green']['y_min']}",
-                f"{y2:.4f}",
-                f"{metrics['Green']['y_max']}",
-                f"{metrics['Green']['y_status']}",
-            ],
-            [
-                "Blue X",
-                f"{metrics['Blue']['x_min']}",
-                f"{x3:.4f}",
-                f"{metrics['Blue']['x_max']}",
-                f"{metrics['Blue']['x_status']}",
-            ],
-            [
-                "Blue Y",
-                f"{metrics['Blue']['y_min']}",
-                f"{y3:.4f}",
-                f"{metrics['Blue']['y_max']}",
-                f"{metrics['Blue']['y_status']}",
-            ],
-            [
-                "White X",
-                f"{metrics['White']['x_min']}",
-                f"{metrics['White']['x_avg']}",
-                f"{metrics['White']['x_max']}",
-                f"{metrics['White']['x_status']}",
-            ],
-            [
-                "White Y",
-                f"{metrics['White']['y_min']}",
-                f"{metrics['White']['y_avg']}",
-                f"{metrics['White']['y_max']}",
-                f"{metrics['White']['y_status']}",
-            ],
+            x_act = x_data.get("actual_values", {})
+            y_act = y_data.get("actual_values", {})
+
+            # Для White 'typ' - это 'avg', для RGB - извлеченная координата
+            if color == "White":
+                x_typ = x_act.get("avg")
+                y_typ = y_act.get("avg")
+            else:
+                x_typ = coordinates[coordinate_names.index(f"{color}_x")]
+                y_typ = coordinates[coordinate_names.index(f"{color}_y")]
+
+            table_data.extend([
+                [
+                    f"{color} X",
+                    f"{x_act.get('min')}",
+                    f"{x_typ:.4f}",
+                    f"{x_act.get('max')}",
+                    x_data.get("status", "N/A")
+                ],
+                [
+                    f"{color} Y",
+                    f"{y_act.get('min')}",
+                    f"{y_typ:.4f}",
+                    f"{y_act.get('max')}",
+                    y_data.get("status", "N/A")
+                ]
+            ])
+
+        # Создание и отрисовка таблицы
+        table = Table(table_data, colWidths=[110, 110, 110, 110, 110])
+
+        # Добавляем динамический цвет для статуса в таблице
+        style_list = [
+            ("BACKGROUND", (0, 0), (-1, 0), grey),
+            ("TEXTCOLOR", (0, 0), (-1, 0), whitesmoke),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
+            ("BACKGROUND", (0, 1), (-1, -1), beige),
+            ("GRID", (0, 0), (-1, -1), 1, black),
         ]
 
-        # Create the table
-        table = Table(table_data, colWidths=[100, 100, 100])
-        table.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, 0), grey),  # Header background
-                    ("TEXTCOLOR", (0, 0), (-1, 0), whitesmoke),  # Header text color
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),  # Center align all cells
-                    ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),  # Header font
-                    ("BOTTOMPADDING", (0, 0), (-1, 0), 12),  # Header padding
-                    ("BACKGROUND", (0, 1), (-1, -1), beige),  # Cell background
-                    ("GRID", (0, 0), (-1, -1), 1, black),  # Grid lines
-                ]
-            )
-        )
+        # Применяем цвет фона к ячейке "STATUS" с использованием pass_fail_color
+        for row in range(1, len(table_data)):
+            status_value = table_data[row][4]
+            style_list.append(("BACKGROUND", (4, row), (4, row), pass_fail_color(status_value)))
 
-        # Draw the table on the PDF
+        table.setStyle(TableStyle(style_list))
+
         table.wrapOn(pdf, 50, 300)
-        table.drawOn(
-            pdf, 50, 500 - len(table_data) * 20
-        )  # Adjust position based on table size
+        y_table_draw = y_table_start - len(table_data) * 20
+        table.drawOn(pdf, 50, y_table_draw)
 
-    # Add a new page for the color space graph
-    pdf.drawImage(plot_picture, 100, 0, width=400, height=320)
-    # Add a new page for the color space graph
-    # pdf.drawImage(plot_picture, 50, 150, width=225, height=180)
+    # --- График и Fail on minimum values ---
+    y_graph_start = y_table_draw - 320 - 20  # 320 - это высота графика, 20 - отступ
 
-    pdf.showPage()  # Start a new page for the table
+    pdf.drawImage(plot_picture, 100, y_graph_start, width=400, height=320)
+
+    pdf.showPage()
     pdf.drawString(250, 750, "Fail on minimum values")
 
     try:
         with open(min_fail, "r") as f:
             min_fail_data = json.load(f)
-    except FileNotFoundError:
-        print(f"Error: JSON file not found at {min_fail}")
-        return
-    except json.JSONDecodeError:
-        print(f"Error: Could not decode JSON from {min_fail}")
-        return
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error reading/parsing min_fail file {min_fail}: {e}")
+        min_fail_data = []
 
     textobject = pdf.beginText()
     textobject.setTextOrigin(inch, 10 * inch)
     textobject.setFont("Courier", 8)
+
+    # Упрощенный вывод данных min_fail_data
     for entry in min_fail_data:
         for test_id, details in entry.items():
             textobject.textLine(f"Serial Number: {test_id}")
+            # Используем генератор для вывода деталей
             for key, value in details.items():
                 textobject.textLine(f"{key}: {value}")
-            textobject.textLine("")  # Add a blank line for separation
+            textobject.textLine("")
+
     pdf.drawText(textobject)
-
-    pdf.showPage()
-
-    # Save the PDF
     pdf.save()
 
 
 def device_reports_to_pdf(folder_path, output_path, device_name):
     """
-    Generates a PDF file containing the formatted content of JSON files
-    from a specified folder.
-
-    Args:
-        folder_path (str): The path to the folder containing the JSON files.
-        output_path (str): The path to save the generated PDF file.
+    Генерирует PDF файл, содержащий форматированный JSON контент
+    из отчетов для указанного устройства.
     """
-
     c = canvas.Canvas(output_path, pagesize=letter)
     styles = getSampleStyleSheet()
-    styleN = styles["Normal"]
     styleH = styles["Heading1"]
+    styleCode = styles["Code"]  # Используем стиль Code для JSON
 
-    page_number = 1
-    y_position = 750  # Starting Y position for content
+    y_position = 750  # Стартовая Y позиция
 
-    pattern = os.path.join(str(folder_path), f"{device_name}_*.json")
-    device_reports = glob.glob(pattern)
+    # Используем glob для получения списка файлов
+    pattern = Path(folder_path) / f"{device_name}_*.json"
+    device_reports = glob.glob(str(pattern))
 
-    for file in device_reports:
-        if file.endswith(".json"):
-            file_path = os.path.join(folder_path, file)
+    for file_path in device_reports:
+        file_name = Path(file_path).name
 
-            try:
-                with open(file_path, "r") as f:
-                    data = json.load(f)
+        try:
+            with open(file_path, "r") as f:
+                data = json.load(f)
 
-                # Format the JSON data for PDF
-                json_string = json.dumps(
-                    data, indent=4
-                )  # Use json.dumps for pretty formatting
+            # Форматируем JSON
+            json_string = json.dumps(data, indent=4)
+            lines = json_string.splitlines()
 
-                # Split the JSON string into lines
-                lines = json_string.splitlines()
+            line_height = 12  # Приблизительная высота строки
 
-                # Calculate the height required for the JSON content
-                line_height = 12  # Approximate line height
-                required_height = len(lines) * line_height + 50  # Add some padding
+            # --- Заголовок файла ---
+            p = Paragraph(f"<b>File: {file_name}</b>", styleH)
+            p.wrapOn(c, letter[0] - 2 * inch, letter[1])
+            p.drawOn(c, inch, y_position)
+            y_position -= 50
 
-                # Check if there's enough space on the current page
-                if y_position - required_height < 50:  # 50 is bottom margin
-                    c.showPage()  # Create a new page
-                    page_number += 1
-                    y_position = 750  # Reset Y position for the new page
+            # --- Контент JSON ---
+            for line in lines:
+                # Используем стиль Code для сохранения моноширинного шрифта JSON
+                p = Paragraph(line, styleCode)
+                p_width, p_height = p.wrapOn(c, letter[0] - 2 * inch, letter[1])
 
-                # Add a title for each JSON file
-                p = Paragraph(f"<b>File: {file}</b>", styleH)
-                p.wrapOn(c, letter[0] - 2 * inch, letter[1])
+                # Проверка на новую страницу
+                if y_position - p_height < 50:
+                    c.showPage()
+                    y_position = 750
+
                 p.drawOn(c, inch, y_position)
-                y_position -= 50
+                y_position -= line_height
 
-                # Write the JSON content to the PDF
-                for line in lines:
-                    p = Paragraph(line, styleN)
-                    p.wrapOn(c, letter[0] - 2 * inch, letter[1])
-                    p_height = p.wrapOn(c, letter[0] - 2 * inch, letter[1])[1]
-                    if y_position - p_height < 50:
-                        c.showPage()
-                        page_number += 1
-                        y_position = 750
-                    p.drawOn(c, inch, y_position)
-                    y_position -= line_height
-
-            except Exception as e:
-                print(f"Error processing file {file}: {e}")
+        except Exception as e:
+            print(f"Error processing file {file_name}: {e}")
 
     c.save()
     print(f"PDF file created successfully at {output_path}")
 
 
 def merge_pdfs(pdf_paths, output_path):
-    """Merges multiple PDF files into a single PDF.
-
-    Args:
-        pdf_paths (list): A list of paths to the PDF files to merge.
-        output_path (str): The path to save the merged PDF file.
-    """
+    """Объединяет несколько PDF файлов в один."""
     merger = PdfMerger()
 
-    for path in pdf_paths:
-        try:
-            merger.append(path)
-        except FileNotFoundError:
-            print(f"Error: File not found: {path}")
-            return  # Or raise the exception, depending on desired behavior
-        except Exception as e:
-            print(f"Error processing {path}: {e}")
-            return
-
+    # Используем генератор для более лаконичной обработки ошибок
     try:
+        for path in pdf_paths:
+            merger.append(path)
+
         with open(output_path, "wb") as output_file:
             merger.write(output_file)
         print(f"Successfully merged PDFs to {output_path}")
+
+    except FileNotFoundError:
+        print(f"Error: File not found in path list.")
     except Exception as e:
-        print(f"Error writing merged PDF: {e}")
+        print(f"Error during PDF merge: {e}")
     finally:
         merger.close()
 
 
 def archive_reports(device_name, timestamp, source_folders):
     """
-    Архивирует все файлы из папок device_reports, pdf_reports, test_reports
-    в один zip файл в папке report_archive
-
-    Args:
-        device_name (str): Имя устройства для формирования имени архива
-
-    Returns:
-        str: Путь к созданному архиву или None в случае ошибки
+    Архивирует все файлы из папок-источников в один zip файл
+    в папке report_archive.
     """
+    archive_folder = Path('report_archive')
+    archive_folder.mkdir(exist_ok=True)  # Создаем папку, если не существует
 
-    # Папки-источники
-    # source_folders = ['device_reports', 'pdf_reports', 'test_reports']
-
-    # Папка назначения
-    archive_folder = 'report_archive'
-
-    # Создаем папку архива, если она не существует
-    Path(archive_folder).mkdir(exist_ok=True)
-
-    # Формируем имя zip файла
+    # Формируем имя zip файла с использованием Path
     zip_filename = f"{device_name}_{timestamp}.zip"
-    zip_path = os.path.join(archive_folder, zip_filename)
+    zip_path = archive_folder / zip_filename
 
     try:
+        files_added = 0
         # Создаем zip архив
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            files_added = 0
 
             # Проходим по каждой папке-источнику
-            for folder in source_folders:
-                if os.path.exists(folder):
-                    # Получаем все файлы из папки
-                    for root, dirs, files in os.walk(folder):
+            for folder_name in source_folders:
+                folder_path = Path(folder_name)
+                if folder_path.exists():
+                    # Используем os.walk для рекурсивного обхода
+                    for root, _, files in os.walk(folder_path):
                         for file in files:
-                            file_path = os.path.join(root, file)
-                            # Добавляем файл в архив с сохранением структуры папок
-                            arcname = os.path.relpath(file_path, '.')
+                            file_path = Path(root) / file
+                            # arcname - путь внутри архива, относительный к текущей директории
+                            arcname = file_path.relative_to(Path.cwd())
                             zipf.write(file_path, arcname)
                             files_added += 1
                             print(f"Добавлен файл: {file_path}")
                 else:
-                    print(f"Папка {folder} не найдена")
+                    print(f"Папка {folder_name} не найдена")
 
             if files_added == 0:
                 print("Не найдено файлов для архивирования")
-                os.remove(zip_path)  # Удаляем пустой архив
+                zip_path.unlink()  # Удаляем пустой архив
                 return None
 
         print(f"Архив создан: {zip_path}")
         print(f"Всего файлов заархивировано: {files_added}")
-
-        return zip_path
+        return str(zip_path)
 
     except Exception as e:
         print(f"Ошибка при создании архива: {e}")
@@ -417,27 +348,22 @@ def archive_reports(device_name, timestamp, source_folders):
 
 def clear_folders(folders):
     """
-    Удаляет все файлы из указанных папок, оставляя сами папки.
-
-    Args:
-        folders (list): Список путей к папкам для очистки.
+    Удаляет все файлы из указанных папок, используя pathlib.Path.
     """
     removed_count = 0
 
     for folder_path in map(Path, folders):
-        if not folder_path.exists():
-            print(f"Папка {folder_path} не найдена")
+        if not folder_path.is_dir():
+            print(f"Папка {folder_path} не найдена или не является папкой")
             continue
 
-        # Используем glob() для рекурсивного поиска всех файлов
-        # **/* находит все файлы во всех подпапках
+        # Используем glob() для рекурсивного поиска всех файлов (Path.glob)
         for file_path in folder_path.glob('**/*'):
             if file_path.is_file():
                 try:
-                    os.remove(file_path)
+                    file_path.unlink()  # Метод Path для удаления файла
                     removed_count += 1
                 except Exception as e:
                     print(f"Ошибка при удалении файла {file_path}: {e}")
 
     print(f"Всего удалено файлов: {removed_count}")
-
