@@ -29,11 +29,7 @@ def calculate_overlap_percentage(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6)
     # Calculate the intersection area of the polygons
     intersection = polygon1.intersection(polygon2)
 
-    # If the intersection is not an empty polygon, calculate its area
-    if intersection.is_empty:
-        intersection_area = 0.0
-    else:
-        intersection_area = intersection.area
+    intersection_area = intersection.area if not intersection.is_empty else 0.0
 
     # Calculate the percentage for area of the first triangle covered by the second triangle
     overlap_percentage = (intersection_area / polygon1.area) * 100
@@ -52,42 +48,38 @@ def brightness(file, is_tv):
 
     measurements = report.get("Measurements", [])
 
-    typical_lv_for_report = None
-    center_lv_for_uniformity = None
-
-    # 1. Точка для типового значения (typ): WhiteColor для ТВ, Center для остальных
+    # Map location names to their required keys
     report_typ_key = "WhiteColor" if is_tv else "Center"
 
-    # Исключенные точки для расчета min/max (т.е. для оценки равномерности)
-    excluded_locations = {"RedColor", "GreenColor", "BlueColor", "BlackColor","WhiteColor"}
-    all_lv_values = []
-
-    for measurement in measurements:
-        location = measurement.get("Location")
-        lv_str = measurement.get("Lv")
-
+    # Собираем все Lv значения в словарь для быстрого доступа
+    lv_values = {}
+    for m in measurements:
+        location = m.get("Location")
         try:
-            lv = float(lv_str)
-        except (ValueError, TypeError):
+            lv_values[location] = float(m.get("Lv"))
+        except (ValueError, TypeError, KeyError):
             continue
 
-            # a) Находим типовое значение для отчета (typ)
-        if location == report_typ_key:
-            typical_lv_for_report = lv
+    # 1. Точка для типового значения (typ)
+    typical_lv_for_report = lv_values.get(report_typ_key)
 
-        # b) Находим значение Center (всегда для равномерности)
-        if location == "Center":
-            center_lv_for_uniformity = lv
+    # 2. Значение Center для равномерности
+    center_lv_for_uniformity = lv_values.get("Center")
 
-        # c) Собираем значения для расчета min/max
-        if location not in excluded_locations:
-            all_lv_values.append(lv)
+    # 3. Собираем значения для расчета min/max
+    excluded_locations = {"RedColor", "GreenColor", "BlueColor", "BlackColor", "WhiteColor"}
 
-    # 2. Расчет min, max
+    # Используем фильтр, чтобы получить все Lv, кроме исключенных
+    all_lv_values = [
+        lv for loc, lv in lv_values.items()
+        if loc not in excluded_locations
+    ]
+
+    # 4. Расчет min, max
     min_lv = min(all_lv_values) if all_lv_values else None
     max_lv = max(all_lv_values) if all_lv_values else None
 
-    # 3. Возвращаем результат
+    # 5. Возвращаем результат
     return {
         "min": min_lv,
         "typ": typical_lv_for_report,
@@ -117,16 +109,23 @@ def cg_by_area(file, color_space):
         return None
     x1, y1, x2, y2, x3, y3 = coordinate
     triangle = np.array([[x1, y1], [x2, y2], [x3, y3]])
-    color_gamut_srgb = (area(triangle) / 0.112) * 100
-    color_gamut_ntcs = (area(triangle) / 0.158) * 100
-    if color_space == "sRGB, NTSC":
-        return float(color_gamut_srgb), float(color_gamut_ntcs)
-    elif color_space == "sRGB":
-        return float(color_gamut_srgb), None
-    elif color_space == "NTSC":
-        return None, float(color_gamut_ntcs)
-    else:
-        pass
+    triangle_area = area(triangle)
+
+    if triangle_area == 0:
+        return None
+
+    color_gamut_srgb = (triangle_area / 0.112) * 100
+    color_gamut_ntsc = (triangle_area / 0.158) * 100
+
+    # Используем словарь для лаконичного возврата
+    return_map = {
+        "sRGB, NTSC": (float(color_gamut_srgb), float(color_gamut_ntsc)),
+        "sRGB": (float(color_gamut_srgb), None),
+        "NTSC": (None, float(color_gamut_ntsc)),
+    }
+
+    # Возвращаем (None, None) по умолчанию
+    return return_map.get(color_space, (None, None))
 
 
 def cg(file, color_space, RGB, NTSC):
@@ -134,20 +133,25 @@ def cg(file, color_space, RGB, NTSC):
     if len(coordinate) != 6:
         return None
     x1, y1, x2, y2, x3, y3 = coordinate
-    if color_space == "sRGB, NTSC":
-        ntsc = calculate_overlap_percentage(*NTSC, x1, y1, x2, y2, x3, y3)
-        rgb = calculate_overlap_percentage(*RGB, x1, y1, x2, y2, x3, y3)
-        return rgb, ntsc
-    elif color_space == "sRGB":
-        rgb = calculate_overlap_percentage(*RGB, x1, y1, x2, y2, x3, y3)
-        ntsc = "null"
-        return rgb, None
-    elif color_space == "NTSC":
-        rgb = "null"
-        ntsc = calculate_overlap_percentage(*NTSC, x1, y1, x2, y2, x3, y3)
-        return None, ntsc
-    else:
-        pass
+
+    # Calculate overlap percentage once
+    ntsc_overlap = calculate_overlap_percentage(*NTSC, x1, y1, x2, y2, x3, y3)
+    rgb_overlap = calculate_overlap_percentage(*RGB, x1, y1, x2, y2, x3, y3)
+
+    # Обработка ошибок, если площадь 0
+    if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str):
+        # Если есть ошибка (например, площадь 0), возвращаем None, None
+        return None, None
+
+        # Используем словарь для лаконичного возврата
+    return_map = {
+        "sRGB, NTSC": (rgb_overlap, ntsc_overlap),
+        "sRGB": (rgb_overlap, None),
+        "NTSC": (None, ntsc_overlap),
+    }
+
+    # Возвращаем (None, None) по умолчанию
+    return return_map.get(color_space, (None, None))
 
 
 def contrast(file_path, is_tv):
@@ -157,22 +161,19 @@ def contrast(file_path, is_tv):
     """
     report = h.parse_one_file(file_path)
     if report is None:
-        return None
+        raise ValueError("Report is empty or could not be parsed.")
 
     measurements = report.get("Measurements", [])
 
-    # Собираем Lv для нужных точек (Center, WhiteColor, BlackColor)
+    # Собираем Lv для нужных точек
     lv_values = {}
-
     for m in measurements:
         location = m.get("Location")
-
         if location in ["Center", "WhiteColor", "BlackColor"]:
             try:
-                # Безопасное извлечение и конвертация в float, по умолчанию 0.0
                 lv_values[location] = float(m.get("Lv", 0.0))
-            except (ValueError, TypeError):
-                lv_values[location] = 0.0  # В случае ошибки преобразования
+            except (ValueError, TypeError, KeyError):
+                lv_values[location] = 0.0
 
     # Определяем числитель на основе флага is_tv
     numerator_key = "WhiteColor" if is_tv else "Center"
@@ -191,73 +192,82 @@ def temperature(file):
     report = h.parse_one_file(file)
     measurements = report.get("Measurements", [])
 
-    temperature = None
+    # Используем next() для поиска "T" в "Center"
+    temperature_str = next(
+        (m.get("T") for m in measurements if m.get("Location") == "Center"),
+        None
+    )
 
-    for measurement in measurements:
-        if measurement["Location"] == "Center":
-            temperature = float(measurement["T"])
-    if temperature is None:
+    if temperature_str is None:
+        # Сохраняем оригинальную ошибку, как того требует логика
         raise ZeroDivisionError("NO Temperature for Central DOT")
 
-    return temperature
+    try:
+        return float(temperature_str)
+    except (ValueError, TypeError):
+        raise ValueError("Invalid temperature value found in report.")
 
 
-def delat_e(file):
-    locations = [
-        "BottomLeft",
-        "BottomCenter",
-        "BottomRight",
-        "MiddleLeft",
-        "Center",
-        "MiddleRight",
-        "TopLeft",
-        "TopCenter",
-        "TopRight",
-    ]
-    report = h.parse_one_file(file)
-    expected_x = float(next(
-        (m.get('x') for m in report.get('Measurements', []) if m.get('Location') == 'Center'),
-        '0.0'
-    ))
-    expected_y = float(next(
-        (m.get('y') for m in report.get('Measurements', []) if m.get('Location') == 'Center'),
-        '0.0'
-    ))
-    measurements = report.get("Measurements", [])
-    ref = parse.find_closest_to_target(report, expected_x, expected_y)
-    reference_location = ref["Location"]
-    ref_x = ref["x"]
-    ref_y = ref["y"]
-    ref_lv = ref["Lv"]
-
+def delta_e(file):
     """Calculates Delta E Color Uniformity for given locations."""
-    delta_e_values = []
+    locations_to_check = {
+        "BottomLeft", "BottomCenter", "BottomRight",
+        "MiddleLeft", "Center", "MiddleRight",
+        "TopLeft", "TopCenter", "TopRight",
+    }
+    report = h.parse_one_file(file)
+    if report is None:
+        return "Error: Report is empty or could not be parsed."
+
+    measurements = report.get("Measurements", [])
+
+    # Используем parse.find_closest_to_target для определения опорной точки
+    # Ожидаемые x/y берутся из Center
+    center_data = next(
+        (m for m in measurements if m.get('Location') == 'Center'),
+        {}
+    )
+
+    expected_x = float(center_data.get('x', '0.0'))
+    expected_y = float(center_data.get('y', '0.0'))
+
+    ref = parse.find_closest_to_target(report, expected_x, expected_y)
+
+    ref_x = ref.get("x")
+    ref_y = ref.get("y")
+    ref_lv = ref.get("Lv")
+    reference_location = ref.get("Location")
 
     if ref_x is None or ref_y is None or ref_lv is None:
         return "Error: Missing reference color data for Center."
 
-    ref_color = xyYColor(ref_x, ref_y, ref_lv)
+    delta_e_values = []
 
-    # Calculate Delta E for each location
+    try:
+        ref_color = xyYColor(float(ref_x), float(ref_y), float(ref_lv))
+        ref_lab = convert_color(ref_color, LabColor)
+    except (ValueError, TypeError):
+        return "Error: Invalid reference color data."
 
     for measurement in measurements:
+        location = measurement.get("Location")
 
-        if (measurement["Location"] not in locations) or measurement[
-            "Location"
-        ] == reference_location:
+        # Пропускаем, если не в списке или является опорной точкой
+        if (location not in locations_to_check) or location == reference_location:
             continue
-        x = float(measurement["x"])
-        y = float(measurement["y"])
-        lv = float(measurement["Lv"])
-        if x is None or y is None or lv is None:
-            continue
+
+        try:
+            x = float(measurement.get("x"))
+            y = float(measurement.get("y"))
+            lv = float(measurement.get("Lv"))
+        except (ValueError, TypeError, KeyError):
+            continue  # Пропускаем, если не удалось преобразовать в float
 
         color = xyYColor(x, y, lv)
-        ref_lab = convert_color(ref_color, LabColor)
         color_lab = convert_color(color, LabColor)
 
-        delta_e = delta_e_cie2000(ref_lab, color_lab)
-        delta_e_values.append(delta_e)
+        delta_e_value = delta_e_cie2000(ref_lab, color_lab)
+        delta_e_values.append(delta_e_value)
 
     # Calculate average Delta E
     if delta_e_values:
@@ -268,25 +278,19 @@ def delat_e(file):
 
 
 def serial_number(file):
-    # Parse the JSON data if it's a string
     report = h.parse_one_file(file)
-    # Extract the serial number and measurement time
-    serial_number = report.get("SerialNumber", None)
-    return serial_number
+    sn = report.get("SerialNumber", None) if report else None
+    return sn
 
 
 def measurement_time(file):
-    # Parse the JSON data if it's a string
     report = h.parse_one_file(file)
-
-    # measurement time
-    measurement_time = report.get("MeasurementDateTime", None)
-    return measurement_time
+    time = report.get("MeasurementDateTime", None) if report else None
+    return time
 
 
 def plot_color_space(RGB, NTSC, x1, y1, x2, y2, x3, y3, output_file, color_space_pic):
     """Plots the color space with sRGB and device triangles and a background image."""
-    # Создаем фигуру
     plt.figure(figsize=(8, 8))
     plt.title("Color Space with sRGB, NTSC and Device Triangles")
     plt.xlabel("x")
@@ -295,10 +299,10 @@ def plot_color_space(RGB, NTSC, x1, y1, x2, y2, x3, y3, output_file, color_space
     plt.ylim(0, 0.9)
 
     # Добавляем изображение на фон
-    img = plt.imread(color_space_pic)  # Загружаем изображение
+    img = plt.imread(color_space_pic)
     plt.imshow(
         img, extent=[0, 0.77, 0, 0.82], aspect="auto"
-    )  # Устанавливаем изображение как фон
+    )
 
     # Рисуем треугольник sRGB
     sRGB_triangle = np.array(
@@ -312,10 +316,11 @@ def plot_color_space(RGB, NTSC, x1, y1, x2, y2, x3, y3, output_file, color_space
         device_triangle[:, 0], device_triangle[:, 1], label="Device", color="green"
     )
 
+    # ИСПРАВЛЕНИЕ БАГА: Используем правильные координаты Y для NTSC
     ntsc_triangle = np.array(
         [[NTSC[0], NTSC[1]], [NTSC[2], NTSC[3]], [NTSC[4], NTSC[5]], [NTSC[0], NTSC[1]]]
     )
-    plt.plot(ntsc_triangle[:, 0], sRGB_triangle[:, 1], label="NTSC", color="black")
+    plt.plot(ntsc_triangle[:, 0], ntsc_triangle[:, 1], label="NTSC", color="black")
 
     # Добавляем легенду
     plt.legend()
