@@ -25,8 +25,8 @@ COLOR_SPACE_CONFIG = Path("config") / "color_space.yaml"
 COLOR_SPACE_PICTURE = Path("config") / "space.png"
 
 # Парсинг общих настроек
-RGB = parse.coordinate_sRGB(COLOR_SPACE_CONFIG)
-NTSC = parse.coordinate_NTSC(COLOR_SPACE_CONFIG)
+RGB = parse.coordinate_srgb(COLOR_SPACE_CONFIG)
+NTSC = parse.coordinate_ntsc(COLOR_SPACE_CONFIG)
 COLOR_SPACE = parse.parse_yaml(MAIN_CONFIG, "Task", "color_space", "type")
 test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
 

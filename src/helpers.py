@@ -5,7 +5,7 @@ from reportlab.platypus import Table, TableStyle
 from reportlab.lib.colors import red, black, green, grey, whitesmoke, beige
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 import json
 from PyPDF2 import PdfMerger
@@ -41,8 +41,8 @@ def parse_one_file(file_path):
 def create_pdf(
         input_file,
         output_file,
-        RGB,
-        NTSC,
+        rgb,
+        ntsc,
         plot_picture,
         color_space_pic,
         min_fail,
@@ -122,7 +122,7 @@ def create_pdf(
         x1, y1, x2, y2, x3, y3 = coordinates
 
         cal.plot_color_space(
-            RGB, NTSC, x1, y1, x2, y2, x3, y3, plot_picture, color_space_pic
+            rgb, ntsc, x1, y1, x2, y2, x3, y3, plot_picture, color_space_pic
         )
 
         # Начальная позиция для таблицы
@@ -169,6 +169,7 @@ def create_pdf(
         table = Table(table_data, colWidths=[110, 110, 110, 110, 110])
 
         # Добавляем динамический цвет для статуса в таблице
+        # noinspection SpellCheckingInspection
         style_list = [
             ("BACKGROUND", (0, 0), (-1, 0), grey),
             ("TEXTCOLOR", (0, 0), (-1, 0), whitesmoke),
@@ -205,20 +206,20 @@ def create_pdf(
         print(f"Error reading/parsing min_fail file {min_fail}: {e}")
         min_fail_data = []
 
-    textobject = pdf.beginText()
-    textobject.setTextOrigin(inch, 10 * inch)
-    textobject.setFont("Courier", 8)
+    text_object = pdf.beginText()
+    text_object.setTextOrigin(inch, 10 * inch)
+    text_object.setFont("Courier", 8)
 
     # Упрощенный вывод данных min_fail_data
     for entry in min_fail_data:
         for test_id, details in entry.items():
-            textobject.textLine(f"Serial Number: {test_id}")
+            text_object.textLine(f"Serial Number: {test_id}")
             # Используем генератор для вывода деталей
             for key, value in details.items():
-                textobject.textLine(f"{key}: {value}")
-            textobject.textLine("")
+                text_object.textLine(f"{key}: {value}")
+            text_object.textLine("")
 
-    pdf.drawText(textobject)
+    pdf.drawText(text_object)
     pdf.save()
 
 
@@ -229,8 +230,8 @@ def device_reports_to_pdf(folder_path, output_path, device_name):
     """
     c = canvas.Canvas(output_path, pagesize=letter)
     styles = getSampleStyleSheet()
-    styleH = styles["Heading1"]
-    styleCode = styles["Code"]  # Используем стиль Code для JSON
+    style_h = styles["Heading1"]
+    style_code = styles["Code"]  # Используем стиль Code для JSON
 
     y_position = 750  # Стартовая Y позиция
 
@@ -252,7 +253,7 @@ def device_reports_to_pdf(folder_path, output_path, device_name):
             line_height = 12  # Приблизительная высота строки
 
             # --- Заголовок файла ---
-            p = Paragraph(f"<b>File: {file_name}</b>", styleH)
+            p = Paragraph(f"<b>File: {file_name}</b>", style_h)
             p.wrapOn(c, letter[0] - 2 * inch, letter[1])
             p.drawOn(c, inch, y_position)
             y_position -= 50
@@ -260,7 +261,7 @@ def device_reports_to_pdf(folder_path, output_path, device_name):
             # --- Контент JSON ---
             for line in lines:
                 # Используем стиль Code для сохранения моноширинного шрифта JSON
-                p = Paragraph(line, styleCode)
+                p = Paragraph(line, style_code)
                 p_width, p_height = p.wrapOn(c, letter[0] - 2 * inch, letter[1])
 
                 # Проверка на новую страницу
@@ -324,9 +325,9 @@ def archive_reports(device_name, timestamp, source_folders):
                     for root, _, files in os.walk(folder_path):
                         for file in files:
                             file_path = Path(root) / file
-                            # arcname - путь внутри архива, относительный к текущей директории
-                            arcname = file_path.relative_to(folder_path.parent)
-                            zipf.write(file_path, arcname)
+                            # name_in_archive - путь внутри архива, относительный к текущей директории
+                            name_in_archive = file_path.relative_to(folder_path.parent)
+                            zipf.write(file_path, name_in_archive)
                             files_added += 1
                             print(f"Добавлен файл: {file_path}")
                 else:
@@ -348,7 +349,7 @@ def archive_reports(device_name, timestamp, source_folders):
 
 def clear_folders(folders):
     """
-    Удаляет все файлы из указанных папок, используя pathlib.Path.
+    Удаляет все файлы из указанных папок, используя pathlib. Path.
     """
     removed_count = 0
 

@@ -33,10 +33,10 @@ def json_report(
         "Results": {
             "Brightness": brightness,
             "BrightnessUniformity": brightness_uniformity,
-            "CgByAreaRgb": cg_by_area_rgb,
-            "CgByAreaNtsc": cg_by_area_ntsc,
-            "CgRgb": cg_rgb,
-            "CgNtsc": cg_ntsc,
+            "CgByAreaRGB": cg_by_area_rgb,
+            "CgByAreaNTSC": cg_by_area_ntsc,
+            "CgRGB": cg_rgb,
+            "CgNTSC": cg_ntsc,
             "Contrast": contrast,
             "Temperature": temperature,
             "DeltaE": delta_e,
@@ -136,7 +136,7 @@ def calculate_full_report(input_folder, output_file, device_name):
                         if not value:  # Empty dictionary
                             aggregated_data[flat_key].append(
                                 {}
-                            )  # Mark presence of this key with an empty dict
+                            )  # Mark the presence of this key with an empty dict
                         process_items(value, new_path_parts)  # Recurse
                     elif value is None:
                         aggregated_data[flat_key].append(None)
@@ -156,9 +156,9 @@ def calculate_full_report(input_folder, output_file, device_name):
                                 item_in_list, (int, float, type(None))
                             ):  # Allow numbers and None
                                 sanitized_list.append(item_in_list)
-                            # Else: non-numeric/non-None items in list are skipped for this element's stats
+                            # Else: non-numeric/non-None items in a list are skipped for this element's stats
                         aggregated_data[flat_key].append(sanitized_list)
-                    # Other data types (e.g. strings) are noted by all_keys_paths but not aggregated for stats
+                    # Other data types (e.g., strings) are noted by all_keys_paths but not aggregated for stats
 
             process_items(data["Results"], [])
 
@@ -238,7 +238,7 @@ def calculate_full_report(input_folder, output_file, device_name):
 
         # CRITICAL FIX: Skip setting stats for purely structural parent keys
         # A key is purely structural if no data was ever aggregated for it directly
-        # (i.e., values_list_for_key is empty). Its stat_package will be all-nulls.
+        # (i.e., values_list_for_key is empty). Its stat_package will be all-null.
         if not values_list_for_key and is_effectively_all_null_stat_package(
             stat_package
         ):
@@ -352,10 +352,10 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
     # Mapping for YAML keys to JSON keys if they differ.
     json_key_mapping = {
         "Brightness_uniformity": "BrightnessUniformity",
-        "Cg_rgb_area": "CgByAreaRgb",
-        "Cg_ntsc_area": "CgByAreaNtsc",
-        "Cg_rgb": "CgRgb",
-        "Cg_ntsc": "CgNtsc",
+        "Cg_rgb_area": "CgByAreaRGB",
+        "Cg_ntsc_area": "CgByAreaNTSC",
+        "Cg_rgb": "CgRGB",
+        "Cg_ntsc": "CgNTSC",
         "Delta_e": "DeltaE",
         # Coordinate specific mappings from YAML key to JSON key (within "Coordinates" object in JSON)
         "White_x": "Center_x",  # JSON uses Center_x for White_x from YAML
@@ -367,8 +367,8 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
     for yaml_key, expected_values_dict in expected_tests_yaml.items():
         report_item = {
             "status": "N/A",  # Default status
-            "reason": "Initialization or data issue",  # Default reason, will be overwritten
-            "actual_values": None,  # Will be populated with relevant actuals from JSON
+            "reason": "Initialization or data issue",  # Default reason will be overwritten
+            "actual_values": None,  # Will be populated with relevant actual from JSON
             "expected_values": expected_values_dict,  # Store the whole expected block from YAML
         }
 
@@ -408,9 +408,9 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                 actual_data_dict_for_test.copy()
             )  # Store a copy of the actual data dict
         elif actual_data_dict_for_test is None:
-            # This covers "IF key in result json - null - write N/A for it"
+            # This covers "IF key in result JSON - null - write N/A for it"
             # Also covers if the key was entirely missing.
-            report_item["actual_values"] = None  # Explicitly set to None in report
+            report_item["actual_values"] = None  # Explicitly set to None in a report
             report_item["reason"] = (
                 f"Actual data for '{json_lookup_key}' (from YAML key '{yaml_key}') is null or missing in JSON."
             )
@@ -536,7 +536,7 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
             # Comparison logic for non-coordinates (order of rules matters)
             elif (
                     actual_avg < expected_typ
-            ):  # Rule: If avg value in result json less then typ in yaml file - FAIL
+            ):  # Rule: If avg value in a result JSON less than typ in YAML file - FAIL
                 report_item.update(
                     {
                         "status": "FAIL",
@@ -545,7 +545,7 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                 )
             elif (
                     actual_min_val < expected_min_thresh
-            ):  # Rule: If min value in result json less then min in yaml file - FAIL
+            ):  # Rule: If min value in a result JSON less than min in YAML file - FAIL
                 report_item.update(
                     {
                         "status": "FAIL",
@@ -553,7 +553,7 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                     }
                 )
 
-            # Additional check for Temperature key: FAIL if max value in JSON > max in YAML
+            # Additional check for a Temperature key: FAIL if max value in JSON > max in YAML
             elif yaml_key == "Temperature":
                 actual_max_val = actual_data_dict_for_test.get("max")
                 expected_max_thresh = expected_values_dict.get("max")
@@ -585,7 +585,7 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                     )
             elif (
                     actual_avg >= expected_typ
-            ):  # Rule: If avg value in result json equal or more then typ in yaml file - PASS
+            ):  # Rule: If avg value in a result JSON equals or more than typ in YAML file - PASS
                 report_item.update(
                     {
                         "status": "PASS",
@@ -621,7 +621,7 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
         print(f"Error: Could not write report to {output_json_file}. Details: {e}")
     except TypeError as e:  # Handle non-serializable data if any slips through
         print(f"Error: Data in report is not JSON serializable. Details: {e}")
-        # Attempt to save a simplified error report if main dump fails
+        # Attempt to save a simplified error report if the main dump fails
         try:
             with open(output_json_file, "w", encoding="utf-8") as f:
                 json.dump(
@@ -648,6 +648,7 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
         folder_path (str): The path to the folder containing the JSON files.
         expected_result_path (str): The path to the YAML file containing the expected results.
         output_path (str): The path to the output JSON file.
+        device_name (str): The name of the device to compare against.
     """
 
     try:
@@ -704,7 +705,7 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
                     else:
                         continue
 
-                    # Compare with expected minimum
+                    # Compare with expected minimums
                     if min_value is not None:
                         try:
                             min_value = float(min_value)

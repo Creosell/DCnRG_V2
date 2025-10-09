@@ -11,20 +11,20 @@ def parse_yaml(yaml_file, dictionary, key_name, k):
     return value
 
 
-def coordinate_sRGB(file):
+def coordinate_srgb(file):
     coordinates_rgb = []
-    for list in ("Red", "Green", "Blue"):
+    for coordinates_list in ("Red", "Green", "Blue"):
         for z in ("x", "y"):
-            temp = parse_yaml(file, "sRGB", list, z)
+            temp = parse_yaml(file, "sRGB", coordinates_list, z)
             coordinates_rgb.append(temp)
     return coordinates_rgb
 
 
-def coordinate_NTSC(file):
+def coordinate_ntsc(file):
     coordinates_ntsc = []
-    for list in ("Red", "Green", "Blue"):
+    for coordinates_list in ("Red", "Green", "Blue"):
         for z in ("x", "y"):
-            temp = parse_yaml(file, "NTSC", list, z)
+            temp = parse_yaml(file, "NTSC", coordinates_list, z)
             coordinates_ntsc.append(temp)
     return coordinates_ntsc
 
@@ -57,7 +57,7 @@ def get_coordinates(file):
     from the given JSON file.
 
     Args:
-        json_file_path (str): Path to the JSON file.
+        file (str): Path to the JSON file.
 
     Returns:
         dict: A dictionary containing the coordinates for RedColor, GreenColor,

@@ -128,15 +128,15 @@ def cg_by_area(file, color_space):
     return return_map.get(color_space, (None, None))
 
 
-def cg(file, color_space, RGB, NTSC):
+def cg(file, color_space, srgb, ntsc):
     coordinate = parse.coordinates_of_triangle(file)
     if len(coordinate) != 6:
         return None
     x1, y1, x2, y2, x3, y3 = coordinate
 
     # Calculate overlap percentage once
-    ntsc_overlap = calculate_overlap_percentage(*NTSC, x1, y1, x2, y2, x3, y3)
-    rgb_overlap = calculate_overlap_percentage(*RGB, x1, y1, x2, y2, x3, y3)
+    ntsc_overlap = calculate_overlap_percentage(*ntsc, x1, y1, x2, y2, x3, y3)
+    rgb_overlap = calculate_overlap_percentage(*srgb, x1, y1, x2, y2, x3, y3)
 
     # Обработка ошибок, если площадь 0
     if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str):
@@ -292,7 +292,7 @@ def measurement_time(file):
     return time
 
 
-def plot_color_space(RGB, NTSC, x1, y1, x2, y2, x3, y3, output_file, color_space_pic):
+def plot_color_space(rgb, ntsc, x1, y1, x2, y2, x3, y3, output_file, color_space_pic):
     """Plots the color space with sRGB and device triangles and a background image."""
     plt.figure(figsize=(8, 8))
     plt.title("Color Space with sRGB, NTSC and Device Triangles")
@@ -308,10 +308,10 @@ def plot_color_space(RGB, NTSC, x1, y1, x2, y2, x3, y3, output_file, color_space
     )
 
     # Рисуем треугольник sRGB
-    sRGB_triangle = np.array(
-        [[RGB[0], RGB[1]], [RGB[2], RGB[3]], [RGB[4], RGB[5]], [RGB[0], RGB[1]]]
+    srgb_triangle = np.array(
+        [[rgb[0], rgb[1]], [rgb[2], rgb[3]], [rgb[4], rgb[5]], [rgb[0], rgb[1]]]
     )
-    plt.plot(sRGB_triangle[:, 0], sRGB_triangle[:, 1], label="sRGB", color="blue")
+    plt.plot(srgb_triangle[:, 0], srgb_triangle[:, 1], label="sRGB", color="blue")
 
     # Рисуем треугольник устройства
     device_triangle = np.array([[x1, y1], [x2, y2], [x3, y3], [x1, y1]])
@@ -321,7 +321,7 @@ def plot_color_space(RGB, NTSC, x1, y1, x2, y2, x3, y3, output_file, color_space
 
     # ИСПРАВЛЕНИЕ БАГА: Используем правильные координаты Y для NTSC
     ntsc_triangle = np.array(
-        [[NTSC[0], NTSC[1]], [NTSC[2], NTSC[3]], [NTSC[4], NTSC[5]], [NTSC[0], NTSC[1]]]
+        [[ntsc[0], ntsc[1]], [ntsc[2], ntsc[3]], [ntsc[4], ntsc[5]], [ntsc[0], ntsc[1]]]
     )
     plt.plot(ntsc_triangle[:, 0], ntsc_triangle[:, 1], label="NTSC", color="black")
 
