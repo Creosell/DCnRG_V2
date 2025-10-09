@@ -325,7 +325,7 @@ def archive_reports(device_name, timestamp, source_folders):
                         for file in files:
                             file_path = Path(root) / file
                             # arcname - путь внутри архива, относительный к текущей директории
-                            arcname = file_path.relative_to(Path.cwd())
+                            arcname = file_path.relative_to(folder_path.parent)
                             zipf.write(file_path, arcname)
                             files_added += 1
                             print(f"Добавлен файл: {file_path}")

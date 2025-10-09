@@ -113,7 +113,7 @@ for current_device_name, file_list in device_groups.items():
             cg_by_area = cal.cg_by_area(file, COLOR_SPACE)
             cg = cal.cg(file, COLOR_SPACE, RGB, NTSC)
             temperature = cal.temperature(file)
-            delta_e = cal.delat_e(file)
+            delta_e = cal.delta_e(file)
             coordinates = parse.get_coordinates(file)
 
             r.json_report(

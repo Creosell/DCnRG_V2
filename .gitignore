@@ -1,0 +1,9 @@
+/.venv/
+/.idea/
+/data/
+/device_reports/
+/pdf_reports/
+/pics/
+/report_archive/
+/results/
+/test_reports/
