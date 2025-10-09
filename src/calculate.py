@@ -190,6 +190,9 @@ def contrast(file_path, is_tv):
 
 def temperature(file):
     report = h.parse_one_file(file)
+    if report is None:
+        raise ValueError("Report is empty or could not be parsed.")
+
     measurements = report.get("Measurements", [])
 
     # Используем next() для поиска "T" в "Center"
