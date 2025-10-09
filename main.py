@@ -178,7 +178,7 @@ for current_device_name, file_list in device_groups.items():
     r.generate_comparison_report(current_report_from_all, current_expected_result, current_final_report)
 
     # Генерация PDF-отчетов
-    h.device_reports_to_pdf(str(DEVICE_REPORTS), str(current_pdf_report_all))  # Добавляем фильтр
+    h.device_reports_to_pdf(str(DEVICE_REPORTS), str(current_pdf_report_all), current_device_name)  # Добавляем фильтр
 
     h.create_pdf(
         str(current_final_report),

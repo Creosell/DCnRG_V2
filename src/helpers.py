@@ -1,3 +1,5 @@
+import glob
+
 import src.calculate as cal
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Table, TableStyle
@@ -252,7 +254,7 @@ def create_pdf(
     pdf.save()
 
 
-def device_reports_to_pdf(folder_path, output_path):
+def device_reports_to_pdf(folder_path, output_path, device_name):
     """
     Generates a PDF file containing the formatted content of JSON files
     from a specified folder.
@@ -270,9 +272,12 @@ def device_reports_to_pdf(folder_path, output_path):
     page_number = 1
     y_position = 750  # Starting Y position for content
 
-    for filename in os.listdir(folder_path):
-        if filename.endswith(".json"):
-            file_path = os.path.join(folder_path, filename)
+    pattern = os.path.join(str(folder_path), f"{device_name}_*.json")
+    device_reports = glob.glob(pattern)
+
+    for file in device_reports:
+        if file.endswith(".json"):
+            file_path = os.path.join(folder_path, file)
 
             try:
                 with open(file_path, "r") as f:
@@ -297,7 +302,7 @@ def device_reports_to_pdf(folder_path, output_path):
                     y_position = 750  # Reset Y position for the new page
 
                 # Add a title for each JSON file
-                p = Paragraph(f"<b>File: {filename}</b>", styleH)
+                p = Paragraph(f"<b>File: {file}</b>", styleH)
                 p.wrapOn(c, letter[0] - 2 * inch, letter[1])
                 p.drawOn(c, inch, y_position)
                 y_position -= 50
@@ -315,7 +320,7 @@ def device_reports_to_pdf(folder_path, output_path):
                     y_position -= line_height
 
             except Exception as e:
-                print(f"Error processing file {filename}: {e}")
+                print(f"Error processing file {file}: {e}")
 
     c.save()
     print(f"PDF file created successfully at {output_path}")
@@ -412,27 +417,27 @@ def archive_reports(device_name, timestamp, source_folders):
 
 def clear_folders(folders):
     """
-    Удаляет все файлы из указанных папок, оставляя сами папки
+    Удаляет все файлы из указанных папок, оставляя сами папки.
 
     Args:
-        folders (list): Список папок для очистки
+        folders (list): Список путей к папкам для очистки.
     """
     removed_count = 0
 
-    for folder in folders:
-        if os.path.exists(folder):
-            # Проходим по всем файлам в папке и подпапках
-            for root, dirs, files in os.walk(folder, topdown=False):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    try:
-                        os.remove(file_path)[[1]]
-                        print(f"Удален файл: {file_path}")
-                        removed_count += 1
-                    except Exception as e:
-                        print(f"Ошибка при удалении файла {file_path}: {e}")
-        else:
-            print(f"Папка {folder} не найдена")
+    for folder_path in map(Path, folders):
+        if not folder_path.exists():
+            print(f"Папка {folder_path} не найдена")
+            continue
+
+        # Используем glob() для рекурсивного поиска всех файлов
+        # **/* находит все файлы во всех подпапках
+        for file_path in folder_path.glob('**/*'):
+            if file_path.is_file():
+                try:
+                    os.remove(file_path)
+                    removed_count += 1
+                except Exception as e:
+                    print(f"Ошибка при удалении файла {file_path}: {e}")
 
     print(f"Всего удалено файлов: {removed_count}")
 

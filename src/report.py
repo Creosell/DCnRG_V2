@@ -95,17 +95,9 @@ def is_effectively_all_null_stat_package(pkg):
 
 
 def calculate_full_report(input_folder, output_file, device_name):
-    # Deletion of old Typ*.json files (from original script)
 
     pattern = os.path.join(str(input_folder), f"{device_name}_*.json")
     device_reports = glob.glob(pattern)
-    # files_to_delete = glob.glob(pattern)
-    # for file_path in files_to_delete:
-    #     try:
-    #         os.remove(file_path)
-    #         print(f"Deleted file: {file_path}")
-    #     except OSError as e:
-    #         print(f"Error deleting file {file_path}: {e}")
 
     aggregated_data = defaultdict(list)  # Stores lists of values for each key path
     all_keys_paths = set()  # Stores all unique flattened key paths encountered
