@@ -129,7 +129,7 @@ def test_brightness_logic_display(mocker, mock_display_data):
 def test_brightness_uniformity():
     """Проверяет расчет равномерности яркости."""
     # Случай 1: Стандартные данные
-    brightness_data = {'min': 145.2, 'uniformity_center_lv': 159.7}
+    brightness_data = {'min': 145.2, 'max': 159.7}
     uniformity = calculate.brightness_uniformity(brightness_data)
     # (1 - (min / typ)) * 100 = 9.0795...
     assert uniformity == pytest.approx(90.92, abs=0.01)

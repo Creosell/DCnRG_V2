@@ -1,6 +1,6 @@
 import datetime
 import os
-from collections import defaultdict  # Добавляем для удобной группировки
+from collections import defaultdict  # Added for convenient grouping
 from pathlib import Path
 
 import src.calculate as cal
@@ -8,9 +8,9 @@ import src.helpers as h
 import src.parse as parse
 import src.report as r
 
-# --- Шаг 0: Инициализация и настройки ---
+# --- Step 0: Initialization and Settings ---
 
-# Настройка путей
+# Path configuration
 CURRENT_TIME = datetime.datetime.now()
 TIMESTAMP = CURRENT_TIME.strftime("%Y%m%d%H%M")
 
@@ -25,13 +25,13 @@ MAIN_CONFIG = Path("config") / "main.yaml"
 COLOR_SPACE_CONFIG = Path("config") / "color_space.yaml"
 COLOR_SPACE_PICTURE = Path("config") / "space.png"
 
-# Парсинг общих настроек
+# Parsing general settings
 RGB = parse.coordinate_srgb(COLOR_SPACE_CONFIG)
 NTSC = parse.coordinate_ntsc(COLOR_SPACE_CONFIG)
 COLOR_SPACE = parse.parse_yaml(MAIN_CONFIG, "Task", "color_space", "type")
 test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
 
-# Создание рабочих папок при их отсутствии
+# Create working folders if they do not exist
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
 DEVICE_REPORTS.mkdir(parents=True, exist_ok=True)
 PDF_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -39,18 +39,18 @@ TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
 PICTURES_FOLDER.mkdir(parents=True, exist_ok=True)
 
-# Общий файл ожидаемых результатов (используется как запасной)
+# Common expected results file (used as fallback)
 EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 
-# --- Шаг 1: Сбор файлов и группировка по конфигурации устройства ---
-# Группируем файлы по DeviceConfiguration
+# --- Step 1: File Collection and Grouping by Device Configuration ---
+# Group files by DeviceConfiguration
 device_groups = defaultdict(list)
 files = os.listdir(DATA_FOLDER)
 if not files:
-    print(f"В папке {DATA_FOLDER} нет файлов для обработки.")
+    print(f"The folder {DATA_FOLDER} contains no files for processing.")
     exit()
 
-print(f"Найдено {len(files)} файлов для обработки. Начинается группировка...")
+print(f"Found {len(files)} files for processing. Starting grouping...")
 
 for file_name in files:
     if file_name.endswith(".json"):
@@ -58,36 +58,36 @@ for file_name in files:
         try:
             data = h.parse_one_file(file_path)
 
-            # Получаем ключевые параметры
+            # Get key parameters
             device_config = data.get("DeviceConfiguration", "UnknownDevice")
             is_tv = data.get("IsTV", False)
             sn = data.get("SerialNumber", "UnknownSN")
 
-            # Добавляем в группу: путь, флаг TV, серийный номер
+            # Add to group: path, TV flag, serial number
             device_groups[device_config].append((file_path, is_tv, sn))
 
         except Exception as e:
-            print(f"Ошибка при парсинге файла {file_name}: {e}")
+            print(f"Error parsing file {file_name}: {e}")
 
 if not device_groups:
-    print("Не удалось сформировать группы устройств. Проверьте файлы.")
+    print("Failed to form device groups. Check the files.")
     exit()
 
-# --- Шаг 2: Обработка каждой группы устройств ---
+# --- Step 2: Process Each Device Group ---
 
 for current_device_name, file_list in device_groups.items():
-    print(f"\n--- Обработка конфигурации устройства: {current_device_name} ({len(file_list)} файлов) ---")
+    print(f"\n--- Processing device configuration: {current_device_name} ({len(file_list)} files) ---")
 
-    # 2.1 Динамическое определение путей для ТЕКУЩЕГО устройства
+    # 2.1 Dynamic path definition for the CURRENT device
 
-    # Поиск специфичного файла требований config/device_configs/{name}.yaml
+    # Search for a specific requirements file config/device_configs/{name}.yaml
     current_expected_result = Path("config") / "device_configs" / f"{current_device_name}.yaml"
     if not current_expected_result.exists():
         print(
-            f"Внимание: Конфигурация требований {current_expected_result} не найдена. Используется общий файл: {EXPECTED_RESULT}")
-        current_expected_result = EXPECTED_RESULT  # Запасной вариант
+            f"Attention: Requirements configuration {current_expected_result} not found. Using general file: {EXPECTED_RESULT}")
+        current_expected_result = EXPECTED_RESULT  # Fallback option
 
-    # Динамические имена файлов отчетов
+    # Dynamic report file names
     current_min_fail = Path("test_reports") / f"min_fail_{current_device_name}.json"
     current_report_from_all = Path("test_reports") / f"full_report_{current_device_name}.json"
     current_final_report = Path("test_reports") / f"final_report_{current_device_name}_{TIMESTAMP}.json"
@@ -96,20 +96,20 @@ for current_device_name, file_list in device_groups.items():
     current_pdf_report_all = Path("pdf_reports") / f"all_reports_{current_device_name}.pdf"
     current_result = Path("results") / f"{current_device_name}_{TIMESTAMP}.pdf"
 
-    # 2.2 Обрабатываем каждый файл в текущей группе
+    # 2.2 Process each file in the current group
     for file, is_tv_flag, sn in file_list:
         t = cal.measurement_time(file)
 
         if test == "FullTest":
             print("FULL TEST")
 
-            # --- ОБНОВЛЕННЫЙ РАСЧЕТ ЯРКОСТИ/РАВНОМЕРНОСТИ ---
-            brightness_values = cal.brightness(file, is_tv_flag)  # Передаем флаг is_tv_flag
-            brightness = brightness_values["typ"]  # Типовая (WhiteColor/Center)
-            brightness_uniformity = cal.brightness_uniformity(brightness_values)  # Использует Center
+            # --- UPDATED BRIGHTNESS/UNIFORMITY CALCULATION ---
+            brightness_values = cal.brightness(file, is_tv_flag)  # Pass the is_tv_flag
+            brightness = brightness_values["typ"]  # Typical (WhiteColor/Center)
+            brightness_uniformity = cal.brightness_uniformity(brightness_values)  # Uses Center
 
-            # --- ОБНОВЛЕННЫЙ РАСЧЕТ КОНТРАСТНОСТИ ---
-            contrast = cal.contrast(file, is_tv_flag)  # Передаем флаг is_tv_flag
+            # --- UPDATED CONTRAST CALCULATION ---
+            contrast = cal.contrast(file, is_tv_flag)  # Pass the is_tv_flag
 
             cg_by_area = cal.cg_by_area(file, COLOR_SPACE)
             cg = cal.cg(file, COLOR_SPACE, RGB, NTSC)
@@ -169,17 +169,17 @@ for current_device_name, file_list in device_groups.items():
                 device_name=current_device_name
             )
 
-    # 2.3 --- Агрегация и Отчетность для ТЕКУЩЕЙ конфигурации ---
-    print(f"Создание финальных отчетов для {current_device_name}...")
+    # 2.3 --- Aggregation and Reporting for the CURRENT configuration ---
+    print(f"Creating final reports for {current_device_name}...")
 
-    # ВНИМАНИЕ: Для корректной работы calculate_full_report и analyze_json_files_for_min_fail
-    # эти функции должны уметь фильтровать файлы по current_device_name внутри себя.
+    # ATTENTION: For calculate_full_report and analyze_json_files_for_min_fail to work correctly,
+    # these functions must be able to filter files by current_device_name internally.
     r.calculate_full_report(DEVICE_REPORTS, current_report_from_all, current_device_name)
     r.analyze_json_files_for_min_fail(DEVICE_REPORTS, current_expected_result, current_min_fail, current_device_name)
     r.generate_comparison_report(current_report_from_all, current_expected_result, current_final_report)
 
-    # Генерация PDF-отчетов
-    h.device_reports_to_pdf(str(DEVICE_REPORTS), str(current_pdf_report_all), current_device_name)  # Добавляем фильтр
+    # PDF Report Generation
+    h.device_reports_to_pdf(str(DEVICE_REPORTS), str(current_pdf_report_all), current_device_name)  # Add filter
 
     h.create_pdf(
         str(current_final_report),
@@ -194,10 +194,10 @@ for current_device_name, file_list in device_groups.items():
 
     h.merge_pdfs((current_pdf_report,current_pdf_report_all),current_result)
 
-    print(f"Отчеты для {current_device_name} сохранены в {current_result}")
+    print(f"Reports for {current_device_name} saved to {current_result}")
 
-# --- Шаг 3: Финальные шаги (Архивация и Очистка) ---
-print("\n--- Финализация и очистка ---")
+# --- Step 3: Final Steps (Archiving and Cleanup) ---
+print("\n--- Finalization and cleanup ---")
 
 FOLDERS_TO_PROCESS = [DEVICE_REPORTS, PDF_REPORTS_FOLDER, TEST_REPORTS_FOLDER, DATA_FOLDER, PICTURES_FOLDER]
 ARCHIVE_SUMMARY_NAME = "Full_Report_Summary"

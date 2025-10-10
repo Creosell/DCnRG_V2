@@ -40,8 +40,10 @@ def calculate_overlap_percentage(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6)
 
 def brightness(file, is_tv):
     """
-    Рассчитывает min/max яркость, типовую яркость (typ) для отчета
-    (WhiteColor или Center) и яркость Center для расчета равномерности.
+    Calculates the minimum (min) and maximum (max) brightness
+    from all measurement points excluding color points (Red, Green, Blue, Black, White).
+    Also calculates the typical (typ) brightness for the report,
+    which is either 'WhiteColor' (for TV) or 'Center' (otherwise).
     """
     report = h.parse_one_file(file)
     if report is None:
@@ -52,7 +54,7 @@ def brightness(file, is_tv):
     # Map location names to their required keys
     report_typ_key = "WhiteColor" if is_tv else "Center"
 
-    # Собираем все Lv значения в словарь для быстрого доступа
+    # Collect all Lv values into a dictionary for quick access
     lv_values = {}
     for m in measurements:
         location = m.get("Location")
@@ -61,38 +63,34 @@ def brightness(file, is_tv):
         except (ValueError, TypeError, KeyError):
             continue
 
-    # Точка для типового значения (typ)
+    # Point for the typical value (typ)
     typical_lv_for_report = lv_values.get(report_typ_key)
 
-    # Значение Center для равномерности
-    # center_lv_for_uniformity = lv_values.get("Center")
-
-    # Собираем значения для расчета min/max
+    # Collect values for min/max calculation
     excluded_locations = {"RedColor", "GreenColor", "BlueColor", "BlackColor", "WhiteColor"}
 
-    # Используем фильтр, чтобы получить все Lv, кроме исключенных
+    # Use a filter to get all Lv except the excluded ones
     all_lv_values = [
         lv for loc, lv in lv_values.items()
         if loc not in excluded_locations
     ]
 
-    # 4. Расчет min, max
+    # Calculate min, max
     min_lv = min(all_lv_values) if all_lv_values else None
     max_lv = max(all_lv_values) if all_lv_values else None
 
-    # 5. Возвращаем результат
+    # Return the result
     return {
         "min": min_lv,
         "typ": typical_lv_for_report,
         "max": max_lv,
-        #"uniformity_center_lv": center_lv_for_uniformity
     }
 
 
 def brightness_uniformity(brightness_value):
     """
-    Рассчитывает равномерность яркости, используя минимальную яркость
-    и яркость Center (uniformity_center_lv).
+    Calculates brightness uniformity using minimum brightness
+    and Center brightness (uniformity_center_lv).
     """
     min_lv = brightness_value.get("min")
     max_lv = brightness_value.get("max")
@@ -118,14 +116,14 @@ def cg_by_area(file, color_space):
     color_gamut_srgb = (triangle_area / 0.112) * 100
     color_gamut_ntsc = (triangle_area / 0.158) * 100
 
-    # Используем словарь для лаконичного возврата
+    # Use a dictionary for concise return
     return_map = {
         "sRGB, NTSC": (float(color_gamut_srgb), float(color_gamut_ntsc)),
         "sRGB": (float(color_gamut_srgb), None),
         "NTSC": (None, float(color_gamut_ntsc)),
     }
 
-    # Возвращаем (None, None) по умолчанию
+    # Return (None, None) by default
     return return_map.get(color_space, (None, None))
 
 
@@ -139,26 +137,26 @@ def cg(file, color_space, srgb, ntsc):
     ntsc_overlap = calculate_overlap_percentage(*ntsc, x1, y1, x2, y2, x3, y3)
     rgb_overlap = calculate_overlap_percentage(*srgb, x1, y1, x2, y2, x3, y3)
 
-    # Обработка ошибок, если площадь 0
+    # Error handling if area is 0
     if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str):
-        # Если есть ошибка (например, площадь 0), возвращаем None, None
+        # If there is an error (e.g., area is 0), return None, None
         return None, None
 
-        # Используем словарь для лаконичного возврата
+    # Use a dictionary for concise return
     return_map = {
         "sRGB, NTSC": (rgb_overlap, ntsc_overlap),
         "sRGB": (rgb_overlap, None),
         "NTSC": (None, ntsc_overlap),
     }
 
-    # Возвращаем (None, None) по умолчанию
+    # Return (None, None) by default
     return return_map.get(color_space, (None, None))
 
 
 def contrast(file_path, is_tv):
     """
-    Рассчитывает контрастность.
-    Использует WhiteColor/BlackColor для ТВ (is_tv=True) и Center/BlackColor иначе.
+    Calculates contrast ratio.
+    Uses WhiteColor/BlackColor for TV (is_tv=True) and Center/BlackColor otherwise.
     """
     report = h.parse_one_file(file_path)
     if report is None:
@@ -166,7 +164,7 @@ def contrast(file_path, is_tv):
 
     measurements = report.get("Measurements", [])
 
-    # Собираем Lv для нужных точек
+    # Collect Lv for the required points
     lv_values = {}
     for m in measurements:
         location = m.get("Location")
@@ -176,13 +174,13 @@ def contrast(file_path, is_tv):
             except (ValueError, TypeError, KeyError):
                 lv_values[location] = 0.0
 
-    # Определяем числитель на основе флага is_tv
+    # Determine the numerator based on the is_tv flag
     numerator_key = "WhiteColor" if is_tv else "Center"
 
     numerator_lv = lv_values.get(numerator_key, 0.0)
     black_lv = lv_values.get("BlackColor", 0.0)
 
-    # Расчет контрастности
+    # Contrast calculation
     if black_lv == 0.0 or numerator_lv == 0.0:
         return 0.0
 
@@ -196,14 +194,14 @@ def temperature(file):
 
     measurements = report.get("Measurements", [])
 
-    # Используем next() для поиска "T" в "Center"
+    # Use next() to find "T" in "Center"
     temperature_str = next(
         (m.get("T") for m in measurements if m.get("Location") == "Center"),
         None
     )
 
     if temperature_str is None:
-        # Сохраняем оригинальную ошибку, как того требует логика
+        # Preserve the original error, as required by the logic
         raise ZeroDivisionError("NO Temperature for Central DOT")
 
     try:
@@ -225,8 +223,8 @@ def delta_e(file):
 
     measurements = report.get("Measurements", [])
 
-    # Используем parse.find_closest_to_target для определения опорной точки
-    # Ожидаемые x/y берутся из Center
+    # Use parse.find_closest_to_target to determine the reference point
+    # Expected x/y are taken from Center
     center_data = next(
         (m for m in measurements if m.get('Location') == 'Center'),
         {}
@@ -256,7 +254,7 @@ def delta_e(file):
     for measurement in measurements:
         location = measurement.get("Location")
 
-        # Пропускаем, если не в списке или является опорной точкой
+        # Skip if not in the list or is the reference point
         if (location not in locations_to_check) or location == reference_location:
             continue
 
@@ -265,7 +263,7 @@ def delta_e(file):
             y = float(measurement.get("y"))
             lv = float(measurement.get("Lv"))
         except (ValueError, TypeError, KeyError):
-            continue  # Пропускаем, если не удалось преобразовать в float
+            continue  # Skip if conversion to float failed
 
         color = xyYColor(x, y, lv)
         color_lab = convert_color(color, LabColor)
@@ -302,33 +300,33 @@ def plot_color_space(rgb, ntsc, x1, y1, x2, y2, x3, y3, output_file, color_space
     plt.xlim(0, 0.8)
     plt.ylim(0, 0.9)
 
-    # Добавляем изображение на фон
+    # Add the image to the background
     img = plt.imread(color_space_pic)
     plt.imshow(
         img, extent=[0, 0.77, 0, 0.82], aspect="auto"
     )
 
-    # Рисуем треугольник sRGB
+    # Draw the sRGB triangle
     srgb_triangle = np.array(
         [[rgb[0], rgb[1]], [rgb[2], rgb[3]], [rgb[4], rgb[5]], [rgb[0], rgb[1]]]
     )
     plt.plot(srgb_triangle[:, 0], srgb_triangle[:, 1], label="sRGB", color="blue")
 
-    # Рисуем треугольник устройства
+    # Draw the device triangle
     device_triangle = np.array([[x1, y1], [x2, y2], [x3, y3], [x1, y1]])
     plt.plot(
         device_triangle[:, 0], device_triangle[:, 1], label="Device", color="green"
     )
 
-    # ИСПРАВЛЕНИЕ БАГА: Используем правильные координаты Y для NTSC
+    # BUG FIX: Use correct Y coordinates for NTSC
     ntsc_triangle = np.array(
         [[ntsc[0], ntsc[1]], [ntsc[2], ntsc[3]], [ntsc[4], ntsc[5]], [ntsc[0], ntsc[1]]]
     )
     plt.plot(ntsc_triangle[:, 0], ntsc_triangle[:, 1], label="NTSC", color="black")
 
-    # Добавляем легенду
+    # Add the legend
     plt.legend()
 
-    # Сохраняем график в файл
+    # Save the plot to a file
     plt.savefig(output_file)
     plt.close()

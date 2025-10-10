@@ -1,8 +1,6 @@
 import json
 import math
-
 import yaml
-
 import src.helpers as h
 
 
@@ -146,8 +144,8 @@ def find_closest_to_target(file, target_x, target_y):
 
 def get_device_info(file_path):
     """
-    Извлекает имя конфигурации устройства (DeviceConfiguration), флаг IsTV
-    и SerialNumber из JSON-файла.
+    Extracts the device configuration name (DeviceConfiguration), IsTV flag,
+    and SerialNumber from the JSON file.
 
     Returns:
         tuple: (str/None device_config, bool is_tv, str/None serial_number)
@@ -155,13 +153,13 @@ def get_device_info(file_path):
     data = h.parse_one_file(file_path)
 
     if data is None:
-        # Возвращаем None и False, если парсинг не удался
+        # Return None and False if parsing failed
         return None, False, None
 
-    # Извлекаем данные, используя .get() для безопасности (со значениями по умолчанию)
+    # Extract data using .get() for safety (with default values)
     device_config = data.get("DeviceConfiguration")
     is_tv = data.get("IsTV", False)
     serial_number = data.get("SerialNumber")
 
-    # Возвращаем DeviceConfiguration, IsTV и SerialNumber
+    # Return DeviceConfiguration, IsTV, and SerialNumber
     return device_config, is_tv, serial_number

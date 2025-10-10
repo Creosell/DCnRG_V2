@@ -97,6 +97,16 @@ def is_effectively_all_null_stat_package(pkg):
 
 
 def calculate_full_report(input_folder, output_file, device_name):
+    """
+    Aggregates data from multiple device-specific JSON reports (filtered by device_name),
+    calculates element-wise statistics (min, avg, max) for all numeric and list values,
+    and saves the aggregated results to a new JSON file.
+
+    Args:
+        input_folder (str/Path): The directory containing the individual JSON reports.
+        output_file (str/Path): The path to save the final aggregated JSON report.
+        device_name (str): The name of the device used to filter the reports.
+    """
 
     pattern = os.path.join(str(input_folder), f"{device_name}_*.json")
     device_reports = glob.glob(pattern)
@@ -170,7 +180,7 @@ def calculate_full_report(input_folder, output_file, device_name):
     for flat_key in sorted_key_paths:
         # values_list_for_key contains raw collected data for this flat_key:
         # e.g., [10, 20, None] for "MetricA"
-        # or `[{}]` if "EmptyGroup" was `{"EmptyGroup": {}}` in one file
+        # or `{}` if "EmptyGroup" was `{"EmptyGroup": {}}` in one file
         # or `[]` if "Coordinates" was always a non-empty dict (purely structural parent)
         values_list_for_key = aggregated_data.get(flat_key, [])
 
