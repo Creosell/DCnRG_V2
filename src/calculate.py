@@ -61,13 +61,13 @@ def brightness(file, is_tv):
         except (ValueError, TypeError, KeyError):
             continue
 
-    # 1. Точка для типового значения (typ)
+    # Точка для типового значения (typ)
     typical_lv_for_report = lv_values.get(report_typ_key)
 
-    # 2. Значение Center для равномерности
-    center_lv_for_uniformity = lv_values.get("Center")
+    # Значение Center для равномерности
+    # center_lv_for_uniformity = lv_values.get("Center")
 
-    # 3. Собираем значения для расчета min/max
+    # Собираем значения для расчета min/max
     excluded_locations = {"RedColor", "GreenColor", "BlueColor", "BlackColor", "WhiteColor"}
 
     # Используем фильтр, чтобы получить все Lv, кроме исключенных
@@ -85,7 +85,7 @@ def brightness(file, is_tv):
         "min": min_lv,
         "typ": typical_lv_for_report,
         "max": max_lv,
-        "uniformity_center_lv": center_lv_for_uniformity
+        #"uniformity_center_lv": center_lv_for_uniformity
     }
 
 
@@ -95,12 +95,12 @@ def brightness_uniformity(brightness_value):
     и яркость Center (uniformity_center_lv).
     """
     min_lv = brightness_value.get("min")
-    center_lv = brightness_value.get("uniformity_center_lv")
+    max_lv = brightness_value.get("max")
 
-    if min_lv is None or center_lv is None or center_lv == 0.0:
+    if min_lv is None or max_lv is None or max_lv == 0.0:
         return 0.0
 
-    brightness_uniformity_percent = (min_lv / center_lv) * 100
+    brightness_uniformity_percent = (min_lv / max_lv) * 100
     return brightness_uniformity_percent
 
 
