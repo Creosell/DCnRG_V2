@@ -17,7 +17,7 @@ def mock_display_data():
     """
     return {
         "SerialNumber": "NotTV",
-        "DeviceConfiguration": "15iA",
+        "DeviceConfiguration": "SDNB-15iA",
         "IsTV": False,
         "MeasurementDateTime": "20250624_184822",
         "Measurements": [

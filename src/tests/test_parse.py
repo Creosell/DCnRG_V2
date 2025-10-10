@@ -72,7 +72,7 @@ def test_get_device_info_success(mocker, mock_display_data):
     device_config, is_tv, sn = parse.get_device_info("dummy_file.json")
 
     # Ожидаемые значения из NotTV.json
-    assert device_config == "15iA"
+    assert device_config == "SDNB-15iA"
     assert is_tv is False
     assert sn == "NotTV"
 
