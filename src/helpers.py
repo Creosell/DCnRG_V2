@@ -168,7 +168,7 @@ def create_pdf(
             ])
 
         # Создание и отрисовка таблицы
-        table = Table(table_data, colWidths=[110, 110, 110, 110, 110])
+        table = Table(table_data, colWidths=[100, 100, 100, 100, 100])
 
         # Добавляем динамический цвет для статуса в таблице
         # noinspection SpellCheckingInspection
@@ -233,6 +233,7 @@ def device_reports_to_pdf(folder_path, output_path, device_name):
     c = canvas.Canvas(output_path, pagesize=letter)
     styles = getSampleStyleSheet()
     style_h = styles["Heading1"]
+    style_n = styles["Normal"]
     style_code = styles["Code"]  # Используем стиль Code для JSON
 
     y_position = 750  # Стартовая Y позиция
@@ -263,7 +264,7 @@ def device_reports_to_pdf(folder_path, output_path, device_name):
             # --- Контент JSON ---
             for line in lines:
                 # Используем стиль Code для сохранения моноширинного шрифта JSON
-                p = Paragraph(line, style_code)
+                p = Paragraph(line, style_n)
                 p_width, p_height = p.wrapOn(c, letter[0] - 2 * inch, letter[1])
 
                 # Проверка на новую страницу
