@@ -25,7 +25,7 @@ def pass_fail_color(result):
         "PASS": green,
         "FAIL": red
     }
-    # Return the color, or grey for "N/A" and other cases
+    # Return the color, or gray for "N/A" and other cases
     return color_map.get(result, grey)
 
 
@@ -87,6 +87,7 @@ def create_pdf(
 
     y_start = 700
     line_height = 20
+    y_after_main_table = y_start - len(param_list) * line_height
 
     # Output main parameters in a loop
     for i, (param_name, text) in enumerate(param_list):
@@ -116,6 +117,8 @@ def create_pdf(
         pdf.drawString(500, y_pos, status)
         pdf.setFillColor(black)
 
+    y_table_draw = y_after_main_table - 30
+
     # --- Color coordinates and plot ---
     if test_type != "Contrast":
         coordinate_names = ["Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y"]
@@ -134,7 +137,7 @@ def create_pdf(
         colors = ["Red", "Green", "Blue", "White"]
         table_data = [["Color", "min", "typ", "max", "status"]]
 
-        # Creating data for the coordinates table in a loop
+        # Creating data for the coordinate table in a loop
         for color in colors:
             x_data = data.get(f"{color}_x", {})
             y_data = data.get(f"{color}_y", {})
@@ -234,7 +237,6 @@ def device_reports_to_pdf(folder_path, output_path, device_name):
     styles = getSampleStyleSheet()
     style_h = styles["Heading1"]
     style_n = styles["Normal"]
-    style_code = styles["Code"]  # Use Code style for JSON
 
     y_position = 750  # Starting Y position
 

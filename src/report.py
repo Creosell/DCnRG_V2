@@ -188,13 +188,13 @@ def calculate_full_report(input_folder, output_file, device_name):
 
         if not values_list_for_key:
             # Key path existed (e.g. "Coordinates") but never held a direct value/null/empty_dict.
-            # It was purely structural. stat_package remains all None.
+            # It was purely structural. Stat_package remains all None.
             pass
         elif all(
             v is None or (isinstance(v, dict) and not v) for v in values_list_for_key
         ):
             # All collected items for this key were None or empty dicts {}.
-            # stat_package remains all None.
+            # Stat_package remains all None.
             pass
         elif any(isinstance(v, list) for v in values_list_for_key):
             # Handles list-based statistics (element-wise)
@@ -657,9 +657,9 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
     and saves the failing data to an output JSON file.
 
     Args:
-        folder_path (str): The path to the folder containing the JSON files.
-        expected_result_path (str): The path to the YAML file containing the expected results.
-        output_path (str): The path to the output JSON file.
+        folder_path (Path): The path to the folder containing the JSON files.
+        expected_result_path (Path): The path to the YAML file containing the expected results.
+        output_path (Path): The path to the output JSON file.
         device_name (str): The name of the device to compare against.
     """
 

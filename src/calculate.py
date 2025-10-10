@@ -155,7 +155,7 @@ def cg(file, color_space, srgb, ntsc):
 
 def contrast(file_path, is_tv):
     """
-    Calculates contrast ratio.
+    Calculates a contrast ratio.
     Uses WhiteColor/BlackColor for TV (is_tv=True) and Center/BlackColor otherwise.
     """
     report = h.parse_one_file(file_path)
