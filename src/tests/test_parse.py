@@ -1,8 +1,8 @@
 # tests/test_parse1.py
 
 import pytest
-import json
 import yaml
+
 from src import parse
 
 

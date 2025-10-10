@@ -1,10 +1,7 @@
 # tests/conftest.py
 
 import pytest
-import json
-import yaml
-from pathlib import Path
-from unittest import mock
+
 
 # --- ФИКСТУРЫ ДЛЯ ИЗОЛИРОВАННОГО ТЕСТИРОВАНИЯ ---
 

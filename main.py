@@ -1,11 +1,12 @@
-import src.parse as parse
-import os
-import src.calculate as cal
-import src.report as r
 import datetime
-import src.helpers as h
-from pathlib import Path
+import os
 from collections import defaultdict  # Добавляем для удобной группировки
+from pathlib import Path
+
+import src.calculate as cal
+import src.helpers as h
+import src.parse as parse
+import src.report as r
 
 # --- Шаг 0: Инициализация и настройки ---
 

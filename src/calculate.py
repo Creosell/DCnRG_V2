@@ -1,11 +1,12 @@
+import matplotlib.pyplot as plt
 import numpy as np
-from shapely.geometry import Polygon
-from colormath2.color_objects import xyYColor, LabColor
 from colormath2.color_conversions import convert_color
 from colormath2.color_diff import delta_e_cie2000
-import src.parse as parse
+from colormath2.color_objects import xyYColor, LabColor
+from shapely.geometry import Polygon
+
 import src.helpers as h
-import matplotlib.pyplot as plt
+import src.parse as parse
 
 
 def area(p):

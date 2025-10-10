@@ -1,7 +1,8 @@
 # tests/test_calculate.py
 
-import pytest
 import numpy as np
+import pytest
+
 from src import calculate
 
 

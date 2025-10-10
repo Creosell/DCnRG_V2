@@ -1,10 +1,12 @@
-import math
-import yaml
-from collections import defaultdict
-import os
 import glob
 import json
+import math
+import os
+from collections import defaultdict
 from pathlib import Path
+
+import yaml
+
 
 def json_report(
     sn=None,

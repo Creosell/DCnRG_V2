@@ -1,12 +1,11 @@
 # tests/test_report.py
 
-import pytest
 import json
-from src import report
-from collections import defaultdict
-import glob
-import os
 from pathlib import Path
+
+import pytest
+
+from src import report
 
 
 # Используем фикстуру mocker и tmp_path из conftest.py

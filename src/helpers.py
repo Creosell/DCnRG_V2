@@ -1,17 +1,19 @@
 import glob
-import src.calculate as cal
-from reportlab.pdfgen import canvas
-from reportlab.platypus import Table, TableStyle
-from reportlab.lib.colors import red, black, green, grey, whitesmoke, beige
-from reportlab.lib.units import inch
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import Paragraph
-from reportlab.lib.styles import getSampleStyleSheet
 import json
-from PyPDF2 import PdfMerger
 import os
 import zipfile
 from pathlib import Path
+
+from PyPDF2 import PdfMerger
+from reportlab.lib.colors import red, black, green, grey, whitesmoke, beige
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph
+from reportlab.platypus import Table, TableStyle
+
+import src.calculate as cal
 
 
 def pass_fail_color(result):

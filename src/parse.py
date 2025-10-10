@@ -1,8 +1,10 @@
 import json
+import math
 
 import yaml
-import math
+
 import src.helpers as h
+
 
 def parse_yaml(yaml_file, dictionary, key_name, k):
     with open(yaml_file, "r") as file:

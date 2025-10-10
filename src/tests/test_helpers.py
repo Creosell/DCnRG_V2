@@ -1,10 +1,10 @@
 # tests/test_helpers.py
 
-import pytest
 import json
+
 from reportlab.lib.colors import green, red, grey
+
 from src import helpers
-from pathlib import Path
 
 
 # Используем фикстуру mocker и mock_json_data из conftest.py
