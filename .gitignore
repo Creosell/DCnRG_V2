@@ -9,5 +9,7 @@
 /test_reports/
 /dist/
 /build/
+/logs/
 /ReportGenerator.exe
 /ReportGenerator.spec
+
