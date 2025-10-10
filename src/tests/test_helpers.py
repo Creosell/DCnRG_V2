@@ -52,6 +52,9 @@ def test_create_pdf_calls_plot(mocker, tmp_path):
         "White_y": {"actual_values": {"avg": 0.32}, "status": "PASS"},
     }
 
+    min_fail_file = tmp_path / "min_fail.json"
+    min_fail_file.write_text("[]")
+
     # sRGB (из conftest): R(0.64, 0.33), G(0.30, 0.60), B(0.15, 0.06)
     MOCK_RGB_COORDS = [0.64, 0.33, 0.30, 0.60, 0.15, 0.06]
     # NTSC (из conftest): R(0.67, 0.33), G(0, 0), B(0, 0) - NTSC в фикстуре неполный, но для теста сойдет.
@@ -77,7 +80,7 @@ def test_create_pdf_calls_plot(mocker, tmp_path):
         ntsc=MOCK_NTSC_COORDS,  # <-- Исправлено
         plot_picture="plot.png",
         color_space_pic="space.png",
-        min_fail="min_fail.json",
+        min_fail=str(min_fail_file),
         test_type="Color"
     )
 
@@ -113,3 +116,56 @@ def test_create_pdf_calls_plot(mocker, tmp_path):
     # mock_canvas - это результат вызова конструктора.
     mock_canvas = helpers.canvas.Canvas.return_value
     mock_canvas.save.assert_called_once()
+
+def test_parse_one_file_failure(tmp_path):
+    """Тестирование parse_one_file на несуществующем и некорректном файле."""
+    # Файл не найден
+    assert helpers.parse_one_file(tmp_path / "nonexistent.json") is None
+
+    # Некорректный JSON
+    bad_file = tmp_path / "bad.json"
+    bad_file.write_text("{'invalid': 'json'}")
+    assert helpers.parse_one_file(bad_file) is None
+
+
+def test_archive_reports_logic(mocker, tmp_path):
+    """Тестирование создания архива."""
+    # Мокируем zipfile
+    mock_zip_file = mocker.patch('src.helpers.zipfile.ZipFile')
+    mock_zip_instance = mock_zip_file.return_value.__enter__.return_value
+
+    # Создаем фиктивные папки и файлы для архивации
+    folder1 = tmp_path / "device_reports"
+    folder1.mkdir()
+    (folder1 / "report1.json").touch()
+
+    folder2 = tmp_path / "pdf_reports"
+    folder2.mkdir()
+    (folder2 / "report.pdf").touch()
+
+    helpers.archive_reports("TestDevice", "20251010", [folder1, folder2])
+
+    # Проверяем, что метод write был вызван для каждого файла
+    assert mock_zip_instance.write.call_count == 2
+
+
+def test_clear_folders_logic(tmp_path):
+    """Тестирование функции очистки папок."""
+    # Создаем структуру папок и файлов
+    folder_to_clear = tmp_path / "folder1"
+    folder_to_clear.mkdir()
+    (folder_to_clear / "file1.txt").touch()
+
+    subfolder = folder_to_clear / "sub"
+    subfolder.mkdir()
+    (subfolder / "file2.txt").touch()
+
+    # Перед очисткой файлы существуют
+    assert (folder_to_clear / "file1.txt").exists()
+    assert (subfolder / "file2.txt").exists()
+
+    helpers.clear_folders([folder_to_clear])
+
+    # После очистки - не существуют
+    assert not (folder_to_clear / "file1.txt").exists()
+    assert not (subfolder / "file2.txt").exists()

@@ -70,8 +70,9 @@ def get_coordinates(file):
               }
     """
     # Open and load the JSON file
-    with open(file, "r") as file:
-        data = json.load(file)
+    data = h.parse_one_file(file)
+    if not data:
+        return {}
 
     # Initialize a dictionary to store the required coordinates
     coordinates = {

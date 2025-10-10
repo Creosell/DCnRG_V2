@@ -6,6 +6,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import yaml
+from loguru import logger
 
 
 def json_report(
@@ -26,7 +27,7 @@ def json_report(
 ):
     # Define the JSON file name
     json_filename = f"{device_name}_{sn}_{t}.json"
-    print(f"json report name ok: {json_filename}")
+    logger.debug(f"JSON report name: {json_filename}")
 
     # Structure the data to save in the JSON file
     json_data = {
@@ -50,6 +51,7 @@ def json_report(
     output_path = output_folder / json_filename
     with open(output_path, "w") as json_file:
         json.dump(json_data, json_file, indent=4)
+
 
 def set_nested_value(d, path_str, value):
     """
@@ -121,20 +123,20 @@ def calculate_full_report(input_folder, output_file, device_name):
                 with open(file, "r", encoding="utf-8") as f:
                     data = json.load(f)
             except json.JSONDecodeError as e:
-                print(f"Error decoding JSON from file {file}: {e}. Skipping file.")
+                logger.error(f"Error decoding JSON from file {file}: {e}. Skipping file.")
                 continue
             except Exception as e:
-                print(f"Error reading file {file}: {e}. Skipping file.")
+                logger.error(f"Error reading file {file}: {e}. Skipping file.")
                 continue
 
             if "SerialNumber" in data and data["SerialNumber"] is not None:
                 serial_numbers.append(data["SerialNumber"])
             else:
-                print(f"Warning: 'SerialNumber' not found or is null in {file}.")
+                logger.warning(f"'SerialNumber' not found or is null in {file}.")
 
             if "Results" not in data or not isinstance(data["Results"], dict):
-                print(
-                    f"Warning: 'Results' not found or not a dictionary in {file}. Skipping."
+                logger.warning(
+                    f"'Results' not found or not a dictionary in {file}. Skipping."
                 )
                 continue
 
@@ -178,23 +180,15 @@ def calculate_full_report(input_folder, output_file, device_name):
     sorted_key_paths = sorted(list(all_keys_paths))
 
     for flat_key in sorted_key_paths:
-        # values_list_for_key contains raw collected data for this flat_key:
-        # e.g., [10, 20, None] for "MetricA"
-        # or `{}` if "EmptyGroup" was `{"EmptyGroup": {}}` in one file
-        # or `[]` if "Coordinates" was always a non-empty dict (purely structural parent)
         values_list_for_key = aggregated_data.get(flat_key, [])
 
         stat_package = {"avg": None, "min": None, "max": None}  # Default
 
         if not values_list_for_key:
-            # Key path existed (e.g. "Coordinates") but never held a direct value/null/empty_dict.
-            # It was purely structural. Stat_package remains all None.
             pass
         elif all(
             v is None or (isinstance(v, dict) and not v) for v in values_list_for_key
         ):
-            # All collected items for this key were None or empty dicts {}.
-            # Stat_package remains all None.
             pass
         elif any(isinstance(v, list) for v in values_list_for_key):
             # Handles list-based statistics (element-wise)
@@ -209,7 +203,7 @@ def calculate_full_report(input_folder, output_file, device_name):
                 elif item is None:  # A file had 'null' for this list-type key
                     valid_lists_data.append(None)
 
-            if not has_any_list:  # Should be rare if any(isinstance(v,list)) was true
+            if not has_any_list:
                 numeric_values = [
                     v
                     for v in values_list_for_key
@@ -246,15 +240,10 @@ def calculate_full_report(input_folder, output_file, device_name):
                 stat_package["avg"] = sum(numeric_values) / len(numeric_values)
                 stat_package["min"] = min(numeric_values)
                 stat_package["max"] = max(numeric_values)
-            # else: stat_package remains all None (e.g., values were [None, {}, "text"])
 
-        # CRITICAL FIX: Skip setting stats for purely structural parent keys
-        # A key is purely structural if no data was ever aggregated for it directly
-        # (i.e., values_list_for_key is empty). Its stat_package will be all-null.
         if not values_list_for_key and is_effectively_all_null_stat_package(
             stat_package
         ):
-            # print(f"Skipping set_nested_value for purely structural key: {flat_key}")
             continue
 
         set_nested_value(final_results_data, flat_key, stat_package)
@@ -267,9 +256,9 @@ def calculate_full_report(input_folder, output_file, device_name):
     try:
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(output_data, f, indent=4)
-        print(f"Full report with averages, min, and max values saved to {output_file}")
+        logger.success(f"Full report with averages, min, and max values saved to {output_file}")
     except Exception as e:
-        print(f"Error writing output JSON to file {output_file}: {e}")
+        logger.error(f"Error writing output JSON to file {output_file}: {e}")
 
 
 def load_json_file(filepath):
@@ -279,11 +268,10 @@ def load_json_file(filepath):
             data = json.load(f)
         return data
     except FileNotFoundError:
-        # These print statements are for script operational errors, not the report itself.
-        print(f"Error: JSON file not found at {filepath}")
+        logger.error(f"JSON file not found at {filepath}")
         return None
     except json.JSONDecodeError as e:
-        print(f"Error: Could not decode JSON from {filepath}. Details: {e}")
+        logger.error(f"Could not decode JSON from {filepath}. Details: {e}")
         return None
 
 
@@ -294,10 +282,10 @@ def load_yaml_file(filepath):
             data = yaml.safe_load(f)
         return data
     except FileNotFoundError:
-        print(f"Error: YAML file not found at {filepath}")
+        logger.error(f"YAML file not found at {filepath}")
         return None
     except yaml.YAMLError as e:
-        print(f"Error: Could not parse YAML from {filepath}. Details: {e}")
+        logger.error(f"Could not parse YAML from {filepath}. Details: {e}")
         return None
 
 
@@ -310,7 +298,7 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
     yaml_data = load_yaml_file(yaml_data_file)
 
     if json_data is None or yaml_data is None:
-        print("Aborting comparison due to file loading errors.")
+        logger.error("Aborting comparison due to file loading errors.")
         error_report = {
             "error": "Failed to load input files.",
             "details": f"JSON file: '{json_data_file}', YAML file: '{yaml_data_file}'",
@@ -318,10 +306,10 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
         try:
             with open(output_json_file, "w", encoding="utf-8") as f:
                 json.dump(error_report, f, indent=4)
-            print(f"Error report saved to {output_json_file}")
+            logger.error(f"Error report saved to {output_json_file}")
         except IOError:
-            print(
-                f"Critical Error: Could not write error report to {output_json_file} after file loading failure."
+            logger.critical(
+                f"Could not write error report to {output_json_file} after file loading failure."
             )
         return
 
@@ -329,13 +317,13 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
     expected_tests_yaml = yaml_data.get("main_tests", {})
 
     if not isinstance(json_results_root, dict):
-        print(
-            f"Warning: 'Results' key in JSON file '{json_data_file}' is not a dictionary or is missing. Treating as empty."
+        logger.warning(
+            f"'Results' key in JSON file '{json_data_file}' is not a dictionary or is missing. Treating as empty."
         )
-        json_results_root = {}  # Proceed with empty results if key is bad/missing
+        json_results_root = {}
     if not isinstance(expected_tests_yaml, dict):
-        print(
-            f"Error: 'main_tests' key in YAML file '{yaml_data_file}' is not a dictionary or is missing. Cannot generate report."
+        logger.error(
+            f"'main_tests' key in YAML file '{yaml_data_file}' is not a dictionary or is missing. Cannot generate report."
         )
         error_report = {
             "error": f"'main_tests' key missing or invalid in YAML: {yaml_data_file}."
@@ -343,10 +331,10 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
         try:
             with open(output_json_file, "w", encoding="utf-8") as f:
                 json.dump(error_report, f, indent=4)
-            print(f"Error report saved to {output_json_file}")
+            logger.error(f"Error report saved to {output_json_file}")
         except IOError:
-            print(
-                f"Critical Error: Could not write error report to {output_json_file} after YAML parsing failure."
+            logger.critical(
+                f"Could not write error report to {output_json_file} after YAML parsing failure."
             )
         return
 
@@ -370,18 +358,18 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
         "Cg_ntsc": "CgNTSC",
         "Delta_e": "DeltaE",
         # Coordinate specific mappings from YAML key to JSON key (within "Coordinates" object in JSON)
-        "White_x": "Center_x",  # JSON uses Center_x for White_x from YAML
-        "White_y": "Center_y",  # JSON uses Center_y for White_y from YAML
+        "White_x": "Center_x",
+        "White_y": "Center_y",
     }
 
     full_report = {}
 
     for yaml_key, expected_values_dict in expected_tests_yaml.items():
         report_item = {
-            "status": "N/A",  # Default status
-            "reason": "Initialization or data issue",  # Default reason will be overwritten
-            "actual_values": None,  # Will be populated with relevant actual from JSON
-            "expected_values": expected_values_dict,  # Store the whole expected block from YAML
+            "status": "N/A",
+            "reason": "Initialization or data issue",
+            "actual_values": None,
+            "expected_values": expected_values_dict,
         }
 
         if not isinstance(expected_values_dict, dict):
@@ -392,64 +380,52 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
             continue
 
         is_coordinate_test = yaml_key in coordinate_yaml_keys
-        # Determine the key to look up in the JSON data
         json_lookup_key = json_key_mapping.get(yaml_key, yaml_key)
 
-        actual_data_dict_for_test = None  # This will hold the specific test data dict (e.g., content of "Brightness" or "Coordinates.Red_x")
+        actual_data_dict_for_test = None
 
         if is_coordinate_test:
             json_coordinates_data_root = json_results_root.get(
                 "Coordinates", {}
-            )  # Get the "Coordinates" object from JSON
+            )
             if isinstance(json_coordinates_data_root, dict):
                 actual_data_dict_for_test = json_coordinates_data_root.get(
                     json_lookup_key
                 )
             else:
-                # 'Coordinates' key itself is missing or not a dict in JSON results
                 report_item["reason"] = (
                     f"'Coordinates' object missing or invalid in JSON results; cannot evaluate '{yaml_key}' (looking for '{json_lookup_key}')."
                 )
-                # actual_data_dict_for_test remains None, leading to N/A status
-        else:  # Non-coordinate test
+        else:
             actual_data_dict_for_test = json_results_root.get(json_lookup_key)
 
-        # Populate actual_values in report_item and handle cases where the specific test data is null/missing or not a dict
         if isinstance(actual_data_dict_for_test, dict):
             report_item["actual_values"] = (
                 actual_data_dict_for_test.copy()
-            )  # Store a copy of the actual data dict
+            )
         elif actual_data_dict_for_test is None:
-            # This covers "IF key in result JSON - null - write N/A for it"
-            # Also covers if the key was entirely missing.
-            report_item["actual_values"] = None  # Explicitly set to None in a report
+            report_item["actual_values"] = None
             report_item["reason"] = (
                 f"Actual data for '{json_lookup_key}' (from YAML key '{yaml_key}') is null or missing in JSON."
             )
-            # Status remains N/A (default)
-        else:  # Data for the test item is present but not a dictionary (e.g., a string, number)
+        else:
             report_item["actual_values"] = {
                 "raw_value_found": actual_data_dict_for_test
             }
             report_item["reason"] = (
                 f"Actual data for '{json_lookup_key}' (from YAML key '{yaml_key}') is not a dictionary (type: {type(actual_data_dict_for_test).__name__}). Cannot process rules."
             )
-            # Status remains N/A (default)
 
-        # If actual_data_dict_for_test is not a dictionary at this point (i.e., it's None or some other non-dict type),
-        # we cannot apply the comparison rules. The status is N/A, and reason/actual_values are set.
         if not isinstance(actual_data_dict_for_test, dict):
             full_report[yaml_key] = report_item
             continue
 
-            # --- Proceed with comparisons now that actual_data_dict_for_test is confirmed to be a dictionary ---
         if is_coordinate_test:
             actual_min = actual_data_dict_for_test.get("min")
             actual_max = actual_data_dict_for_test.get("max")
             expected_min = expected_values_dict.get("min")
             expected_max = expected_values_dict.get("max")
 
-            # N/A checks for essential numeric values needed for comparison
             if actual_min is None:
                 report_item.update(
                     {
@@ -488,7 +464,6 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                         "reason": "Non-numeric data encountered for coordinate comparison.",
                     }
                 )
-            # Comparison logic for coordinates
             elif actual_min < expected_min:
                 report_item.update(
                     {
@@ -503,19 +478,16 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                         "reason": f"Actual max ({actual_max}) > Expected max ({expected_max})",
                     }
                 )
-            else:  # "In other cases - PASS"
+            else:
                 report_item.update(
                     {"status": "PASS", "reason": "All coordinate checks passed."}
                 )
-        else:  # Non-coordinate test
+        else:
             actual_avg = actual_data_dict_for_test.get("avg")
-            actual_min_val = actual_data_dict_for_test.get(
-                "min"
-            )  # Renamed to avoid conflict with expected_min
+            actual_min_val = actual_data_dict_for_test.get("min")
             expected_typ = expected_values_dict.get("typ")
-            expected_min_thresh = expected_values_dict.get("min")  # Renamed for clarity
+            expected_min_thresh = expected_values_dict.get("min")
 
-            # N/A checks for essential numeric values
             if actual_avg is None:
                 report_item.update(
                     {"status": "N/A", "reason": "Actual 'avg' value missing in JSON."}
@@ -545,19 +517,14 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                         "reason": "Non-numeric data encountered for general test comparison.",
                     }
                 )
-            # Comparison logic for non-coordinates (order of rules matters)
-            elif (
-                    actual_avg < expected_typ
-            ):  # Rule: If avg value in a result JSON less than typ in YAML file - FAIL
+            elif actual_avg < expected_typ:
                 report_item.update(
                     {
                         "status": "FAIL",
                         "reason": f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})",
                     }
                 )
-            elif (
-                    actual_min_val < expected_min_thresh
-            ):  # Rule: If min value in a result JSON less than min in YAML file - FAIL
+            elif actual_min_val < expected_min_thresh:
                 report_item.update(
                     {
                         "status": "FAIL",
@@ -565,7 +532,6 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                     }
                 )
 
-            # Additional check for a Temperature key: FAIL if max value in JSON > max in YAML
             elif yaml_key == "Temperature":
                 actual_max_val = actual_data_dict_for_test.get("max")
                 expected_max_thresh = expected_values_dict.get("max")
@@ -579,9 +545,7 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                             "reason": f"Actual max ({actual_max_val}) > Expected max ({expected_max_thresh}) for Temperature",
                         }
                     )
-                elif (
-                        actual_avg >= expected_typ
-                ):  # If Temperature max check passes, apply standard PASS logic
+                elif actual_avg >= expected_typ:
                     report_item.update(
                         {
                             "status": "PASS",
@@ -595,45 +559,32 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                             "reason": "Temperature test: max check could not be performed or logical error occurred.",
                         }
                     )
-            elif (
-                    actual_avg >= expected_typ
-            ):  # Rule: If avg value in a result JSON equals or more than typ in YAML file - PASS
+            elif actual_avg >= expected_typ:
                 report_item.update(
                     {
                         "status": "PASS",
                         "reason": f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})",
                     }
                 )
-
-
             else:
-                # This case implies:
-                # NOT (actual_avg < expected_typ)           => actual_avg >= expected_typ
-                # NOT (actual_min_val < expected_min_thresh) => actual_min_val >= expected_min_thresh
-                # NOT (actual_avg >= expected_typ)          => actual_avg < expected_typ (This creates a contradiction)
-                # This state should ideally not be reached if rules are mutually exclusive and cover all scenarios for valid data.
-                # Given the specific PASS condition, if it didn't FAIL and doesn't meet this PASS, it's an issue.
                 report_item.update(
                     {
                         "status": "ERROR",
                         "reason": "Logical error or unhandled case in non-coordinate test evaluation. Data might not fit defined PASS/FAIL rules.",
                     }
                 )
-
         full_report[yaml_key] = report_item
 
-    # Save the full report to a JSON file
     try:
         with open(output_json_file, "w", encoding="utf-8") as f:
             json.dump(full_report, f, indent=4, ensure_ascii=False)
-        print(
-            f"Report successfully saved to {output_json_file}"
-        )  # User feedback on success
+        logger.success(
+            f"Comparison report successfully saved to {output_json_file}"
+        )
     except IOError as e:
-        print(f"Error: Could not write report to {output_json_file}. Details: {e}")
-    except TypeError as e:  # Handle non-serializable data if any slips through
-        print(f"Error: Data in report is not JSON serializable. Details: {e}")
-        # Attempt to save a simplified error report if the main dump fails
+        logger.error(f"Could not write report to {output_json_file}. Details: {e}")
+    except TypeError as e:
+        logger.error(f"Data in report is not JSON serializable. Details: {e}")
         try:
             with open(output_json_file, "w", encoding="utf-8") as f:
                 json.dump(
@@ -645,22 +596,13 @@ def generate_comparison_report(json_data_file, yaml_data_file, output_json_file)
                     indent=4,
                 )
         except IOError:
-            pass  # Already tried to print an error about writing
-
-    # The function could return full_report if its content is needed by a calling process
-    # return full_report
+            pass
 
 
 def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_path, device_name):
     """
     Analyzes JSON files in a folder, compares their minimum values against expected values,
     and saves the failing data to an output JSON file.
-
-    Args:
-        folder_path (Path): The path to the folder containing the JSON files.
-        expected_result_path (Path): The path to the YAML file containing the expected results.
-        output_path (Path): The path to the output JSON file.
-        device_name (str): The name of the device to compare against.
     """
 
     try:
@@ -668,13 +610,13 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
             expected_data = yaml.safe_load(yaml_file)
             expected_values = expected_data["main_tests"]
     except FileNotFoundError:
-        print(f"Error: Expected result file not found at {expected_result_path}")
+        logger.error(f"Expected result file not found at {expected_result_path}")
         return
     except yaml.YAMLError as e:
-        print(f"Error: Could not parse YAML file: {e}")
+        logger.error(f"Could not parse YAML file: {e}")
         return
     except KeyError:
-        print("Error: 'main_tests' key not found in the YAML file.")
+        logger.error("'main_tests' key not found in the YAML file.")
         return
 
     output_data = []
@@ -692,7 +634,6 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
                 for key, expected in expected_values.items():
                     min_value = None
 
-                    # Extract values based on the key
                     if key in results:
                         value = results[key]
                         if isinstance(value, dict) and "min" in value:
@@ -700,24 +641,17 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
                         else:
                             min_value = value
                     elif key in [
-                        "Red_x",
-                        "Red_y",
-                        "Green_x",
-                        "Green_y",
-                        "Blue_x",
-                        "Blue_y",
-                        "Center_x",
-                        "Center_y",
+                        "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y",
+                        "Center_x", "Center_y",
                     ]:
                         if "Coordinates" in results:
                             try:
                                 min_value = results["Coordinates"][key]
                             except KeyError:
-                                pass  # Key not found in Coordinates
+                                pass
                     else:
                         continue
 
-                    # Compare with expected minimums
                     if min_value is not None:
                         try:
                             min_value = float(min_value)
@@ -732,23 +666,23 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
                                     }
                                 )
                         except (ValueError, TypeError):
-                            print(
-                                f"Warning: Could not convert value to float in {file} for key {key}. Skipping."
+                            logger.warning(
+                                f"Could not convert value to float in {file} for key {key}. Skipping."
                             )
                             continue
 
         except FileNotFoundError:
-            print(f"Error: JSON file not found: {file}")
+            logger.error(f"JSON file not found: {file}")
         except json.JSONDecodeError as e:
-            print(f"Error: Could not decode JSON file {file}: {e}")
+            logger.error(f"Could not decode JSON file {file}: {e}")
         except Exception as e:
-            print(f"An unexpected error occurred while processing {file}: {e}")
+            logger.error(f"An unexpected error occurred while processing {file}: {e}")
 
     try:
         with open(output_path, "w") as outfile:
             json.dump(output_data, outfile, indent=4)
     except IOError as e:
-        print(f"Error: Could not write output file: {e}")
+        logger.error(f"Could not write output file: {e}")
         return
 
-    print(f"Analysis complete. Results saved to {output_path}")
+    logger.success(f"Analysis complete. Results saved to {output_path}")

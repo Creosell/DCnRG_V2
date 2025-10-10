@@ -5,6 +5,7 @@ import zipfile
 from pathlib import Path
 
 from PyPDF2 import PdfMerger
+from loguru import logger
 from reportlab.lib.colors import red, black, green, grey, whitesmoke, beige
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet
@@ -36,7 +37,7 @@ def parse_one_file(file_path):
             data = json.load(file)
         return data
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"Error reading/parsing file {file_path}: {e}")
+        logger.error(f"Error reading/parsing file {file_path}: {e}")
         return None
 
 
@@ -61,7 +62,7 @@ def create_pdf(
         with open(input_file, "r") as f:
             data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"Error reading/parsing input file {input_file}: {e}")
+        logger.error(f"Error reading/parsing input file {input_file}: {e}")
         return
 
     # --- First page: Text results ---
@@ -173,8 +174,6 @@ def create_pdf(
         # Create and draw the table
         table = Table(table_data, colWidths=[100, 100, 100, 100, 100])
 
-        # Add dynamic color for the status in the table
-        # noinspection SpellCheckingInspection
         style_list = [
             ("BACKGROUND", (0, 0), (-1, 0), grey),
             ("TEXTCOLOR", (0, 0), (-1, 0), whitesmoke),
@@ -208,7 +207,7 @@ def create_pdf(
         with open(min_fail, "r") as f:
             min_fail_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"Error reading/parsing min_fail file {min_fail}: {e}")
+        logger.error(f"Error reading/parsing min_fail file {min_fail}: {e}")
         min_fail_data = []
 
     text_object = pdf.beginText()
@@ -278,29 +277,28 @@ def device_reports_to_pdf(folder_path, output_path, device_name):
                 y_position -= line_height
 
         except Exception as e:
-            print(f"Error processing file {file_name}: {e}")
+            logger.error(f"Error processing file {file_name}: {e}")
 
     c.save()
-    print(f"PDF file created successfully at {output_path}")
+    logger.success(f"PDF file with device reports created successfully at {output_path}")
 
 
 def merge_pdfs(pdf_paths, output_path):
     """Merges multiple PDF files into one."""
     merger = PdfMerger()
 
-    # Use a generator for more concise error handling
     try:
         for path in pdf_paths:
             merger.append(path)
 
         with open(output_path, "wb") as output_file:
             merger.write(output_file)
-        print(f"Successfully merged PDFs to {output_path}")
+        logger.success(f"Successfully merged PDFs to {output_path}")
 
     except FileNotFoundError:
-        print(f"Error: File not found in path list.")
+        logger.error(f"Error: File not found in path list.")
     except Exception as e:
-        print(f"Error during PDF merge: {e}")
+        logger.error(f"Error during PDF merge: {e}")
     finally:
         merger.close()
 
@@ -313,42 +311,36 @@ def archive_reports(device_name, timestamp, source_folders):
     archive_folder = Path('report_archive')
     archive_folder.mkdir(exist_ok=True)  # Create the folder if it doesn't exist
 
-    # Form the zip file name using Path
     zip_filename = f"{device_name}_{timestamp}.zip"
     zip_path = archive_folder / zip_filename
 
     try:
         files_added = 0
-        # Create the zip archive
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-
-            # Iterate through each source folder
             for folder_name in source_folders:
                 folder_path = Path(folder_name)
                 if folder_path.exists():
-                    # Use os.walk for recursive traversal
                     for root, _, files in os.walk(folder_path):
                         for file in files:
                             file_path = Path(root) / file
-                            # name_in_archive - path inside the archive, relative to the current directory
                             name_in_archive = file_path.relative_to(folder_path.parent)
                             zipf.write(file_path, name_in_archive)
                             files_added += 1
-                            print(f"File added: {file_path}")
+                            logger.debug(f"File added to archive: {file_path}")
                 else:
-                    print(f"Folder {folder_name} not found")
+                    logger.warning(f"Folder {folder_name} not found, skipping for archive.")
 
             if files_added == 0:
-                print("No files found to archive")
-                zip_path.unlink()  # Delete the empty archive
+                logger.warning("No files found to archive. Deleting empty archive.")
+                zip_path.unlink()
                 return None
 
-        print(f"Archive created: {zip_path}")
-        print(f"Total files archived: {files_added}")
+        logger.success(f"Archive created: {zip_path}")
+        logger.info(f"Total files archived: {files_added}")
         return str(zip_path)
 
     except Exception as e:
-        print(f"Error during archive creation: {e}")
+        logger.error(f"Error during archive creation: {e}")
         return None
 
 
@@ -360,16 +352,15 @@ def clear_folders(folders):
 
     for folder_path in map(Path, folders):
         if not folder_path.is_dir():
-            print(f"Folder {folder_path} not found or is not a directory")
+            logger.warning(f"Folder {folder_path} not found or is not a directory, skipping cleanup.")
             continue
 
-        # Use glob() for recursive search of all files (Path.glob)
         for file_path in folder_path.glob('**/*'):
             if file_path.is_file():
                 try:
-                    file_path.unlink()  # Path method to delete the file
+                    file_path.unlink()
                     removed_count += 1
                 except Exception as e:
-                    print(f"Error deleting file {file_path}: {e}")
+                    logger.error(f"Error deleting file {file_path}: {e}")
 
-    print(f"Total files removed: {removed_count}")
+    logger.info(f"Total files removed during cleanup: {removed_count}")

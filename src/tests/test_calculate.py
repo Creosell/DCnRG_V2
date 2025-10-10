@@ -165,3 +165,102 @@ def test_temperature_extraction(mocker, mock_tv_data):
     temp = calculate.temperature("dummy_tv.json")
     # T для Center в mock_tv_data = 6752
     assert temp == 6752
+
+def test_calculate_overlap_percentage_invalid_triangle():
+    """Тестирование overlap_percentage, когда один из треугольников вырожденный."""
+    # Первый треугольник валидный, второй - точки на одной линии (площадь 0)
+    result = calculate.calculate_overlap_percentage(0, 0, 1, 1, 0, 1, 5, 5, 6, 6, 7, 7)
+    assert "the input data does not form valid triangles" in result
+
+
+def test_brightness_empty_report(mocker):
+    """Тестирование функции brightness, когда отчет не может быть спарсен (возвращает None)."""
+    mocker.patch('src.calculate.h.parse_one_file', return_value=None)
+    result = calculate.brightness("nonexistent_file.json", is_tv=False)
+    expected = {"min": None, "typ": None, "max": None, "uniformity_center_lv": None}
+    assert result == expected
+
+
+def test_brightness_uniformity_edge_cases():
+    """Тестирование brightness_uniformity с некорректными входными данными."""
+    # Случай 1: max_lv равен 0
+    assert calculate.brightness_uniformity({'min': 100, 'max': 0}) == 0.0
+    # Случай 2: Отсутствуют ключи
+    assert calculate.brightness_uniformity({'min': 100}) == 0.0
+    assert calculate.brightness_uniformity({}) == 0.0
+
+
+def test_cg_logic(mocker):
+    """Тестирование основной логики функции cg (по перекрытию)."""
+    # Мокируем зависимости
+    mocker.patch('src.calculate.parse.coordinates_of_triangle', return_value=[0.1, 0.1] * 3)
+    mock_overlap = mocker.patch('src.calculate.calculate_overlap_percentage')
+
+    # Задаем возвращаемые значения для NTSC и sRGB
+    mock_overlap.side_effect = [95.5, 85.2]  # Первое значение для NTSC, второе для sRGB
+
+    srgb_coords = [0.64, 0.33, 0.30, 0.60, 0.15, 0.06]
+    ntsc_coords = [0.67, 0.33, 0.21, 0.71, 0.14, 0.08]
+
+    # Проверяем 'sRGB, NTSC'
+    cg_rgb, cg_ntsc = calculate.cg("file.json", "sRGB, NTSC", srgb_coords, ntsc_coords)
+    assert cg_rgb == 85.2
+    assert cg_ntsc == 95.5
+
+    # Проверяем, что calculate_overlap_percentage был вызван дважды
+    assert mock_overlap.call_count == 2
+
+
+def test_contrast_zero_lv(mocker, mock_display_data):
+    """Тестирование расчета контраста, когда Lv черного или белого равен нулю."""
+    # Устанавливаем Lv для Center и BlackColor в 0
+    mock_display_data["Measurements"][4]["Lv"] = 0.0  # Center
+    mock_display_data["Measurements"][12]["Lv"] = 0.0  # BlackColor
+    mocker.patch('src.calculate.h.parse_one_file', return_value=mock_display_data)
+
+    contrast = calculate.contrast("dummy.json", is_tv=False)
+    assert contrast == 0.0
+
+
+def test_temperature_missing_data(mocker, mock_display_data):
+    """Тестирование функции temperature, когда точка 'Center' или 'T' отсутствуют."""
+    # Случай 1: Точка 'Center' отсутствует
+    no_center_data = {"Measurements": [m for m in mock_display_data["Measurements"] if m["Location"] != "Center"]}
+    mocker.patch('src.calculate.h.parse_one_file', return_value=no_center_data)
+    with pytest.raises(ZeroDivisionError, match="NO Temperature for Central DOT"):
+        calculate.temperature("dummy.json")
+
+    # Случай 2: У 'Center' нет ключа 'T'
+    no_t_data = mock_display_data.copy()
+    del no_t_data["Measurements"][4]["T"]  # Удаляем 'T' у Center
+    mocker.patch('src.calculate.h.parse_one_file', return_value=no_t_data)
+    with pytest.raises(ZeroDivisionError, match="NO Temperature for Central DOT"):
+        calculate.temperature("dummy.json")
+
+
+def test_delta_e_success(mocker, mock_display_data):
+    """Тестирование успешного расчета Delta E."""
+    mocker.patch('src.calculate.h.parse_one_file', return_value=mock_display_data)
+    # В mock_display_data все точки (кроме цветовых) имеют схожие координаты,
+    # поэтому Delta E должен быть небольшим, но не нулевым.
+    avg_delta_e = calculate.delta_e("dummy.json")
+    assert isinstance(avg_delta_e, float)
+    assert avg_delta_e > 0
+    # Проверяем, что значение разумно (очень маленькое, так как точки почти идентичны)
+    assert avg_delta_e == pytest.approx(2.28, abs=0.01)
+
+
+def test_serial_number_and_time(mocker, mock_display_data):
+    """Тестирование получения серийного номера и времени измерения."""
+    mocker.patch('src.calculate.h.parse_one_file', return_value=mock_display_data)
+    sn = calculate.serial_number("dummy.json")
+    time = calculate.measurement_time("dummy.json")
+    assert sn == "NotTV"
+    assert time == "20250624_184822"
+
+    # Тест на случай сбоя парсинга
+    mocker.patch('src.calculate.h.parse_one_file', return_value=None)
+    sn_fail = calculate.serial_number("dummy.json")
+    time_fail = calculate.measurement_time("dummy.json")
+    assert sn_fail is None
+    assert time_fail is None

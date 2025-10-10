@@ -87,3 +87,49 @@ def test_get_device_info_failure(mocker):
     assert device_config is None
     assert is_tv is False
     assert sn is None
+
+def test_coordinates_of_triangle_missing_color(mocker, mock_display_data):
+    """Тестирование coordinates_of_triangle, когда один из цветов отсутствует."""
+    # Удаляем GreenColor из данных
+    filtered_measurements = [m for m in mock_display_data["Measurements"] if m["Location"] != "GreenColor"]
+    mock_display_data["Measurements"] = filtered_measurements
+
+    mocker.patch('src.parse.h.parse_one_file', return_value=mock_display_data)
+
+    coords = parse.coordinates_of_triangle("dummy_report.json")
+
+    # Ожидаем только 4 координаты (для Red и Blue), так как Green отсутствует
+    expected = [0.648, 0.336, 0.152, 0.06]
+    assert coords == pytest.approx(expected)
+
+
+def test_get_coordinates_logic(mocker, mock_display_data):
+    """Тестирование функции get_coordinates на успешное извлечение и на случай отсутствия данных."""
+    # Успешный случай
+    mocker.patch('src.parse.h.parse_one_file', return_value=mock_display_data)
+
+    coords = parse.get_coordinates("dummy.json")
+    assert coords["Red_x"] == 0.648
+    assert coords["Center_y"] == 0.328
+
+    # Случай, когда Center отсутствует
+    no_center_data = mock_display_data.copy()
+    no_center_data["Measurements"] = [m for m in no_center_data["Measurements"] if m["Location"] != "Center"]
+    mocker.patch('src.helpers.parse_one_file', return_value=no_center_data)
+
+    coords_no_center = parse.get_coordinates("dummy.json")
+    assert coords_no_center["Center_x"] is None
+
+
+def test_find_closest_to_target(mock_display_data):
+    """Тестирование поиска ближайшей точки к заданной цели."""
+    # Цель (0.3, 0.3)
+    target_x, target_y = 0.3, 0.3
+
+    # Вызываем функцию с мок-данными (не нужен mocker, так как file - это уже dict)
+    closest = parse.find_closest_to_target(mock_display_data, target_x, target_y)
+
+    # Ближайшей точкой в mock_display_data должна быть BottomCenter (0.308, 0.327) или похожая.
+    # Проверим, что это не RedColor (0.648, 0.336)
+    assert closest["Location"] != "RedColor"
+    assert "Center" in closest["Location"]  # Какая-то из центральных точек

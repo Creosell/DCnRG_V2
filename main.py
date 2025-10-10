@@ -1,7 +1,10 @@
 import datetime
 import os
-from collections import defaultdict  # Added for convenient grouping
+import sys
+from collections import defaultdict
 from pathlib import Path
+
+from loguru import logger
 
 import src.calculate as cal
 import src.helpers as h
@@ -20,10 +23,16 @@ PDF_REPORTS_FOLDER = Path("pdf_reports")
 TEST_REPORTS_FOLDER = Path("test_reports")
 ARCHIVE_REPORTS = Path("report_archive")
 PICTURES_FOLDER = Path("pics")
+LOGS_FOLDER = Path("logs")
 
 MAIN_CONFIG = Path("config") / "main.yaml"
 COLOR_SPACE_CONFIG = Path("config") / "color_space.yaml"
 COLOR_SPACE_PICTURE = Path("config") / "space.png"
+
+# Logger configuration
+logger.remove()
+logger.add(sys.stderr, level="INFO")
+logger.add(LOGS_FOLDER / f"{TIMESTAMP}.log", level="DEBUG", encoding="utf-8")
 
 # Parsing general settings
 RGB = parse.coordinate_srgb(COLOR_SPACE_CONFIG)
@@ -38,6 +47,7 @@ PDF_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
 PICTURES_FOLDER.mkdir(parents=True, exist_ok=True)
+LOGS_FOLDER.mkdir(parents=True, exist_ok=True)
 
 # Common expected results file (used as fallback)
 EXPECTED_RESULT = Path("config") / "expected_result.yaml"
@@ -47,10 +57,10 @@ EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 device_groups = defaultdict(list)
 files = os.listdir(DATA_FOLDER)
 if not files:
-    print(f"The folder {DATA_FOLDER} contains no files for processing.")
+    logger.warning(f"The folder {DATA_FOLDER} contains no files for processing.")
     exit()
 
-print(f"Found {len(files)} files for processing. Starting grouping...")
+logger.info(f"Found {len(files)} files for processing. Starting grouping...")
 
 for file_name in files:
     if file_name.endswith(".json"):
@@ -67,24 +77,24 @@ for file_name in files:
             device_groups[device_config].append((file_path, is_tv, sn))
 
         except Exception as e:
-            print(f"Error parsing file {file_name}: {e}")
+            logger.error(f"Error parsing file {file_name}: {e}")
 
 if not device_groups:
-    print("Failed to form device groups. Check the files.")
+    logger.error("Failed to form device groups. Check the files.")
     exit()
 
 # --- Step 2: Process Each Device Group ---
 
 for current_device_name, file_list in device_groups.items():
-    print(f"\n--- Processing device configuration: {current_device_name} ({len(file_list)} files) ---")
+    logger.info(f"--- Processing device configuration: {current_device_name} ({len(file_list)} files) ---")
 
     # 2.1 Dynamic path definition for the CURRENT device
 
     # Search for a specific requirements file config/device_configs/{name}.yaml
     current_expected_result = Path("config") / "device_configs" / f"{current_device_name}.yaml"
     if not current_expected_result.exists():
-        print(
-            f"Attention: Requirements configuration {current_expected_result} not found. Using general file: {EXPECTED_RESULT}")
+        logger.warning(
+            f"Requirements configuration {current_expected_result} not found. Using general file: {EXPECTED_RESULT}")
         current_expected_result = EXPECTED_RESULT  # Fallback option
 
     # Dynamic report file names
@@ -101,7 +111,7 @@ for current_device_name, file_list in device_groups.items():
         t = cal.measurement_time(file)
 
         if test == "FullTest":
-            print("FULL TEST")
+            logger.info(f"Processing FullTest for {file.name}")
 
             # --- UPDATED BRIGHTNESS/UNIFORMITY CALCULATION ---
             brightness_values = cal.brightness(file, is_tv_flag)  # Pass the is_tv_flag
@@ -134,11 +144,13 @@ for current_device_name, file_list in device_groups.items():
                 device_name=current_device_name
             )
 
-        if test == "Contrast":
+        elif test == "Contrast":
+            logger.info(f"Processing Contrast test for {file.name}")
             contrast = cal.contrast(file, is_tv_flag)
             r.json_report(sn=sn, t=t, contrast=contrast, output_folder=DEVICE_REPORTS, device_name=current_device_name)
 
-        if test == "BrightnessUniformity":
+        elif test == "BrightnessUniformity":
+            logger.info(f"Processing BrightnessUniformity test for {file.name}")
             brightness_values = cal.brightness(file, is_tv_flag)
             brightness = brightness_values["typ"]
             brightness_uniformity = cal.brightness_uniformity(brightness_values)
@@ -153,7 +165,8 @@ for current_device_name, file_list in device_groups.items():
                 device_name=current_device_name
             )
 
-        if test == "ColorGamut":
+        elif test == "ColorGamut":
+            logger.info(f"Processing ColorGamut test for {file.name}")
             cg_by_area = cal.cg_by_area(file, COLOR_SPACE)
             cg = cal.cg(file, COLOR_SPACE, RGB, NTSC)
             coordinates = parse.get_coordinates(file)
@@ -170,7 +183,7 @@ for current_device_name, file_list in device_groups.items():
             )
 
     # 2.3 --- Aggregation and Reporting for the CURRENT configuration ---
-    print(f"Creating final reports for {current_device_name}...")
+    logger.info(f"Creating final reports for {current_device_name}...")
 
     # ATTENTION: For calculate_full_report and analyze_json_files_for_min_fail to work correctly,
     # these functions must be able to filter files by current_device_name internally.
@@ -192,12 +205,12 @@ for current_device_name, file_list in device_groups.items():
         test,
     )
 
-    h.merge_pdfs((current_pdf_report,current_pdf_report_all),current_result)
+    h.merge_pdfs((current_pdf_report, current_pdf_report_all), current_result)
 
-    print(f"Reports for {current_device_name} saved to {current_result}")
+    logger.success(f"Reports for {current_device_name} saved to {current_result}")
 
 # --- Step 3: Final Steps (Archiving and Cleanup) ---
-print("\n--- Finalization and cleanup ---")
+logger.info("--- Finalization and cleanup ---")
 
 FOLDERS_TO_PROCESS = [DEVICE_REPORTS, PDF_REPORTS_FOLDER, TEST_REPORTS_FOLDER, DATA_FOLDER, PICTURES_FOLDER]
 ARCHIVE_SUMMARY_NAME = "Full_Report_Summary"

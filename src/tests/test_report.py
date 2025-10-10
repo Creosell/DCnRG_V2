@@ -104,3 +104,94 @@ def test_calculate_full_report_aggregator_logic(mocker, tmp_path):
     assert array_stats["min"] == pytest.approx([100.0, 105.0])
     assert array_stats["max"] == pytest.approx([120.0, 125.0])
     assert array_stats["avg"] == pytest.approx([110.0, 115.0])
+
+def test_json_report_creates_file(tmp_path):
+    """Тестирование, что json_report успешно создает файл с корректной структурой."""
+    output_folder = tmp_path
+    device_name = "TestDevice"
+    sn = "SN001"
+    t = "Time001"
+
+    report.json_report(
+        sn=sn, t=t, brightness=100.5, contrast=1000,
+        output_folder=output_folder, device_name=device_name
+    )
+
+    expected_file = output_folder / f"{device_name}_{sn}_{t}.json"
+    assert expected_file.exists()
+
+    with open(expected_file, "r") as f:
+        data = json.load(f)
+
+    assert data["SerialNumber"] == sn
+    assert data["Results"]["Brightness"] == 100.5
+    assert data["Results"]["Contrast"] == 1000
+
+
+def test_calculate_full_report_file_errors(mocker, tmp_path):
+    """Тестирование calculate_full_report на устойчивость к ошибкам в файлах."""
+    # Файл с ошибкой декодирования JSON
+    bad_json_path = tmp_path / "Monitor_SN1.json"
+    with open(bad_json_path, "w") as f:
+        f.write("{'bad': json,}")
+
+    # Файл с корректным JSON, но без ключа 'Results'
+    no_results_path = tmp_path / "Monitor_SN2.json"
+    with open(no_results_path, "w") as f:
+        json.dump({"SerialNumber": "SN2"}, f)
+
+    mocker.patch('src.report.glob.glob', return_value=[str(bad_json_path), str(no_results_path)])
+
+    output_file = tmp_path / "full_report.json"
+    # Функция должна отработать без ошибок, пропустив "плохие" файлы
+    report.calculate_full_report(tmp_path, str(output_file), "Monitor")
+
+    # Проверяем, что выходной файл создан, но пуст, так как все входные файлы были проблемными
+    with open(output_file, "r") as f:
+        result = json.load(f)
+
+    assert result["SerialNumber"] == ["SN2"]  # SN1 не добавился из-за ошибки парсинга
+    assert result["Results"] == {}  # Данных для агрегации не было
+
+
+def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
+    """Тестирование основной логики generate_comparison_report (PASS/FAIL/N/A)."""
+    # 1. Создаем JSON с результатами
+    full_report_data = {
+        "Results": {
+            "Brightness": {"avg": 110.0, "min": 85.0},
+            "Temperature": {"avg": 6900, "max": 7000, "min": 6000},  # <-- Добавлен 'min'
+            "Coordinates": {
+                "Red_x": {"min": 0.61, "max": 0.65}
+            }
+        }
+    }
+    json_file = tmp_path / "full_report.json"
+    with open(json_file, "w") as f:
+        json.dump(full_report_data, f)
+
+    # 2. Создаем YAML с ожиданиями
+    mock_yaml_data["main_tests"]["Temperature"].update({"typ": 6500.0, "min": 5500.0})
+    yaml_file = tmp_path / "expected.yaml"
+    with open(yaml_file, "w") as f:
+        json.dump(mock_yaml_data, f)
+
+    # 3. Выполняем сравнение
+    output_file = tmp_path / "comparison.json"
+    report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file))
+
+    # 4. Проверяем результат
+    with open(output_file, "r") as f:
+        result = json.load(f)
+
+    assert result["Brightness"]["status"] == "PASS"
+    assert "Actual avg (110.0) >= Expected typ (100.0)" in result["Brightness"]["reason"]
+
+    assert result["Temperature"]["status"] == "FAIL"
+    assert "Actual max (7000) > Expected max (6800.0)" in result["Temperature"]["reason"]
+
+    assert result["Red_x"]["status"] == "FAIL"
+    assert "Actual min (0.61) < Expected min (0.62)" in result["Red_x"]["reason"]
+
+    assert result["White_x"]["status"] == "N/A"
+    assert "is null or missing in JSON" in result["White_x"]["reason"]
