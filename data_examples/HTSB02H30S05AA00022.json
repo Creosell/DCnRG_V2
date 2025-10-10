@@ -1,0 +1,97 @@
+{
+  "SerialNumber": "HTSB02H30S05AA00022",
+  "MeasurementDateTime": "20250925_192756",
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": 0.296,
+      "y": 0.328,
+      "Lv": 499,
+      "T": 7516
+    },
+    {
+      "Location": "TopCenter",
+      "x": 0.295,
+      "y": 0.326,
+      "Lv": 472.2,
+      "T": 7607
+    },
+    {
+      "Location": "TopRight",
+      "x": 0.293,
+      "y": 0.321,
+      "Lv": 472,
+      "T": 7817
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": 0.294,
+      "y": 0.326,
+      "Lv": 469.5,
+      "T": 7700
+    },
+    {
+      "Location": "Center",
+      "x": 0.294,
+      "y": 0.323,
+      "Lv": 530.3,
+      "T": 7730
+    },
+    {
+      "Location": "MiddleRight",
+      "x": 0.293,
+      "y": 0.321,
+      "Lv": 438.2,
+      "T": 7864
+    },
+    {
+      "Location": "BottomLeft",
+      "x": 0.292,
+      "y": 0.323,
+      "Lv": 488.4,
+      "T": 7896
+    },
+    {
+      "Location": "BottomCenter",
+      "x": 0.292,
+      "y": 0.32,
+      "Lv": 484.9,
+      "T": 7938
+    },
+    {
+      "Location": "BottomRight",
+      "x": 0.292,
+      "y": 0.319,
+      "Lv": 440.8,
+      "T": 7925
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.675,
+      "y": 0.316,
+      "Lv": 102.5,
+      "T": -1
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.267,
+      "y": 0.697,
+      "Lv": 399.5,
+      "T": -1
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.15,
+      "y": 0.045,
+      "Lv": 33.8,
+      "T": -1
+    },
+    {
+      "Location": "BlackColor",
+      "x": 0.244,
+      "y": 0.25,
+      "Lv": 0.44346751,
+      "T": -1
+    }
+  ]
+}

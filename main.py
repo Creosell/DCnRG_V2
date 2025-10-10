@@ -24,10 +24,12 @@ TEST_REPORTS_FOLDER = Path("test_reports")
 ARCHIVE_REPORTS = Path("report_archive")
 PICTURES_FOLDER = Path("pics")
 LOGS_FOLDER = Path("logs")
+RESULTS_FOLDER = Path("results")
 
 MAIN_CONFIG = Path("config") / "main.yaml"
 COLOR_SPACE_CONFIG = Path("config") / "color_space.yaml"
 COLOR_SPACE_PICTURE = Path("config") / "space.png"
+EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 
 # Logger configuration
 logger.remove()
@@ -48,9 +50,8 @@ TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
 PICTURES_FOLDER.mkdir(parents=True, exist_ok=True)
 LOGS_FOLDER.mkdir(parents=True, exist_ok=True)
+RESULTS_FOLDER.mkdir(parents=True, exist_ok=True)
 
-# Common expected results file (used as fallback)
-EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 
 # --- Step 1: File Collection and Grouping by Device Configuration ---
 # Group files by DeviceConfiguration
@@ -221,4 +222,4 @@ h.archive_reports(
     FOLDERS_TO_PROCESS
 )
 
-h.clear_folders(FOLDERS_TO_PROCESS)
+#h.clear_folders(FOLDERS_TO_PROCESS)
