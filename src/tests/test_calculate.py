@@ -71,35 +71,28 @@ def test_calculate_overlap_percentage_full_overlap(mocker):
 
 def test_cg_by_area_logic(mocker):
     """Тестирование расчета цветового охвата по площади."""
-    # Мокируем parse.coordinates_of_triangle, чтобы вернуть R, G, B координаты
-    # (эти координаты формируют треугольник с площадью ~0.14)
-    mock_coords = [0.640, 0.330, 0.300, 0.600, 0.150, 0.060]
+    mock_coords = [0.636, 0.329, 0.311, 0.615, 0.156, 0.049]
     mocker.patch('src.calculate.parse.coordinates_of_triangle', return_value=mock_coords)
-
-    # Мокируем функцию area, чтобы она возвращала фиксированную площадь для треугольника устройства
-    mocker.patch('src.calculate.area', return_value=0.140)
-
-    # sRGB = 0.112 (из mock_yaml_data)
-    # NTSC = 0.158 (из mock_yaml_data)
-
-    # 0.140 / 0.112 * 100 = 125.0
-    # 0.140 / 0.158 * 100 = ~88.6
 
     # Проверяем 'sRGB, NTSC'
     result_srgb_ntsc = calculate.cg_by_area("dummy_file.json", "sRGB, NTSC")
-    assert result_srgb_ntsc[0] == pytest.approx(125.0)
-    assert result_srgb_ntsc[1] == pytest.approx(88.60759493670887)
+    assert result_srgb_ntsc[0] == pytest.approx(101.86, 0.01)
+    assert result_srgb_ntsc[1] == pytest.approx(72.24, 0.01)
 
     # Проверяем 'sRGB'
     result_srgb = calculate.cg_by_area("dummy_file.json", "sRGB")
-    assert result_srgb[0] == pytest.approx(125.0)
+    assert result_srgb[0] == pytest.approx(101.86,0.01)
     assert result_srgb[1] == None
 
     # Проверяем 'NTSC'
     result_ntsc = calculate.cg_by_area("dummy_file.json", "NTSC")
     assert result_ntsc[0] == None
-    assert result_ntsc[1] == pytest.approx(88.60759493670887)
+    assert result_ntsc[1] == pytest.approx(72.24, 0.01)
 
+    # Проверяем 'DCI-P3
+    result_dci_p3=calculate.cg_by_area("dummy_file.json", "DCI-P3")
+    assert result_dci_p3[0] == pytest.approx(75.09, 0.01)
+    assert result_dci_p3[1] == None
 
 # --------------------------------------------------------------------------------
 # Конвертированные тесты (brightness, uniformity, contrast, temperature) из test_calculate1.py
@@ -193,22 +186,29 @@ def test_brightness_uniformity_edge_cases():
 def test_cg_logic(mocker):
     """Тестирование основной логики функции cg (по перекрытию)."""
     # Мокируем зависимости
-    mocker.patch('src.calculate.parse.coordinates_of_triangle', return_value=[0.1, 0.1] * 3)
+    mock_coords = [0.636, 0.329, 0.311, 0.615, 0.156, 0.049]
+    mocker.patch('src.calculate.parse.coordinates_of_triangle', return_value=mock_coords)
+
     mock_overlap = mocker.patch('src.calculate.calculate_overlap_percentage')
 
-    # Задаем возвращаемые значения для NTSC и sRGB
-    mock_overlap.side_effect = [95.5, 85.2]  # Первое значение для NTSC, второе для sRGB
-
-    srgb_coords = [0.64, 0.33, 0.30, 0.60, 0.15, 0.06]
-    ntsc_coords = [0.67, 0.33, 0.21, 0.71, 0.14, 0.08]
+    mock_overlap.side_effect = [
+        95.5,  # Результат 1-го вызова: ntsc_overlap
+        85.2,  # Результат 2-го вызова: rgb_overlap
+        100.0,  # Результат 3-го вызова: dci_p3_overlap (не используется в этом тесте)
+    ]
 
     # Проверяем 'sRGB, NTSC'
-    cg_rgb, cg_ntsc = calculate.cg("file.json", "sRGB, NTSC", srgb_coords, ntsc_coords)
+    cg_rgb, cg_ntsc = calculate.cg("file.json", "sRGB, NTSC")
     assert cg_rgb == 85.2
     assert cg_ntsc == 95.5
 
-    # Проверяем, что calculate_overlap_percentage был вызван дважды
-    assert mock_overlap.call_count == 2
+    mock_overlap.reset_mock(side_effect=True)  # Сбрасываем мок для нового запуска
+    mock_overlap.side_effect = [95.5, 85.2, 100.0]
+
+    cg_rgb_only, cg_ntsc_dummy = calculate.cg("file.json", "sRGB")
+    assert cg_rgb_only == 85.2
+    assert cg_ntsc_dummy is None
+
 
 
 def test_contrast_zero_lv(mocker, mock_display_data):

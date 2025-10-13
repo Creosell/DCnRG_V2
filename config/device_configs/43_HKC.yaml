@@ -8,17 +8,17 @@ main_tests:
     typ: 70
     max: 100
   Contrast:
-    min: 3500.0
-    typ: 5000.0
-    max: 1000000.0
+    min: 3500
+    typ: 5000
+    max: 1000000
   Cg_rgb_area:
     min: 80.0
     typ: 85.0
-    max: 200
+    max: 200.0
   Cg_ntsc_area:
     min: 80.0
     typ: 85.0
-    max: 200
+    max: 200.0
   Cg_rgb:
     min: 80.0
     typ: 85.0
@@ -28,9 +28,9 @@ main_tests:
     typ: 85.0
     max: 100.0
   Temperature:
-    min: 9142.0
-    typ: 9892.0
-    max: 10642.0
+    min: 9142
+    typ: 9892
+    max: 10642
   Delta_e:
     min: 4
     typ: 3
@@ -67,5 +67,3 @@ main_tests:
     min: 0.260
     typ: 0.290
     max: 0.320
-
-

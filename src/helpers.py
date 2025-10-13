@@ -158,14 +158,14 @@ def create_pdf(
                 [
                     f"{color} X",
                     f"{x_act.get('min')}",
-                    f"{x_typ:.4f}",
+                    f"{x_typ:.3f}",
                     f"{x_act.get('max')}",
                     x_data.get("status", "N/A")
                 ],
                 [
                     f"{color} Y",
                     f"{y_act.get('min')}",
-                    f"{y_typ:.4f}",
+                    f"{y_typ:.3f}",
                     f"{y_act.get('max')}",
                     y_data.get("status", "N/A")
                 ]

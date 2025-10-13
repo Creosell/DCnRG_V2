@@ -8,6 +8,24 @@ from shapely.geometry import Polygon
 import src.helpers as h
 import src.parse as parse
 
+# Format: (Standard Name, [[Red_x, Red_y], [Green_x, Green_y], [Blue_x, Blue_y]])
+COLOR_STANDARDS = {
+    "NTSC": [
+        [0.67, 0.33],
+        [0.21, 0.71],
+        [0.14, 0.08]
+    ],
+    "sRGB": [
+        [0.64, 0.33],
+        [0.3, 0.6],
+        [0.15, 0.06]
+    ],
+    "DCI-P3": [
+        [0.680, 0.320],
+        [0.265, 0.690],
+        [0.150, 0.060]
+    ]
+}
 
 def area(p):
     """Calculates the area of a triangle defined by three points."""
@@ -52,7 +70,7 @@ def brightness(file, is_tv):
     measurements = report.get("Measurements", [])
 
     # Map location names to their required keys
-    report_typ_key = "WhiteColor" if is_tv else "Center"
+    brightness_calculation_point = "WhiteColor" if is_tv else "Center"
 
     # Collect all Lv values into a dictionary for quick access
     lv_values = {}
@@ -62,9 +80,6 @@ def brightness(file, is_tv):
             lv_values[location] = float(m.get("Lv"))
         except (ValueError, TypeError, KeyError):
             continue
-
-    # Point for the typical value (typ)
-    typical_lv_for_report = lv_values.get(report_typ_key)
 
     # Collect values for min/max calculation
     excluded_locations = {"RedColor", "GreenColor", "BlueColor", "BlackColor", "WhiteColor"}
@@ -78,14 +93,9 @@ def brightness(file, is_tv):
     # Calculate min, max
     min_lv = min(all_lv_values) if all_lv_values else None
     max_lv = max(all_lv_values) if all_lv_values else None
+    typical_lv_for_report = lv_values.get(brightness_calculation_point)
 
-    # Return the result
-    return {
-        "min": min_lv,
-        "typ": typical_lv_for_report,
-        "max": max_lv,
-    }
-
+    return {"min": min_lv, "typ": typical_lv_for_report, "max": max_lv}
 
 def brightness_uniformity(brightness_value):
     """
@@ -106,36 +116,53 @@ def cg_by_area(file, color_space):
     coordinate = parse.coordinates_of_triangle(file)
     if len(coordinate) != 6:
         return None
-    x1, y1, x2, y2, x3, y3 = coordinate
-    triangle = np.array([[x1, y1], [x2, y2], [x3, y3]])
-    triangle_area = area(triangle)
 
-    if triangle_area == 0:
+    x1, y1, x2, y2, x3, y3 = coordinate
+    dut_triangle = np.array([[x1, y1], [x2, y2], [x3, y3]])
+    dut_triangle_area = area(dut_triangle)
+    if dut_triangle_area == 0:
         return None
 
-    color_gamut_srgb = (triangle_area / 0.112) * 100
-    color_gamut_ntsc = (triangle_area / 0.158) * 100
+    srgb_triangle = np.array(COLOR_STANDARDS.get("sRGB"))
+    ntsc_triangle = np.array(COLOR_STANDARDS.get("NTSC"))
+    dci_p3_triangle = np.array(COLOR_STANDARDS.get("DCI-P3"))
+    srgb_triangle_area = area(srgb_triangle)
+    ntsc_triangle_area = area(ntsc_triangle)
+    dci_p3_triangle_area = area(dci_p3_triangle)
+
+    # color_gamut_srgb = (dut_triangle_area / 0.112) * 100
+    # color_gamut_ntsc = (dut_triangle_area / 0.158) * 100
+
+    color_gamut_srgb = (dut_triangle_area / srgb_triangle_area) * 100
+    color_gamut_ntsc = (dut_triangle_area / ntsc_triangle_area) * 100
+    color_gamut_dci_p3 = (dut_triangle_area / dci_p3_triangle_area) * 100
 
     # Use a dictionary for concise return
     return_map = {
         "sRGB, NTSC": (float(color_gamut_srgb), float(color_gamut_ntsc)),
         "sRGB": (float(color_gamut_srgb), None),
         "NTSC": (None, float(color_gamut_ntsc)),
+        "DCI-P3": (float(color_gamut_dci_p3), None)
     }
 
     # Return (None, None) by default
     return return_map.get(color_space, (None, None))
 
 
-def cg(file, color_space, srgb, ntsc):
-    coordinate = parse.coordinates_of_triangle(file)
-    if len(coordinate) != 6:
+def cg(file, color_space):
+    dut_coordinates = parse.coordinates_of_triangle(file)
+    if len(dut_coordinates) != 6:
         return None
-    x1, y1, x2, y2, x3, y3 = coordinate
+
+    x1, y1, x2, y2, x3, y3 = dut_coordinates
+    ntsc = [coord for point in COLOR_STANDARDS.get("NTSC") for coord in point]
+    srgb = [coord for point in COLOR_STANDARDS.get("sRGB") for coord in point]
+    dci_p3 = [coord for point in COLOR_STANDARDS.get("DCI-P3") for coord in point]
 
     # Calculate overlap percentage once
     ntsc_overlap = calculate_overlap_percentage(*ntsc, x1, y1, x2, y2, x3, y3)
     rgb_overlap = calculate_overlap_percentage(*srgb, x1, y1, x2, y2, x3, y3)
+    dci_p3_overlap = calculate_overlap_percentage(*dci_p3, x1, y1, x2, y2, x3, y3)
 
     # Error handling if area is 0
     if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str):
@@ -147,6 +174,7 @@ def cg(file, color_space, srgb, ntsc):
         "sRGB, NTSC": (rgb_overlap, ntsc_overlap),
         "sRGB": (rgb_overlap, None),
         "NTSC": (None, ntsc_overlap),
+        "DCI-P3": (dci_p3_overlap, None)
     }
 
     # Return (None, None) by default
@@ -318,7 +346,6 @@ def plot_color_space(rgb, ntsc, x1, y1, x2, y2, x3, y3, output_file, color_space
         device_triangle[:, 0], device_triangle[:, 1], label="Device", color="green"
     )
 
-    # BUG FIX: Use correct Y coordinates for NTSC
     ntsc_triangle = np.array(
         [[ntsc[0], ntsc[1]], [ntsc[2], ntsc[3]], [ntsc[4], ntsc[5]], [ntsc[0], ntsc[1]]]
     )

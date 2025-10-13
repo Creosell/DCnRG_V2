@@ -123,7 +123,7 @@ for current_device_name, file_list in device_groups.items():
             contrast = cal.contrast(file, is_tv_flag)  # Pass the is_tv_flag
 
             cg_by_area = cal.cg_by_area(file, COLOR_SPACE)
-            cg = cal.cg(file, COLOR_SPACE, RGB, NTSC)
+            cg = cal.cg(file, COLOR_SPACE)
             temperature = cal.temperature(file)
             delta_e = cal.delta_e(file)
             coordinates = parse.get_coordinates(file,is_tv_flag)
@@ -155,7 +155,7 @@ for current_device_name, file_list in device_groups.items():
             brightness_values = cal.brightness(file, is_tv_flag)
             brightness = brightness_values["typ"]
             brightness_uniformity = cal.brightness_uniformity(brightness_values)
-            coordinates = parse.get_coordinates(file)
+            coordinates = parse.get_coordinates(file, is_tv_flag)
             r.json_report(
                 sn=sn,
                 t=t,
@@ -169,8 +169,8 @@ for current_device_name, file_list in device_groups.items():
         elif test == "ColorGamut":
             logger.info(f"Processing ColorGamut test for {file.name}")
             cg_by_area = cal.cg_by_area(file, COLOR_SPACE)
-            cg = cal.cg(file, COLOR_SPACE, RGB, NTSC)
-            coordinates = parse.get_coordinates(file)
+            cg = cal.cg(file, COLOR_SPACE)
+            coordinates = parse.get_coordinates(file,is_tv_flag)
             r.json_report(
                 sn=sn,
                 t=t,
@@ -222,4 +222,4 @@ h.archive_reports(
     FOLDERS_TO_PROCESS
 )
 
-h.clear_folders(FOLDERS_TO_PROCESS)
+#h.clear_folders(FOLDERS_TO_PROCESS)

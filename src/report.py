@@ -8,6 +8,30 @@ from pathlib import Path
 import yaml
 from loguru import logger
 
+REPORT_PRECISION = {
+    "Brightness": 0,
+    "Contrast": 0,
+    "Temperature": 0,
+
+    "BrightnessUniformity": 1,
+    "CgByAreaRGB": 1,
+    "CgByAreaNTSC": 1,
+    "cgRGB": 1,
+    "cgNTSC": 1,
+    "DeltaE": 1,
+
+    "Red_x": 3,
+    "Red_y": 3,
+    "Green_x": 3,
+    "Green_y": 3,
+    "Blue_x": 3,
+    "Blue_y": 3,
+    "White_x": 3,
+    "White_y": 3,
+    "Center_x":3,
+    "Center_y":3,
+}
+
 
 def json_report(
     sn=None,
@@ -28,6 +52,25 @@ def json_report(
     # Define the JSON file name
     json_filename = f"{device_name}_{sn}_{t}.json"
     logger.debug(f"JSON report name: {json_filename}")
+
+    # # Formatting data before saving to JSON
+    # brightness = safe_round(brightness)
+    # brightness_uniformity = safe_round(brightness_uniformity, 1)
+    # cg_by_area_rgb = safe_round(cg_by_area_rgb, 1)
+    # cg_by_area_ntsc = safe_round(cg_by_area_ntsc, 1)
+    # cg_rgb = safe_round(cg_rgb, 1)
+    # cg_ntsc = safe_round(cg_ntsc, 1)
+    # contrast = safe_round(contrast)
+    # temperature = safe_round(temperature)
+    # delta_e = safe_round(delta_e, 1)
+    #
+    # if isinstance(coordinates, dict):
+    #     coordinates = {
+    #         key: round(value, 3)
+    #         for key, value in coordinates.items()
+    #         if isinstance(value, (int, float))
+    #     }
+
 
     # Structure the data to save in the JSON file
     json_data = {
@@ -52,6 +95,14 @@ def json_report(
     with open(output_path, "w") as json_file:
         json.dump(json_data, json_file, indent=4)
 
+def safe_round(value, decimals=0):
+    """Rounds the value only if it is an int or float. Otherwise, returns the original value (e.g., None)."""
+    if isinstance(value, (int, float)):
+        if decimals == 0:
+            value = int(round(value))
+        else:
+            value = round(value, decimals)
+    return value
 
 def set_nested_value(d, path_str, value):
     """
@@ -245,6 +296,19 @@ def calculate_full_report(input_folder, output_file, device_name):
             stat_package
         ):
             continue
+
+        precision = REPORT_PRECISION.get(flat_key.split('.')[-1], 2)
+
+        for stat_key in ["avg", "min", "max"]:
+            value = stat_package[stat_key]
+
+            if isinstance(value, (int, float)):
+                stat_package[stat_key] = safe_round(value, precision)
+            elif isinstance(value, list):
+                stat_package[stat_key] = [
+                    safe_round(v, precision)
+                    for v in value
+                ]
 
         set_nested_value(final_results_data, flat_key, stat_package)
 

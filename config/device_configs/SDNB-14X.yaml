@@ -8,16 +8,16 @@ main_tests:
     typ: 80
     max: 110
   Contrast:
-    min: 1000.0
-    typ: 1500.0
-    max: 5000.0
+    min: 1000
+    typ: 1500
+    max: 5000
   Cg_rgb_area:
-    min: 95.00
+    min: 95.0
     typ: 99.0
-    max: 150.00
+    max: 150.0
   Cg_ntsc_area:
     min: 71
-    typ: 72.0
+    typ: 72
     max: 90
   Cg_rgb:
     min: 95
