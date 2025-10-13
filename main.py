@@ -126,7 +126,7 @@ for current_device_name, file_list in device_groups.items():
             cg = cal.cg(file, COLOR_SPACE, RGB, NTSC)
             temperature = cal.temperature(file)
             delta_e = cal.delta_e(file)
-            coordinates = parse.get_coordinates(file)
+            coordinates = parse.get_coordinates(file,is_tv_flag)
 
             r.json_report(
                 sn=sn,
@@ -222,4 +222,4 @@ h.archive_reports(
     FOLDERS_TO_PROCESS
 )
 
-#h.clear_folders(FOLDERS_TO_PROCESS)
+h.clear_folders(FOLDERS_TO_PROCESS)

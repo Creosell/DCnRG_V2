@@ -51,56 +51,41 @@ def coordinates_of_triangle(file):
     return result
 
 
-def get_coordinates(file):
+def get_coordinates(file, is_tv_flag):
     """
     Extracts the x and y coordinates for RedColor, GreenColor, BlueColor, and Center
     from the given JSON file.
-
-    Args:
-        file (str): Path to the JSON file.
-
-    Returns:
-        dict: A dictionary containing the coordinates for RedColor, GreenColor,
-              BlueColor, and Center in the format:
-              {
-                "Red": (x, y),
-                "Green": (x, y),
-                "Blue": (x, y),
-                "Center": (x, y)
-              }
     """
-    # Open and load the JSON file
     data = h.parse_one_file(file)
     if not data:
         return {}
 
-    # Initialize a dictionary to store the required coordinates
-    coordinates = {
-        "Red_x": None,
-        "Red_y": None,
-        "Green_x": None,
-        "Green_y": None,
-        "Blue_x": None,
-        "Blue_y": None,
-        "Center_x": None,
-        "Center_y": None,
+    coordinates = {f"{color}_{axis}": None for color in ["Red", "Green", "Blue", "Center"] for axis in ["x", "y"]}
+
+    # Define mapping based on is_tv_flag
+    location_map = {
+        "RedColor": "Red",
+        "GreenColor": "Green",
+        "BlueColor": "Blue",
+        # Conditional mapping for the Center point
+        "WhiteColor": "Center" if is_tv_flag else None,
+        "Center": "Center" if not is_tv_flag else None
     }
 
-    # Iterate through the measurements to find the required locations
+    # Filter out None values in the map for efficiency
+    location_map = {k: v for k, v in location_map.items() if v}
+
     for measurement in data["Measurements"]:
         location = measurement["Location"]
-        if location == "RedColor":
-            coordinates["Red_x"] = float(measurement["x"])
-            coordinates["Red_y"] = float(measurement["y"])
-        elif location == "GreenColor":
-            coordinates["Green_x"] = float(measurement["x"])
-            coordinates["Green_y"] = float(measurement["y"])
-        elif location == "BlueColor":
-            coordinates["Blue_x"] = float(measurement["x"])
-            coordinates["Blue_y"] = float(measurement["y"])
-        elif location == "Center":
-            coordinates["Center_x"] = float(measurement["x"])
-            coordinates["Center_y"] = float(measurement["y"])
+        target_key = location_map.get(location)
+
+        if target_key:
+            try:
+                coordinates[f"{target_key}_x"] = float(measurement["x"])
+                coordinates[f"{target_key}_y"] = float(measurement["y"])
+            except ValueError:
+                # Handle cases where 'x' or 'y' are not valid floats
+                pass
 
     return coordinates
 
