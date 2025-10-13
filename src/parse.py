@@ -55,6 +55,10 @@ def get_coordinates(file, is_tv_flag):
     """
     Extracts the x and y coordinates for RedColor, GreenColor, BlueColor, and Center
     from the given JSON file.
+
+    Args:
+        file (string): Path to the JSON file.
+        is_tv_flag (bool): True if the coordinates should be calculated for TV.
     """
     data = h.parse_one_file(file)
     if not data:

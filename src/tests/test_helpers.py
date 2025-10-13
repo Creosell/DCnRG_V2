@@ -29,7 +29,7 @@ def test_parse_one_file_success(tmp_path, mock_display_data):
 
     assert data is not None
     assert data["SerialNumber"] == "NotTV"
-    assert len(data["Measurements"]) == 14  # 14 - количество измерений в mock_display_data
+    assert len(data["Measurements"]) == 13  # 13 - количество измерений в mock_display_data
 
 
 # Тест мокирует внешние зависимости reportlab и calculate

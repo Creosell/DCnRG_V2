@@ -108,7 +108,7 @@ def test_get_coordinates_logic(mocker, mock_display_data):
     # Успешный случай
     mocker.patch('src.parse.h.parse_one_file', return_value=mock_display_data)
 
-    coords = parse.get_coordinates("dummy.json")
+    coords = parse.get_coordinates("dummy_file.json", is_tv_flag=False)
     assert coords["Red_x"] == 0.648
     assert coords["Center_y"] == 0.328
 
@@ -117,7 +117,24 @@ def test_get_coordinates_logic(mocker, mock_display_data):
     no_center_data["Measurements"] = [m for m in no_center_data["Measurements"] if m["Location"] != "Center"]
     mocker.patch('src.helpers.parse_one_file', return_value=no_center_data)
 
-    coords_no_center = parse.get_coordinates("dummy.json")
+    coords_no_center = parse.get_coordinates("dummy.json",is_tv_flag=False)
+    assert coords_no_center["Center_x"] is None
+
+def test_get_coordinates_tv_logic(mocker, mock_tv_data):
+    """Тестирование функции get_coordinates на успешное извлечение и на случай отсутствия данных."""
+    # Успешный случай
+    mocker.patch('src.parse.h.parse_one_file', return_value=mock_tv_data)
+
+    coords = parse.get_coordinates("dummy_file.json", is_tv_flag=True)
+    assert coords["Red_x"] == 0.648
+    assert coords["Center_y"] == 0.348
+
+    # Случай, когда Center отсутствует
+    no_center_data = mock_tv_data.copy()
+    no_center_data["Measurements"] = [m for m in no_center_data["Measurements"] if m["Location"] != "WhiteColor"]
+    mocker.patch('src.helpers.parse_one_file', return_value=no_center_data)
+
+    coords_no_center = parse.get_coordinates("dummy.json",is_tv_flag=True)
     assert coords_no_center["Center_x"] is None
 
 

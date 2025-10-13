@@ -35,7 +35,6 @@ def mock_display_data():
             {"Location": "GreenColor", "x": 0.304, "y": 0.630, "Lv": 80.0, "T": 10000},
             {"Location": "BlueColor", "x": 0.152, "y": 0.060, "Lv": 4.0, "T": 12000},
             {"Location": "BlackColor", "x": 0.152, "y": 0.060, "Lv": 0.6183643, "T": 12000},
-            {"Location": "WhiteColor", "x": 0.309, "y": 0.328, "Lv": 159.7, "T": 6752}, # Для Display WhiteColor = Center
         ]
     }
 
@@ -67,7 +66,7 @@ def mock_tv_data():
             {"Location": "GreenColor", "x": 0.304, "y": 0.630, "Lv": 80.0, "T": 10000},
             {"Location": "BlueColor", "x": 0.152, "y": 0.060, "Lv": 4.0, "T": 12000},
             {"Location": "BlackColor", "x": 0.152, "y": 0.060, "Lv": 0.6183643, "T": 12000},
-            {"Location": "WhiteColor", "x": 0.309, "y": 0.328, "Lv": 200.0, "T": 6752}, # Для TV WhiteColor != Center
+            {"Location": "WhiteColor", "x": 0.339, "y": 0.348, "Lv": 200, "T": 6752}
         ]
     }
     return data
