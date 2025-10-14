@@ -44,6 +44,24 @@ AVG_FAIL_SKIP_KEYS_FOR_TV = { # Keys which we skip while checking for FAIL by av
 }
 
 
+# Keys that are considered coordinate tests (using min/max bounds)
+COORDINATE_TEST_KEYS = {
+    "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y", "White_x", "White_y",
+}
+# Mapping from YAML keys (e.g., 'Cg_rgb_area') to JSON keys (e.g., 'CgByAreaRGB')
+YAML_TO_JSON_KEY_MAP = {
+    "Brightness_uniformity": "BrightnessUniformity",
+    "Cg_rgb_area": "CgByAreaRGB",
+    "Cg_ntsc_area": "CgByAreaNTSC",
+    "Cg_rgb": "CgRGB",
+    "Cg_ntsc": "CgNTSC",
+    "Delta_e": "DeltaE",
+    # Special case: 'White_x' and 'White_y' are used for Center_x/y in JSON
+    "White_x": "Center_x",
+    "White_y": "Center_y",
+}
+
+
 def json_report(
     sn=None,
     t=None,
@@ -518,24 +536,6 @@ def generate_comparison_report(actual_result_file, expected_result_file, output_
         }
         write_error_report(output_json_file, error_report, "YAML parsing failure")
         return
-
-    # --- 3. CONFIGURATION (Mapping keys) ---
-    # Keys that are considered coordinate tests (using min/max bounds)
-    COORDINATE_TEST_KEYS = {
-        "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y", "White_x", "White_y",
-    }
-    # Mapping from YAML keys (e.g., 'Cg_rgb_area') to JSON keys (e.g., 'CgByAreaRGB')
-    YAML_TO_JSON_KEY_MAP = {
-        "Brightness_uniformity": "BrightnessUniformity",
-        "Cg_rgb_area": "CgByAreaRGB",
-        "Cg_ntsc_area": "CgByAreaNTSC",
-        "Cg_rgb": "CgRGB",
-        "Cg_ntsc": "CgNTSC",
-        "Delta_e": "DeltaE",
-        # Special case: 'White_x' and 'White_y' are used for Center_x/y in JSON
-        "White_x": "Center_x",
-        "White_y": "Center_y",
-    }
 
     full_report = {}
 

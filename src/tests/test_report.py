@@ -178,7 +178,7 @@ def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
 
     # 3. Выполняем сравнение
     output_file = tmp_path / "comparison.json"
-    report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file))
+    report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file), is_tv_flag=False)
 
     # 4. Проверяем результат
     with open(output_file, "r") as f:
@@ -195,3 +195,130 @@ def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
 
     assert result["White_x"]["status"] == "N/A"
     assert "is null or missing in JSON" in result["White_x"]["reason"]
+
+
+@pytest.mark.parametrize(
+    "actual_avg, expected_status, expected_reason_part",
+    [
+        # Случай 1: Явный PASS. Среднее значение выше ожидаемого.
+        (1100.0, "PASS", "Actual avg (1100.0) >= Expected typ (935.0)"),
+
+        # Случай 2: Граничный PASS. Среднее значение находится точно на границе допуска (1000 - 6.5% = 935).
+        (935.0, "PASS", "Actual avg (935.0) >= Expected typ (935.0)"),
+
+        # Случай 3: Граничный FAIL. Среднее значение чуть ниже границы допуска.
+        (934.9, "FAIL", "Actual avg (934.9) < Expected typ (935.0)"),
+
+        # Случай 4: Явный FAIL. Среднее значение значительно ниже допуска.
+        (900.0, "FAIL", "Actual avg (900.0) < Expected typ (935.0)"),
+    ],
+)
+def test_generate_comparison_report_tv_contrast_tolerance_scenarios(
+        tmp_path, mock_yaml_data, actual_avg, expected_status, expected_reason_part
+):
+    """
+    Тестирование различных сценариев (PASS/FAIL) для допуска контраста на ТВ.
+    """
+    # 1. Настройка данных
+    full_report_data = {
+        "Results": {"Contrast": {"avg": actual_avg, "min": 850.0}}  # min проходит всегда
+    }
+    mock_yaml_data["main_tests"]["Contrast"] = {"min": 800.0, "typ": 1000.0}
+
+    json_file = tmp_path / "full_report.json"
+    with open(json_file, "w") as f:
+        json.dump(full_report_data, f)
+
+    yaml_file = tmp_path / "expected.yaml"
+    with open(yaml_file, "w") as f:
+        json.dump(mock_yaml_data, f)
+
+    # 2. Выполнение сравнения с флагом is_tv_flag=True
+    output_file = tmp_path / "comparison.json"
+    report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file), is_tv_flag=True)
+
+    # 3. Проверка результата
+    with open(output_file, "r") as f:
+        result = json.load(f)
+
+    assert result["Contrast"]["status"] == expected_status
+    assert expected_reason_part in result["Contrast"]["reason"]
+
+
+# Параметризация по всем ключам, где для ТВ пропускается проверка avg
+@pytest.mark.parametrize("skipped_key_yaml", list(report.AVG_FAIL_SKIP_KEYS_FOR_TV))
+def test_generate_comparison_report_tv_avg_skip_pass_on_min(
+        tmp_path, mock_yaml_data, skipped_key_yaml
+):
+    """
+    Проверяет, что для всех пропускаемых ключей ТВ получает PASS,
+    если min значение в норме, даже если avg ниже ожидаемого.
+    """
+    # 1. Настройка данных
+    # avg ниже typ, но min выше порога
+    actual_values = {"avg": 90.0, "min": 85.0}
+    expected_values = {"min": 80.0, "typ": 100.0}
+
+    # В YAML ключи могут быть с подчеркиванием, а в JSON - CamelCase
+    key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
+
+
+    full_report_data = {"Results": {key_in_json: actual_values}}
+    mock_yaml_data["main_tests"][skipped_key_yaml] = expected_values
+
+    json_file = tmp_path / "full_report.json"
+    with open(json_file, "w") as f:
+        json.dump(full_report_data, f)
+
+    yaml_file = tmp_path / "expected.yaml"
+    with open(yaml_file, "w") as f:
+        json.dump(mock_yaml_data, f)
+
+    # 2. Выполнение сравнения
+    output_file = tmp_path / "comparison.json"
+    report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file), is_tv_flag=True)
+
+    # 3. Проверка
+    with open(output_file, "r") as f:
+        result = json.load(f)
+
+    assert result[skipped_key_yaml]["status"] == "PASS"
+    assert "(TV) Actual min (85.0) >= Expected min (80.0)" in result[skipped_key_yaml]["reason"]
+
+
+@pytest.mark.parametrize("skipped_key_yaml", list(report.AVG_FAIL_SKIP_KEYS_FOR_TV))
+def test_generate_comparison_report_tv_avg_skip_fail_on_min(
+        tmp_path, mock_yaml_data, skipped_key_yaml
+):
+    """
+    Проверяет, что для всех пропускаемых ключей ТВ получает FAIL,
+    если min значение ниже нормы, несмотря на пропуск проверки avg.
+    """
+    # 1. Настройка данных
+    # avg ниже typ, и min тоже ниже порога
+    actual_values = {"avg": 90.0, "min": 75.0}
+    expected_values = {"min": 80.0, "typ": 100.0}
+
+    key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
+
+    full_report_data = {"Results": {key_in_json: actual_values}}
+    mock_yaml_data["main_tests"][skipped_key_yaml] = expected_values
+
+    json_file = tmp_path / "full_report.json"
+    with open(json_file, "w") as f:
+        json.dump(full_report_data, f)
+
+    yaml_file = tmp_path / "expected.yaml"
+    with open(yaml_file, "w") as f:
+        json.dump(mock_yaml_data, f)
+
+    # 2. Выполнение сравнения
+    output_file = tmp_path / "comparison.json"
+    report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file), is_tv_flag=True)
+
+    # 3. Проверка
+    with open(output_file, "r") as f:
+        result = json.load(f)
+
+    assert result[skipped_key_yaml]["status"] == "FAIL"
+    assert "Actual min (75.0) < Expected min threshold (80.0)" in result[skipped_key_yaml]["reason"]

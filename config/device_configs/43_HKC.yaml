@@ -1,15 +1,15 @@
 main_tests:
   Brightness:
-    min: 300
+    min: 321
     typ: 330
     max: None
   Brightness_uniformity:
-    min: 65
-    typ: 70
+    min: 71
+    typ: 75
     max: None
   Contrast:
     min: 3500
-    typ: 5000
+    typ: 4500
     max: None
   Cg_rgb_area:
     min: 70
