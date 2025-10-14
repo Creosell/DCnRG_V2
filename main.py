@@ -63,6 +63,9 @@ if not files:
 
 logger.info(f"Found {len(files)} files for processing. Starting grouping...")
 
+# Setting default flag for tested devices to false
+is_tv_flag = False
+
 for file_name in files:
     if file_name.endswith(".json"):
         file_path = DATA_FOLDER / file_name
@@ -71,11 +74,11 @@ for file_name in files:
 
             # Get key parameters
             device_config = data.get("DeviceConfiguration", "UnknownDevice")
-            is_tv = data.get("IsTV", False)
+            is_tv_flag = data.get("IsTV", False)
             sn = data.get("SerialNumber", "UnknownSN")
 
             # Add to group: path, TV flag, serial number
-            device_groups[device_config].append((file_path, is_tv, sn))
+            device_groups[device_config].append((file_path, is_tv_flag, sn))
 
         except Exception as e:
             logger.error(f"Error parsing file {file_name}: {e}")
@@ -114,13 +117,10 @@ for current_device_name, file_list in device_groups.items():
         if test == "FullTest":
             logger.info(f"Processing FullTest for {file.name}")
 
-            # --- UPDATED BRIGHTNESS/UNIFORMITY CALCULATION ---
-            brightness_values = cal.brightness(file, is_tv_flag)  # Pass the is_tv_flag
-            brightness = brightness_values["typ"]  # Typical (WhiteColor/Center)
-            brightness_uniformity = cal.brightness_uniformity(brightness_values)  # Uses Center
-
-            # --- UPDATED CONTRAST CALCULATION ---
-            contrast = cal.contrast(file, is_tv_flag)  # Pass the is_tv_flag
+            brightness_values = cal.brightness(file, is_tv_flag)
+            brightness = brightness_values["typ"]
+            brightness_uniformity = cal.brightness_uniformity(brightness_values)
+            contrast = cal.contrast(file, is_tv_flag)
 
             cg_by_area = cal.cg_by_area(file, COLOR_SPACE)
             cg = cal.cg(file, COLOR_SPACE)
@@ -190,7 +190,7 @@ for current_device_name, file_list in device_groups.items():
     # these functions must be able to filter files by current_device_name internally.
     r.calculate_full_report(DEVICE_REPORTS, current_report_from_all, current_device_name)
     r.analyze_json_files_for_min_fail(DEVICE_REPORTS, current_expected_result, current_min_fail, current_device_name)
-    r.generate_comparison_report(current_report_from_all, current_expected_result, current_final_report)
+    r.generate_comparison_report(current_report_from_all, current_expected_result, current_final_report, is_tv_flag)
 
     # PDF Report Generation
     h.device_reports_to_pdf(str(DEVICE_REPORTS), str(current_pdf_report_all), current_device_name)  # Add filter
@@ -222,4 +222,4 @@ h.archive_reports(
     FOLDERS_TO_PROCESS
 )
 
-#h.clear_folders(FOLDERS_TO_PROCESS)
+h.clear_folders(FOLDERS_TO_PROCESS)

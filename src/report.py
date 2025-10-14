@@ -32,6 +32,17 @@ REPORT_PRECISION = {
     "Center_y":3,
 }
 
+# Special requirements for TV's
+TOLERANCE_FOR_TV = 0.065 # Tolerance 6.5% for some TV checks
+AVG_FAIL_SKIP_KEYS_FOR_TV = { # Keys which we skip while checking for FAIL by avg
+    "Brightness",
+    "Brightness_uniformity",
+    "Cg_rgb_area",
+    "Cg_ntsc_area",
+    "Cg_rgb",
+    "Cg_ntsc"
+}
+
 
 def json_report(
     sn=None,
@@ -52,25 +63,6 @@ def json_report(
     # Define the JSON file name
     json_filename = f"{device_name}_{sn}_{t}.json"
     logger.debug(f"JSON report name: {json_filename}")
-
-    # # Formatting data before saving to JSON
-    # brightness = safe_round(brightness)
-    # brightness_uniformity = safe_round(brightness_uniformity, 1)
-    # cg_by_area_rgb = safe_round(cg_by_area_rgb, 1)
-    # cg_by_area_ntsc = safe_round(cg_by_area_ntsc, 1)
-    # cg_rgb = safe_round(cg_rgb, 1)
-    # cg_ntsc = safe_round(cg_ntsc, 1)
-    # contrast = safe_round(contrast)
-    # temperature = safe_round(temperature)
-    # delta_e = safe_round(delta_e, 1)
-    #
-    # if isinstance(coordinates, dict):
-    #     coordinates = {
-    #         key: round(value, 3)
-    #         for key, value in coordinates.items()
-    #         if isinstance(value, (int, float))
-    #     }
-
 
     # Structure the data to save in the JSON file
     json_data = {
@@ -353,302 +345,271 @@ def load_yaml_file(filepath):
         return None
 
 
-def generate_comparison_report(json_data_file, yaml_data_file, output_json_file):
+# Helper function for writing error reports
+def write_error_report(output_file, error_report_data, error_context):
+    """Helper function to write an error report to a JSON file."""
+    logger.error(f"Aborting comparison due to {error_context}.")
+    try:
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(error_report_data, f, indent=4)
+        logger.error(f"Error report saved to {output_file}")
+    except IOError:
+        logger.critical(f"Could not write error report to {output_file} after {error_context}.")
+
+
+# Helper function for coordinate checks
+def check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max):
+    """
+    Checks coordinate data for presence (None), type (numeric), and boundary adherence (min/max).
+    Returns (status, reason).
+    """
+
+    # --- N/A CHECKS ---
+
+    # 1. Check for data presence
+    missing_map = {
+        (actual_min is None): "Actual 'min' value missing in JSON for coordinate test.",
+        (actual_max is None): "Actual 'max' value missing in JSON for coordinate test.",
+        (expected_min is None): "Expected 'min' value missing in YAML for coordinate test.",
+        (expected_max is None): "Expected 'max' value missing in YAML for coordinate test.",
+    }
+    for condition, reason in missing_map.items():
+        if condition:
+            return "N/A", reason
+
+    # 2. Check for data type (must be numeric)
+    all_values = [actual_min, actual_max, expected_min, expected_max]
+    if not all(isinstance(v, (int, float)) for v in all_values):
+        return "N/A", "Non-numeric data encountered for coordinate comparison."
+
+    # --- FAIL CHECKS ---
+
+    # 3. Check lower bound
+    if actual_min < expected_min:
+        return "FAIL", f"Actual min ({actual_min}) < Expected min ({expected_min})"
+
+    # 4. Check upper bound
+    if actual_max > expected_max:
+        return "FAIL", f"Actual max ({actual_max}) > Expected max ({expected_max})"
+
+    # --- PASS ---
+    return "PASS", "All coordinate checks passed."
+
+
+# Helper function for general test checks
+def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_values_dict, is_tv_flag):
+    """
+    Checks general tests (avg/typ/min-threshold) for rule compliance.
+    Returns (status, reason).
+
+    Args:
+        yaml_key (str): Key of the YAML file.
+        actual_data_dict_for_test (dict): Actual test data.
+        expected_values_dict (dict): Expected test data.
+        is_tv_flag (bool): Whether the device under test is TV or not.
+    """
+    actual_avg = actual_data_dict_for_test.get("avg")
+    actual_min_val = actual_data_dict_for_test.get("min")
+    expected_typ = expected_values_dict.get("typ")
+    expected_min_thresh = expected_values_dict.get("min")
+
+    # 1. N/A Checks (presence)
+    general_checks = [
+        (actual_avg is None, "Actual 'avg' value missing in JSON."),
+        (actual_min_val is None, "Actual 'min' value missing in JSON."),
+        (expected_typ is None, "Expected 'typ' value missing in YAML."),
+        (expected_min_thresh is None, "Expected 'min' threshold missing in YAML."),
+    ]
+    for condition, reason_msg in general_checks:
+        if condition:
+            return "N/A", reason_msg
+
+    # 2. N/A Check (data type)
+    all_values = [actual_avg, actual_min_val, expected_typ, expected_min_thresh]
+    if not all(isinstance(v, (int, float)) for v in all_values):
+        return "N/A", "Non-numeric data encountered for general test comparison."
+
+
+    # 3. FAILS by min and avg values
+
+    # Special rules for TV
+    # Applying tolerance for contrast value
+    if yaml_key == "Contrast" and is_tv_flag:
+        tolerance_for_contract = expected_typ * TOLERANCE_FOR_TV
+        expected_typ = expected_typ-tolerance_for_contract
+    # Skipping checks for typical values according to a TV quality standard
+    if is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_TV:
+        if actual_min_val < expected_min_thresh:
+            return "FAIL", f"Actual min ({actual_min_val}) < Expected min threshold ({expected_min_thresh})"
+        else:
+            return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min_thresh})"
+
+    if actual_avg < expected_typ:
+        return "FAIL", f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})"
+    if actual_min_val < expected_min_thresh:
+        return "FAIL", f"Actual min ({actual_min_val}) < Expected min threshold ({expected_min_thresh})"
+
+    # 4. Check for FAIL on max for Temperature
+    if yaml_key == "Temperature":
+        actual_max_val = actual_data_dict_for_test.get("max")
+        expected_max_thresh = expected_values_dict.get("max")
+
+        # Validation of max values before comparison
+        is_valid_max_check = (
+                actual_max_val is not None
+                and expected_max_thresh is not None
+                and isinstance(actual_max_val, (int, float))
+                and isinstance(expected_max_thresh, (int, float))
+        )
+
+        if is_valid_max_check and actual_max_val > expected_max_thresh:
+            return "FAIL", f"Actual max ({actual_max_val}) > Expected max ({expected_max_thresh}) for Temperature"
+
+        # If no FAIL, and avg meets typ, then PASS
+        if actual_avg >= expected_typ:
+            return "PASS", f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})"
+
+        return "ERROR", "Temperature test: logical error or max check was invalid."
+
+    # 5. General PASS condition
+    if actual_avg >= expected_typ:
+        return "PASS", f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})"
+
+    # 6. General ERROR
+    return "ERROR", "Logical error or unhandled case in non-coordinate test evaluation. Data might not fit defined PASS/FAIL rules."
+
+
+def generate_comparison_report(actual_result_file, expected_result_file, output_json_file, is_tv_flag):
     """
     Compares data from a JSON results file with expected values from a YAML file,
     includes all relevant data in the report, and saves it to a JSON file.
-    """
-    json_data = load_json_file(json_data_file)
-    yaml_data = load_yaml_file(yaml_data_file)
 
-    if json_data is None or yaml_data is None:
-        logger.error("Aborting comparison due to file loading errors.")
+    Args:
+        actual_result_file (Path): Path to the JSON file containing the actual data.
+        expected_result_file (Path): Path to the JSON file containing the expected data.
+        output_json_file (Path): Path to the output JSON file containing the report.
+        is_tv_flag (bool): Whether the report from TV or not.
+    """
+    actual_result_data = load_json_file(actual_result_file)
+    expected_result_data = load_yaml_file(expected_result_file)
+
+    # --- 1. FILE LOADING CHECK ---
+    if actual_result_data is None or expected_result_data is None:
         error_report = {
             "error": "Failed to load input files.",
-            "details": f"JSON file: '{json_data_file}', YAML file: '{yaml_data_file}'",
+            "details": f"JSON file: '{actual_result_file}', YAML file: '{expected_result_file}'",
         }
-        try:
-            with open(output_json_file, "w", encoding="utf-8") as f:
-                json.dump(error_report, f, indent=4)
-            logger.error(f"Error report saved to {output_json_file}")
-        except IOError:
-            logger.critical(
-                f"Could not write error report to {output_json_file} after file loading failure."
-            )
+        write_error_report(output_json_file, error_report, "file loading errors")
         return
 
-    json_results_root = json_data.get("Results", {})
-    expected_tests_yaml = yaml_data.get("main_tests", {})
+    # --- 2. ROOT KEY CHECK ---
+    actual_result_root = actual_result_data.get("Results", {})
+    expected_result_root = expected_result_data.get("main_tests", {})
 
-    if not isinstance(json_results_root, dict):
+    if not isinstance(actual_result_root, dict):
         logger.warning(
-            f"'Results' key in JSON file '{json_data_file}' is not a dictionary or is missing. Treating as empty."
+            f"'Results' key in JSON file '{actual_result_file}' is not a dictionary or is missing. Treating as empty."
         )
-        json_results_root = {}
-    if not isinstance(expected_tests_yaml, dict):
-        logger.error(
-            f"'main_tests' key in YAML file '{yaml_data_file}' is not a dictionary or is missing. Cannot generate report."
-        )
+        actual_result_root = {}
+
+    if not isinstance(expected_result_root, dict):
         error_report = {
-            "error": f"'main_tests' key missing or invalid in YAML: {yaml_data_file}."
+            "error": f"'main_tests' key missing or invalid in YAML: {expected_result_file}."
         }
-        try:
-            with open(output_json_file, "w", encoding="utf-8") as f:
-                json.dump(error_report, f, indent=4)
-            logger.error(f"Error report saved to {output_json_file}")
-        except IOError:
-            logger.critical(
-                f"Could not write error report to {output_json_file} after YAML parsing failure."
-            )
+        write_error_report(output_json_file, error_report, "YAML parsing failure")
         return
 
-    coordinate_yaml_keys = {
-        "Red_x",
-        "Red_y",
-        "Green_x",
-        "Green_y",
-        "Blue_x",
-        "Blue_y",
-        "White_x",
-        "White_y",
+    # --- 3. CONFIGURATION (Mapping keys) ---
+    # Keys that are considered coordinate tests (using min/max bounds)
+    COORDINATE_TEST_KEYS = {
+        "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y", "White_x", "White_y",
     }
-
-    # Mapping for YAML keys to JSON keys if they differ.
-    json_key_mapping = {
+    # Mapping from YAML keys (e.g., 'Cg_rgb_area') to JSON keys (e.g., 'CgByAreaRGB')
+    YAML_TO_JSON_KEY_MAP = {
         "Brightness_uniformity": "BrightnessUniformity",
         "Cg_rgb_area": "CgByAreaRGB",
         "Cg_ntsc_area": "CgByAreaNTSC",
         "Cg_rgb": "CgRGB",
         "Cg_ntsc": "CgNTSC",
         "Delta_e": "DeltaE",
-        # Coordinate specific mappings from YAML key to JSON key (within "Coordinates" object in JSON)
+        # Special case: 'White_x' and 'White_y' are used for Center_x/y in JSON
         "White_x": "Center_x",
         "White_y": "Center_y",
     }
 
     full_report = {}
 
-    for yaml_key, expected_values_dict in expected_tests_yaml.items():
+    # --- 4. MAIN COMPARISON LOOP ---
+    for test_name, expected_test_data in expected_result_root.items():
         report_item = {
             "status": "N/A",
             "reason": "Initialization or data issue",
             "actual_values": None,
-            "expected_values": expected_values_dict,
+            "expected_values": expected_test_data,
         }
 
-        if not isinstance(expected_values_dict, dict):
-            report_item["reason"] = (
-                f"Expected values for '{yaml_key}' in YAML is not a dictionary."
-            )
-            full_report[yaml_key] = report_item
+        if not isinstance(expected_test_data, dict):
+            report_item["reason"] = f"Expected values for '{test_name}' in YAML is not a dictionary."
+            full_report[test_name] = report_item
             continue
 
-        is_coordinate_test = yaml_key in coordinate_yaml_keys
-        json_lookup_key = json_key_mapping.get(yaml_key, yaml_key)
+        is_coordinate_test = test_name in COORDINATE_TEST_KEYS
+        actual_data_key = YAML_TO_JSON_KEY_MAP.get(test_name, test_name)
+        actual_test_details = None
 
-        actual_data_dict_for_test = None
-
+        # A. GET ACTUAL DATA
         if is_coordinate_test:
-            json_coordinates_data_root = json_results_root.get(
-                "Coordinates", {}
-            )
-            if isinstance(json_coordinates_data_root, dict):
-                actual_data_dict_for_test = json_coordinates_data_root.get(
-                    json_lookup_key
-                )
+            actual_coordinates_root = actual_result_root.get("Coordinates", {})
+            if isinstance(actual_coordinates_root, dict):
+                actual_test_details = actual_coordinates_root.get(actual_data_key)
             else:
-                report_item["reason"] = (
-                    f"'Coordinates' object missing or invalid in JSON results; cannot evaluate '{yaml_key}' (looking for '{json_lookup_key}')."
-                )
+                report_item[
+                    "reason"] = f"'Coordinates' object missing or invalid in JSON results; cannot evaluate '{test_name}' (looking for '{actual_data_key}')."
         else:
-            actual_data_dict_for_test = json_results_root.get(json_lookup_key)
+            actual_test_details = actual_result_root.get(actual_data_key)
 
-        if isinstance(actual_data_dict_for_test, dict):
-            report_item["actual_values"] = (
-                actual_data_dict_for_test.copy()
-            )
-        elif actual_data_dict_for_test is None:
-            report_item["actual_values"] = None
-            report_item["reason"] = (
-                f"Actual data for '{json_lookup_key}' (from YAML key '{yaml_key}') is null or missing in JSON."
-            )
+        # B. CHECK ACTUAL DATA TYPE
+        if isinstance(actual_test_details, dict):
+            report_item["actual_values"] = actual_test_details.copy()
+        elif actual_test_details is None:
+            report_item[
+                "reason"] = f"Actual data for '{actual_data_key}' (from YAML key '{test_name}') is null or missing in JSON."
         else:
-            report_item["actual_values"] = {
-                "raw_value_found": actual_data_dict_for_test
-            }
-            report_item["reason"] = (
-                f"Actual data for '{json_lookup_key}' (from YAML key '{yaml_key}') is not a dictionary (type: {type(actual_data_dict_for_test).__name__}). Cannot process rules."
-            )
+            report_item["actual_values"] = {"raw_value_found": actual_test_details}
+            report_item[
+                "reason"] = f"Actual data for '{actual_data_key}' (from YAML key '{test_name}') is not a dictionary (type: {type(actual_test_details).__name__}). Cannot process rules."
 
-        if not isinstance(actual_data_dict_for_test, dict):
-            full_report[yaml_key] = report_item
+        if not isinstance(actual_test_details, dict):
+            full_report[test_name] = report_item
             continue
 
+        # C. DETERMINE STATUS (using helper functions)
         if is_coordinate_test:
-            actual_min = actual_data_dict_for_test.get("min")
-            actual_max = actual_data_dict_for_test.get("max")
-            expected_min = expected_values_dict.get("min")
-            expected_max = expected_values_dict.get("max")
+            actual_min = actual_test_details.get("min")
+            actual_max = actual_test_details.get("max")
+            expected_min = expected_test_data.get("min")
+            expected_max = expected_test_data.get("max")
 
-            if actual_min is None:
-                report_item.update(
-                    {
-                        "status": "N/A",
-                        "reason": "Actual 'min' value missing in JSON for coordinate test.",
-                    }
-                )
-            elif actual_max is None:
-                report_item.update(
-                    {
-                        "status": "N/A",
-                        "reason": "Actual 'max' value missing in JSON for coordinate test.",
-                    }
-                )
-            elif expected_min is None:
-                report_item.update(
-                    {
-                        "status": "N/A",
-                        "reason": "Expected 'min' value missing in YAML for coordinate test.",
-                    }
-                )
-            elif expected_max is None:
-                report_item.update(
-                    {
-                        "status": "N/A",
-                        "reason": "Expected 'max' value missing in YAML for coordinate test.",
-                    }
-                )
-            elif not all(
-                    isinstance(v, (int, float))
-                    for v in [actual_min, actual_max, expected_min, expected_max]
-            ):
-                report_item.update(
-                    {
-                        "status": "N/A",
-                        "reason": "Non-numeric data encountered for coordinate comparison.",
-                    }
-                )
-            elif actual_min < expected_min:
-                report_item.update(
-                    {
-                        "status": "FAIL",
-                        "reason": f"Actual min ({actual_min}) < Expected min ({expected_min})",
-                    }
-                )
-            elif actual_max > expected_max:
-                report_item.update(
-                    {
-                        "status": "FAIL",
-                        "reason": f"Actual max ({actual_max}) > Expected max ({expected_max})",
-                    }
-                )
-            else:
-                report_item.update(
-                    {"status": "PASS", "reason": "All coordinate checks passed."}
-                )
+            # Helper function: check_coordinate_bounds(...)
+            status, reason = check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max)
         else:
-            actual_avg = actual_data_dict_for_test.get("avg")
-            actual_min_val = actual_data_dict_for_test.get("min")
-            expected_typ = expected_values_dict.get("typ")
-            expected_min_thresh = expected_values_dict.get("min")
+            # Helper function: check_general_test_status(...)
+            status, reason = check_general_test_status(test_name, actual_test_details, expected_test_data, is_tv_flag)
 
-            if actual_avg is None:
-                report_item.update(
-                    {"status": "N/A", "reason": "Actual 'avg' value missing in JSON."}
-                )
-            elif actual_min_val is None:
-                report_item.update(
-                    {"status": "N/A", "reason": "Actual 'min' value missing in JSON."}
-                )
-            elif expected_typ is None:
-                report_item.update(
-                    {"status": "N/A", "reason": "Expected 'typ' value missing in YAML."}
-                )
-            elif expected_min_thresh is None:
-                report_item.update(
-                    {
-                        "status": "N/A",
-                        "reason": "Expected 'min' threshold missing in YAML.",
-                    }
-                )
-            elif not all(
-                    isinstance(v, (int, float))
-                    for v in [actual_avg, actual_min_val, expected_typ, expected_min_thresh]
-            ):
-                report_item.update(
-                    {
-                        "status": "N/A",
-                        "reason": "Non-numeric data encountered for general test comparison.",
-                    }
-                )
-            elif actual_avg < expected_typ:
-                report_item.update(
-                    {
-                        "status": "FAIL",
-                        "reason": f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})",
-                    }
-                )
-            elif actual_min_val < expected_min_thresh:
-                report_item.update(
-                    {
-                        "status": "FAIL",
-                        "reason": f"Actual min ({actual_min_val}) < Expected min threshold ({expected_min_thresh})",
-                    }
-                )
+        # D. SINGLE REPORT UPDATE
+        report_item.update({"status": status, "reason": reason})
+        full_report[test_name] = report_item
 
-            elif yaml_key == "Temperature":
-                actual_max_val = actual_data_dict_for_test.get("max")
-                expected_max_thresh = expected_values_dict.get("max")
-
-                if (actual_max_val is not None and expected_max_thresh is not None and
-                        isinstance(actual_max_val, (int, float)) and isinstance(expected_max_thresh, (int, float)) and
-                        actual_max_val > expected_max_thresh):
-                    report_item.update(
-                        {
-                            "status": "FAIL",
-                            "reason": f"Actual max ({actual_max_val}) > Expected max ({expected_max_thresh}) for Temperature",
-                        }
-                    )
-                elif actual_avg >= expected_typ:
-                    report_item.update(
-                        {
-                            "status": "PASS",
-                            "reason": f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})",
-                        }
-                    )
-                else:
-                    report_item.update(
-                        {
-                            "status": "ERROR",
-                            "reason": "Temperature test: max check could not be performed or logical error occurred.",
-                        }
-                    )
-            elif actual_avg >= expected_typ:
-                report_item.update(
-                    {
-                        "status": "PASS",
-                        "reason": f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})",
-                    }
-                )
-            else:
-                report_item.update(
-                    {
-                        "status": "ERROR",
-                        "reason": "Logical error or unhandled case in non-coordinate test evaluation. Data might not fit defined PASS/FAIL rules.",
-                    }
-                )
-        full_report[yaml_key] = report_item
-
+    # --- 5. SAVE REPORT ---
     try:
         with open(output_json_file, "w", encoding="utf-8") as f:
             json.dump(full_report, f, indent=4, ensure_ascii=False)
-        logger.success(
-            f"Comparison report successfully saved to {output_json_file}"
-        )
+        logger.success(f"Comparison report successfully saved to {output_json_file}")
     except IOError as e:
         logger.error(f"Could not write report to {output_json_file}. Details: {e}")
     except TypeError as e:
         logger.error(f"Data in report is not JSON serializable. Details: {e}")
+        # Logic to write a serialization error report (kept as is)
         try:
             with open(output_json_file, "w", encoding="utf-8") as f:
                 json.dump(

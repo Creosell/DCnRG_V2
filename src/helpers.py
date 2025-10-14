@@ -70,7 +70,7 @@ def create_pdf(
     pdf.setFont("Helvetica", 8)
 
     # Table headers and their positions
-    headers = ["Param", "min act", "min exp", "avg act", "avg exp", "max act", "max exp", "STATUS"]
+    headers = ["", "min act", "min exp", "avg act", "avg exp", "max act", "max exp", "STATUS"]
     x_positions = [50, 200, 250, 300, 350, 400, 450, 500]
     y_header = 730
 
