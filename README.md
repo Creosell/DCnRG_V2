@@ -19,3 +19,10 @@ Command for generating .exe file
 ```bash
   pyinstaller main.py --onefile --name "ReportGenerator" --hidden-import "src.parse" --hidden-import "src.calculate" --hidden-import "src.report" --hidden-import "src.helpers" --distpath .
 ```
+
+TODO:
+1) Optimize names for variables in JSON reports, make one name across all functions
+2) Optimize temp working folders
+3) Add support for configuration enabled/disabled tests through YAML file (can be mixed with optimizing names)
+4) Optimize using of color_space.yaml
+5) Uploading reports result to cloud
