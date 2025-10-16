@@ -222,4 +222,4 @@ h.archive_reports(
     FOLDERS_TO_PROCESS
 )
 
-#h.clear_folders(FOLDERS_TO_PROCESS)
+h.clear_folders(FOLDERS_TO_PROCESS)
