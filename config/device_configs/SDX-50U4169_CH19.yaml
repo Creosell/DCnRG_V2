@@ -1,0 +1,79 @@
+# Config for report generator
+# General instructions:
+#   The file name must match the approved model name, for example SDX-43U4169.yaml
+#   In cases where the order number and name of the manufacturing factory must be included in the file name, variants such as SDX-43U4169_CH19 are permitted
+#     Where SDX-65U4169 is the model name, CH is the Changhong factory, and 19 is the order number.
+# Note:
+#   If no requirements to max value, just leave it as None
+#   If no requirements to color gamut for one of color space, put the same value as for necessary color space
+#   if no requirements you can leave by default values for color accuracy
+
+main_tests:
+  Brightness: # Brightness range
+    min: 300
+    typ: 330
+    max: None
+  Brightness_uniformity: # Brightness uniformity range
+    min: 65
+    typ: 70
+    max: None
+  Contrast: # Contrast ratio range
+    min: 3500
+    typ: 5000
+    max: None
+  Cg_rgb_area: # Color gamut percent in sRGB color space
+    min: 80
+    typ: 85
+    max: None
+  Cg_ntsc_area: # Color gamut percent in NTSC color space
+    min: 80
+    typ: 85
+    max: None
+  Cg_rgb: # Color gamut percent in sRGB color space (more accurate calculation method)
+    min: 80
+    typ: 85
+    max: None
+  Cg_ntsc: # Color gamut percent in NTSC color space (more accurate calculation method)
+    min: 80
+    typ: 85
+    max: None
+  Temperature: # Color temperature range
+    min: 7300
+    typ: 9300
+    max: 11300
+  Delta_e: # Requirements for color accuracy
+    min: 4
+    typ: 3
+    max: 2
+  Red_x: # Requirements for color coordinates of Red
+    min: 0.630
+    typ: 0.660
+    max: 0.690
+  Red_y:
+    min: 0.280
+    typ: 0.310
+    max: 0.340
+  Green_x: # Requirements for color coordinates of Green
+    min: 0.250
+    typ: 0.280
+    max: 0.310
+  Green_y:
+    min: 0.630
+    typ: 0.660
+    max: 0.690
+  Blue_x: # Requirements for color coordinates of Blue
+    min: 0.125
+    typ: 0.155
+    max: 0.185
+  Blue_y:
+    min: 0.025
+    typ: 0.055
+    max: 0.085
+  White_x: # Requirements for color coordinates of White
+    min: 0.250
+    typ: 0.280
+    max: 0.310
+  White_y:
+    min: 0.260
+    typ: 0.290
+    max: 0.320
