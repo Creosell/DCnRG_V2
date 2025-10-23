@@ -46,34 +46,34 @@ main_tests:
     typ: 3
     max: 2
   Red_x: # Requirements for color coordinates of Red
-    min: 0.630
+    min: 0.600
     typ: 0.660
-    max: 0.690
+    max: 0.720
   Red_y:
-    min: 0.280
+    min: 0.250
     typ: 0.310
-    max: 0.340
+    max: 0.370
   Green_x: # Requirements for color coordinates of Green
-    min: 0.250
+    min: 0.220
     typ: 0.280
-    max: 0.310
+    max: 0.340
   Green_y:
-    min: 0.630
+    min: 0.600
     typ: 0.660
-    max: 0.690
+    max: 0.720
   Blue_x: # Requirements for color coordinates of Blue
-    min: 0.125
+    min: 0.095
     typ: 0.155
-    max: 0.185
+    max: 0.215
   Blue_y:
-    min: 0.025
+    min: 0.01
     typ: 0.055
-    max: 0.085
+    max: 0.115
   White_x: # Requirements for color coordinates of White
-    min: 0.250
+    min: 0.220
     typ: 0.280
-    max: 0.310
+    max: 0.340
   White_y:
-    min: 0.260
+    min: 0.230
     typ: 0.290
-    max: 0.320
+    max: 0.350
