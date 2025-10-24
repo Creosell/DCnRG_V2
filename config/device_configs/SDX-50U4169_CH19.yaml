@@ -66,9 +66,9 @@ main_tests:
     typ: 0.155
     max: 0.215
   Blue_y:
-    min: 0.01
+    min: 0.005
     typ: 0.055
-    max: 0.115
+    max: 0.105
   White_x: # Requirements for color coordinates of White
     min: 0.220
     typ: 0.280
