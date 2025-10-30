@@ -35,12 +35,12 @@ REPORT_PRECISION = {
 # Special requirements for TV's
 TOLERANCE_FOR_TV = 0.065 # Tolerance 6.5% for some TV checks
 AVG_FAIL_SKIP_KEYS_FOR_TV = { # Keys which we skip while checking for FAIL by avg
-    "Brightness",
     "Brightness_uniformity",
     "Cg_rgb_area",
     "Cg_ntsc_area",
     "Cg_rgb",
-    "Cg_ntsc"
+    "Cg_ntsc",
+    "Temperature"
 }
 
 
@@ -456,11 +456,11 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         tolerance_for_contract = expected_typ * TOLERANCE_FOR_TV
         expected_typ = expected_typ-tolerance_for_contract
     # Skipping checks for typical values according to a TV quality standard
-    # if is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_TV:
-    #     if actual_min_val < expected_min_thresh:
-    #         return "FAIL", f"Actual min ({actual_min_val}) < Expected min threshold ({expected_min_thresh})"
-    #     else:
-    #         return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min_thresh})"
+    if is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_TV:
+        if actual_min_val < expected_min_thresh:
+            return "FAIL", f"Actual min ({actual_min_val}) < Expected min threshold ({expected_min_thresh})"
+        else:
+            return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min_thresh})"
 
     if actual_avg < expected_typ:
         return "FAIL", f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})"
