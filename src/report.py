@@ -64,6 +64,7 @@ YAML_TO_JSON_KEY_MAP = {
 
 def json_report(
     sn=None,
+    is_tv = None,
     t=None,
     brightness=None,
     brightness_uniformity=None,
@@ -86,6 +87,7 @@ def json_report(
     json_data = {
         "SerialNumber": sn,
         "MeasurementDateTime": t,
+        "IsTV": is_tv,
         "Results": {
             "Brightness": brightness,
             "BrightnessUniformity": brightness_uniformity,
