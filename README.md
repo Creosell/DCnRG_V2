@@ -26,3 +26,4 @@ TODO:
 3) Add support for configuration enabled/disabled tests through YAML file (can be mixed with optimizing names)
 4) Optimize using of color_space.yaml
 5) Uploading reports result to cloud
+6) Change report to HTML

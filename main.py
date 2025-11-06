@@ -52,7 +52,6 @@ PICTURES_FOLDER.mkdir(parents=True, exist_ok=True)
 LOGS_FOLDER.mkdir(parents=True, exist_ok=True)
 RESULTS_FOLDER.mkdir(parents=True, exist_ok=True)
 
-
 # --- Step 1: File Collection and Grouping by Device Configuration ---
 # Group files by DeviceConfiguration
 device_groups = defaultdict(list)
@@ -126,11 +125,12 @@ for current_device_name, file_list in device_groups.items():
             cg = cal.cg(file, COLOR_SPACE)
             temperature = cal.temperature(file)
             delta_e = cal.delta_e(file)
-            coordinates = parse.get_coordinates(file,is_tv_flag)
+            coordinates = parse.get_coordinates(file, is_tv_flag)
 
             r.json_report(
                 sn=sn,
                 t=t,
+                is_tv=is_tv_flag,
                 brightness=brightness,
                 brightness_uniformity=brightness_uniformity,
                 cg_by_area_rgb=cg_by_area[0],
@@ -170,7 +170,7 @@ for current_device_name, file_list in device_groups.items():
             logger.info(f"Processing ColorGamut test for {file.name}")
             cg_by_area = cal.cg_by_area(file, COLOR_SPACE)
             cg = cal.cg(file, COLOR_SPACE)
-            coordinates = parse.get_coordinates(file,is_tv_flag)
+            coordinates = parse.get_coordinates(file, is_tv_flag)
             r.json_report(
                 sn=sn,
                 t=t,
@@ -190,7 +190,14 @@ for current_device_name, file_list in device_groups.items():
     # these functions must be able to filter files by current_device_name internally.
     r.calculate_full_report(DEVICE_REPORTS, current_report_from_all, current_device_name)
     r.analyze_json_files_for_min_fail(DEVICE_REPORTS, current_expected_result, current_min_fail, current_device_name)
-    r.generate_comparison_report(current_report_from_all, current_expected_result, current_final_report, is_tv_flag)
+    r.generate_comparison_report(
+        actual_result_file=current_report_from_all,
+        expected_result_file=current_expected_result,
+        output_json_file=current_final_report,
+        is_tv_flag=is_tv_flag,
+        device_reports_folder=DEVICE_REPORTS,
+        device_name_filter=current_device_name
+    )
 
     # PDF Report Generation
     h.device_reports_to_pdf(str(DEVICE_REPORTS), str(current_pdf_report_all), current_device_name)  # Add filter

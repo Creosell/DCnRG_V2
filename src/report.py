@@ -28,13 +28,13 @@ REPORT_PRECISION = {
     "Blue_y": 3,
     "White_x": 3,
     "White_y": 3,
-    "Center_x":3,
-    "Center_y":3,
+    "Center_x": 3,
+    "Center_y": 3,
 }
 
 # Special requirements for TV's
-TOLERANCE_FOR_TV = 0.065 # Tolerance 6.5% for some TV checks
-AVG_FAIL_SKIP_KEYS_FOR_TV = { # Keys which we skip while checking for FAIL by avg
+TOLERANCE_FOR_TV = 0.065  # Tolerance 6.5% for some TV checks
+AVG_FAIL_SKIP_KEYS_FOR_TV = {  # Keys which we skip while checking for FAIL by avg
     "Brightness_uniformity",
     "Cg_rgb_area",
     "Cg_ntsc_area",
@@ -43,6 +43,15 @@ AVG_FAIL_SKIP_KEYS_FOR_TV = { # Keys which we skip while checking for FAIL by av
     "Temperature"
 }
 
+MAJORITY_TYP_CHECK_KEYS_FOR_TV = {
+    "Brightness",
+    "Brightness_uniformity",
+    "Cg_rgb_area",
+    "Cg_ntsc_area",
+    "Cg_rgb",
+    "Cg_ntsc"
+}
+MAJORITY_TYP_TOLERANCE = 0.01
 
 # Keys that are considered coordinate tests (using min/max bounds)
 COORDINATE_TEST_KEYS = {
@@ -63,21 +72,21 @@ YAML_TO_JSON_KEY_MAP = {
 
 
 def json_report(
-    sn=None,
-    is_tv = None,
-    t=None,
-    brightness=None,
-    brightness_uniformity=None,
-    cg_by_area_rgb=None,
-    cg_by_area_ntsc=None,
-    cg_rgb=None,
-    cg_ntsc=None,
-    contrast=None,
-    temperature=None,
-    delta_e=None,
-    coordinates=None,
-    output_folder=Path("device_reports"),
-    device_name=None
+        sn=None,
+        is_tv=None,
+        t=None,
+        brightness=None,
+        brightness_uniformity=None,
+        cg_by_area_rgb=None,
+        cg_by_area_ntsc=None,
+        cg_rgb=None,
+        cg_ntsc=None,
+        contrast=None,
+        temperature=None,
+        delta_e=None,
+        coordinates=None,
+        output_folder=Path("device_reports"),
+        device_name=None
 ):
     # Define the JSON file name
     json_filename = f"{device_name}_{sn}_{t}.json"
@@ -107,6 +116,7 @@ def json_report(
     with open(output_path, "w") as json_file:
         json.dump(json_data, json_file, indent=4)
 
+
 def safe_round(value, decimals=0):
     """Rounds the value only if it is an int or float. Otherwise, returns the original value (e.g., None)."""
     if isinstance(value, (int, float)):
@@ -115,6 +125,7 @@ def safe_round(value, decimals=0):
         else:
             value = round(value, decimals)
     return value
+
 
 def set_nested_value(d, path_str, value):
     """
@@ -131,9 +142,9 @@ def set_nested_value(d, path_str, value):
 
     last_part = parts[-1]
     if (
-        last_part in current
-        and isinstance(current[last_part], dict)
-        and isinstance(value, dict)
+            last_part in current
+            and isinstance(current[last_part], dict)
+            and isinstance(value, dict)
     ):
         current[last_part].update(value)
     else:
@@ -153,7 +164,7 @@ def is_effectively_all_null_stat_package(pkg):
             continue
         if isinstance(val, list):
             if any(
-                x is not None for x in val
+                    x is not None for x in val
             ):  # If any element in the list is not None
                 return False
         elif val is not None:  # Scalar value is not None
@@ -226,11 +237,11 @@ def calculate_full_report(input_folder, output_file, device_name):
                         sanitized_list = []
                         for item_in_list in value:
                             if isinstance(item_in_list, float) and (
-                                math.isnan(item_in_list) or math.isinf(item_in_list)
+                                    math.isnan(item_in_list) or math.isinf(item_in_list)
                             ):
                                 sanitized_list.append(None)
                             elif isinstance(
-                                item_in_list, (int, float, type(None))
+                                    item_in_list, (int, float, type(None))
                             ):  # Allow numbers and None
                                 sanitized_list.append(item_in_list)
                             # Else: non-numeric/non-None items in a list are skipped for this element's stats
@@ -250,7 +261,7 @@ def calculate_full_report(input_folder, output_file, device_name):
         if not values_list_for_key:
             pass
         elif all(
-            v is None or (isinstance(v, dict) and not v) for v in values_list_for_key
+                v is None or (isinstance(v, dict) and not v) for v in values_list_for_key
         ):
             pass
         elif any(isinstance(v, list) for v in values_list_for_key):
@@ -285,8 +296,8 @@ def calculate_full_report(input_folder, output_file, device_name):
                         lst[i]
                         for lst in valid_lists_data
                         if isinstance(lst, list)
-                        and i < len(lst)
-                        and isinstance(lst[i], (int, float))
+                           and i < len(lst)
+                           and isinstance(lst[i], (int, float))
                     ]
                     if column_elements:
                         avg_list[i] = sum(column_elements) / len(column_elements)
@@ -305,7 +316,7 @@ def calculate_full_report(input_folder, output_file, device_name):
                 stat_package["max"] = max(numeric_values)
 
         if not values_list_for_key and is_effectively_all_null_stat_package(
-            stat_package
+                stat_package
         ):
             continue
 
@@ -417,7 +428,8 @@ def check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max):
 
 
 # Helper function for general test checks
-def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_values_dict, is_tv_flag):
+def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_values_dict, is_tv_flag,
+                              majority_check_data):
     """
     Checks general tests (avg/typ/min-threshold) for rule compliance.
     Returns (status, reason).
@@ -427,13 +439,49 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         actual_data_dict_for_test (dict): Actual test data.
         expected_values_dict (dict): Expected test data.
         is_tv_flag (bool): Whether the device under test is TV or not.
+        majority_check_data (dict): Data for the new "majority" logic.
     """
+    expected_typ = expected_values_dict.get("typ")
+
+    # --- 1. “MAJORITY” LOGIC ---
+    # This logic redefines the standard avg/typ checks for specific keys on TV.
+    majority_data = majority_check_data or {}
+    if majority_data.get("active"):
+
+        if expected_typ is None:
+            return "N/A", "Expected 'typ' value missing in YAML (required for TV majority check)."
+        if not isinstance(expected_typ, (int, float)):
+            return "N/A", f"Non-numeric 'typ' value ({expected_typ}) in YAML (required for TV majority check)."
+
+        devices_values_list = majority_data.get("devices_values", [])
+        majority_needed = majority_data.get("majority_needed", 0)
+
+        if not devices_values_list:
+            return "FAIL", f"(TV Majority) No individual device data found for {yaml_key}."
+
+        # Calculate expected typical with a threshold
+        typ_with_threshold = expected_typ * (1.0 - MAJORITY_TYP_TOLERANCE)
+
+        devices_passed_count = sum(1 for val in devices_values_list if val >= typ_with_threshold)
+
+        if devices_passed_count >= majority_needed:
+            return "PASS", (
+                f"(TV Majority) PASS. {devices_passed_count}/{len(devices_values_list)} devices "
+                f">= threshold ({typ_with_threshold:.2f}). (Need: {majority_needed})"
+            )
+        else:
+            return "FAIL", (
+                f"(TV Majority) FAIL. {devices_passed_count}/{len(devices_values_list)} devices "
+                f">= threshold ({typ_with_threshold:.2f}). (Need: {majority_needed})"
+            )
+
+    # --- 2. STANDARD LOGIC (if MAJORITY LOGIC isn't active) ---
+
     actual_avg = actual_data_dict_for_test.get("avg")
     actual_min_val = actual_data_dict_for_test.get("min")
-    expected_typ = expected_values_dict.get("typ")
     expected_min_thresh = expected_values_dict.get("min")
 
-    # 1. N/A Checks (presence)
+    # 2.1. N/A Checks (presence)
     general_checks = [
         (actual_avg is None, "Actual 'avg' value missing in JSON."),
         (actual_min_val is None, "Actual 'min' value missing in JSON."),
@@ -444,19 +492,18 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         if condition:
             return "N/A", reason_msg
 
-    # 2. N/A Check (data type)
+    # 2.2. N/A Check (data type)
     all_values = [actual_avg, actual_min_val, expected_typ, expected_min_thresh]
     if not all(isinstance(v, (int, float)) for v in all_values):
         return "N/A", "Non-numeric data encountered for general test comparison."
 
-
-    # 3. FAILS by min and avg values
+    # 2.3. FAILS by min and avg values
 
     # Special rules for TV
     # Applying tolerance for contrast value
     if yaml_key == "Contrast" and is_tv_flag:
         tolerance_for_contract = expected_typ * TOLERANCE_FOR_TV
-        expected_typ = expected_typ-tolerance_for_contract
+        expected_typ = expected_typ - tolerance_for_contract
     # Skipping checks for typical values according to a TV quality standard
     if is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_TV:
         if actual_min_val < expected_min_thresh:
@@ -469,7 +516,7 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     if actual_min_val < expected_min_thresh:
         return "FAIL", f"Actual min ({actual_min_val}) < Expected min threshold ({expected_min_thresh})"
 
-    # 4. Check for FAIL on max for Temperature
+    # 2.4. Check for FAIL on max for Temperature
     if yaml_key == "Temperature":
         actual_max_val = actual_data_dict_for_test.get("max")
         expected_max_thresh = expected_values_dict.get("max")
@@ -491,15 +538,22 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
 
         return "ERROR", "Temperature test: logical error or max check was invalid."
 
-    # 5. General PASS condition
+    # 2.5. General PASS condition
     if actual_avg >= expected_typ:
         return "PASS", f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})"
 
-    # 6. General ERROR
+    # 2.6. General ERROR
     return "ERROR", "Logical error or unhandled case in non-coordinate test evaluation. Data might not fit defined PASS/FAIL rules."
 
 
-def generate_comparison_report(actual_result_file, expected_result_file, output_json_file, is_tv_flag):
+def generate_comparison_report(
+        actual_result_file,
+        expected_result_file,
+        output_json_file,
+        is_tv_flag,
+        device_reports_folder=None,
+        device_name_filter=None
+):
     """
     Compares data from a JSON results file with expected values from a YAML file,
     includes all relevant data in the report, and saves it to a JSON file.
@@ -509,6 +563,8 @@ def generate_comparison_report(actual_result_file, expected_result_file, output_
         expected_result_file (Path): Path to the JSON file containing the expected data.
         output_json_file (Path): Path to the output JSON file containing the report.
         is_tv_flag (bool): Whether the report from TV or not.
+        device_reports_folder (Path, optional): Path to the folder with individual reports (for majority logic).
+        device_name_filter (str, optional): Device name to filter individual reports (for majority logic).
     """
     actual_result_data = load_json_file(actual_result_file)
     expected_result_data = load_yaml_file(expected_result_file)
@@ -539,6 +595,43 @@ def generate_comparison_report(actual_result_file, expected_result_file, output_
         write_error_report(output_json_file, error_report, "YAML parsing failure")
         return
 
+    # --- 2. MAJORITY CHECK ---
+    devices_values_map = defaultdict(list)
+    total_device_count = 0
+    majority_needed = 0
+
+    if is_tv_flag and device_reports_folder and device_name_filter:
+        logger.info("TV flag is ON. Loading individual reports for 'majority' logic...")
+
+        # Use glob to find all individual reports for this group
+        pattern = os.path.join(str(device_reports_folder), f"{device_name_filter}_*.json")
+        devices_report_files = glob.glob(pattern)
+        total_device_count = len(devices_report_files)
+
+        if total_device_count > 0:
+            majority_needed = (total_device_count // 2) + 1
+            logger.info(f"Total devices: {total_device_count}, Majority needed: {majority_needed}")
+
+            for file_path in devices_report_files:
+                report_data = load_json_file(file_path)
+                if not report_data or "Results" not in report_data:
+                    logger.warning(f"Skipping device report: {file_path} (invalid or no 'Results')")
+                    continue
+
+                current_device_results = report_data.get("Results", {})
+
+                for yaml_key in MAJORITY_TYP_CHECK_KEYS_FOR_TV:
+                    json_key = YAML_TO_JSON_KEY_MAP.get(yaml_key,yaml_key)
+
+                    value = current_device_results.get(json_key)
+                    if isinstance(value, (int, float)):
+                        devices_values_map[yaml_key].append(value)
+                    else:
+                        logger.debug(f"Value for {json_key} in {file_path} is missing or not numeric.")
+
+        else:
+            logger.warning(f"TV 'majority' logic active, but no individual reports found matching pattern: {pattern}")
+
     full_report = {}
 
     # --- 4. MAIN COMPARISON LOOP ---
@@ -556,10 +649,10 @@ def generate_comparison_report(actual_result_file, expected_result_file, output_
             continue
 
         is_coordinate_test = test_name in COORDINATE_TEST_KEYS
-        actual_data_key = YAML_TO_JSON_KEY_MAP.get(test_name, test_name)
+        actual_data_key = YAML_TO_JSON_KEY_MAP.get(test_name,test_name)
         actual_test_details = None
 
-        # A. GET ACTUAL DATA
+        # A. GET ACTUAL DATA (from aggregate file)
         if is_coordinate_test:
             actual_coordinates_root = actual_result_root.get("Coordinates", {})
             if isinstance(actual_coordinates_root, dict):
@@ -595,8 +688,29 @@ def generate_comparison_report(actual_result_file, expected_result_file, output_
             # Helper function: check_coordinate_bounds(...)
             status, reason = check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max)
         else:
+            # use_majority_logic = (
+            #         is_tv_flag
+            #         and test_name in MAJORITY_TYP_CHECK_KEYS_FOR_TV
+            #         and total_device_count > 0
+            # )
+
+            # DISABLE MAJORITY LOGIC FLAG
+            use_majority_logic = False
+
+            majority_check_data = {
+                "active": use_majority_logic,
+                "devices_values": devices_values_map.get(test_name, []),
+                "majority_needed": majority_needed
+            }
+
             # Helper function: check_general_test_status(...)
-            status, reason = check_general_test_status(test_name, actual_test_details, expected_test_data, is_tv_flag)
+            status, reason = check_general_test_status(
+                test_name,
+                actual_test_details,
+                expected_test_data,
+                is_tv_flag,
+                majority_check_data
+            )
 
         # D. SINGLE REPORT UPDATE
         report_item.update({"status": status, "reason": reason})
