@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from colormath2.color_conversions import convert_color
 from colormath2.color_diff import delta_e_cie2000
@@ -317,43 +316,3 @@ def measurement_time(file):
     report = h.parse_one_file(file)
     time = report.get("MeasurementDateTime", None) if report else None
     return time
-
-
-def plot_color_space(rgb, ntsc, x1, y1, x2, y2, x3, y3, output_file, color_space_pic):
-    """Plots the color space with sRGB and device triangles and a background image."""
-    plt.figure(figsize=(8, 8))
-    plt.title("Color Space with sRGB, NTSC and Device Triangles")
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.xlim(0, 0.8)
-    plt.ylim(0, 0.9)
-
-    # Add the image to the background
-    img = plt.imread(color_space_pic)
-    plt.imshow(
-        img, extent=[0, 0.77, 0, 0.82], aspect="auto"
-    )
-
-    # Draw the sRGB triangle
-    srgb_triangle = np.array(
-        [[rgb[0], rgb[1]], [rgb[2], rgb[3]], [rgb[4], rgb[5]], [rgb[0], rgb[1]]]
-    )
-    plt.plot(srgb_triangle[:, 0], srgb_triangle[:, 1], label="sRGB", color="blue")
-
-    # Draw the device triangle
-    device_triangle = np.array([[x1, y1], [x2, y2], [x3, y3], [x1, y1]])
-    plt.plot(
-        device_triangle[:, 0], device_triangle[:, 1], label="Device", color="green"
-    )
-
-    ntsc_triangle = np.array(
-        [[ntsc[0], ntsc[1]], [ntsc[2], ntsc[3]], [ntsc[4], ntsc[5]], [ntsc[0], ntsc[1]]]
-    )
-    plt.plot(ntsc_triangle[:, 0], ntsc_triangle[:, 1], label="NTSC", color="black")
-
-    # Add the legend
-    plt.legend()
-
-    # Save the plot to a file
-    plt.savefig(output_file)
-    plt.close()

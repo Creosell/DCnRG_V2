@@ -1,33 +1,14 @@
+# helpers.py
 import glob
 import json
 import os
 import zipfile
+import src.calculate as cal  # Keep this import
+import src.graphics_hepler as gfx  # Import our new helper
+
 from pathlib import Path
-
-from PyPDF2 import PdfMerger
 from loguru import logger
-from reportlab.lib.colors import red, black, green, grey, whitesmoke, beige
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
-from reportlab.pdfgen import canvas
-from reportlab.platypus import Paragraph
-from reportlab.platypus import Table, TableStyle
-
-import src.calculate as cal
-
-
-def pass_fail_color(result):
-    """
-    Returns the color for the PASS/FAIL status.
-    Uses dictionary mapping instead of if/elif/else.
-    """
-    color_map = {
-        "PASS": green,
-        "FAIL": red
-    }
-    # Return the color, or gray for "N/A" and other cases
-    return color_map.get(result, grey)
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 
 def parse_one_file(file_path):
@@ -41,267 +22,117 @@ def parse_one_file(file_path):
         return None
 
 
-def create_pdf(
-        input_file,
-        output_file,
-        rgb,
-        ntsc,
-        plot_picture,
-        color_space_pic,
-        min_fail,
-        test_type,
+def create_html_report(
+        input_file: Path,
+        output_file: Path,
+        min_fail_file: Path,
+        template_name: str,
+        cie_background_svg: Path,
+        rgb_coords: list,
+        ntsc_coords: list,
+        test_type: str
 ):
     """
-    Generates a PDF report from a JSON test result file.
-    The logic is simplified by using loops and reducing duplication.
-    """
-    pdf = canvas.Canvas(output_file, pagesize=letter)
-    pdf.setFont("Helvetica", 11)
+    Generates an interactive HTML report from a JSON test result file
+    using a Jinja2 template.
 
+    Args:
+        input_file (Path): Path to the main JSON report data.
+        output_file (Path): Path to save the final .html report.
+        min_fail_file (Path): Path to the min_fail JSON file.
+        template_name (str): The name of the template file (e.g., "report_template.html").
+        cie_background_svg (Path): Path to the SVG background image.
+        rgb_coords (list): List of sRGB coordinates [x, y, x, y, x, y].
+        ntsc_coords (list): List of NTSC coordinates [x, y, x, y, x, y].
+        test_type (str): The type of test (e.g., "FullTest", "Contrast").
+    """
+    logger.info(f"Generating HTML report for {input_file.name}")
+
+    # --- 1. Load Data ---
     try:
         with open(input_file, "r") as f:
-            data = json.load(f)
+            main_report_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error(f"Error reading/parsing input file {input_file}: {e}")
+        logger.error(f"Error reading/parsing main report file {input_file}: {e}")
         return
 
-    # --- First page: Text results ---
-    pdf.drawString(250, 760, "Display Analysis Report")
-    pdf.setFont("Helvetica", 8)
-
-    # Table headers and their positions
-    headers = ["", "min act", "min exp", "avg act", "avg exp", "max act", "max exp", "STATUS"]
-    x_positions = [50, 200, 250, 300, 350, 400, 450, 500]
-    y_header = 730
-
-    for x, header in zip(x_positions, headers):
-        pdf.drawString(x, y_header, header)
-
-    param_list = [
-        ("Brightness", "Brightness"),
-        ("Brightness_uniformity", "Brightness uniformity"),
-        ("Cg_rgb_area", "Color Gamut RGB by Area"),
-        ("Cg_ntsc_area", "Color Gamut NTSC by Area"),
-        ("Contrast", "Contrast"),
-        ("Temperature", "Temperature"),
-    ]
-
-    y_start = 700
-    line_height = 20
-    y_after_main_table = y_start - len(param_list) * line_height
-
-    # Output main parameters in a loop
-    for i, (param_name, text) in enumerate(param_list):
-        param_data = data.get(param_name, {})
-        actual = param_data.get("actual_values", {})
-        expected = param_data.get("expected_values", {})
-        status = param_data.get("status", "N/A")
-
-        y_pos = y_start - i * line_height
-
-        # List of values for output
-        values = [
-            actual.get("min"), expected.get("min"),
-            actual.get("avg"), expected.get("typ"),
-            actual.get("max"), expected.get("max"),
-        ]
-
-        pdf.drawString(50, y_pos, f"{text}:")
-
-        # Output values formatted to 6 characters
-        for j, value in enumerate(values):
-            x_pos = x_positions[1] + j * 50 + 5
-            pdf.drawString(x_pos, y_pos, f"{value}"[:6])
-
-            # Status with color
-        pdf.setFillColor(green if status == "PASS" else red)
-        pdf.drawString(500, y_pos, status)
-        pdf.setFillColor(black)
-
-    y_table_draw = y_after_main_table - 30
-
-    # --- Color coordinates and plot ---
-    if test_type != "Contrast":
-        coordinate_names = ["Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y"]
-        # Concise coordinate extraction
-        coordinates = [data.get(name, {}).get("actual_values", {}).get("avg") for name in coordinate_names]
-        x1, y1, x2, y2, x3, y3 = coordinates
-
-        cal.plot_color_space(
-            rgb, ntsc, x1, y1, x2, y2, x3, y3, plot_picture, color_space_pic
-        )
-
-        # Starting position for the table
-        y_table_start = y_start - len(param_list) * line_height - line_height * 2
-        pdf.drawString(50, y_table_start, "Color coordinates")
-
-        colors = ["Red", "Green", "Blue", "White"]
-        table_data = [["Color", "min", "typ", "max", "status"]]
-
-        # Creating data for the coordinate table in a loop
-        for color in colors:
-            x_data = data.get(f"{color}_x", {})
-            y_data = data.get(f"{color}_y", {})
-
-            x_act = x_data.get("actual_values", {})
-            y_act = y_data.get("actual_values", {})
-
-            # For White 'typ' is 'avg', for RGB it's the extracted coordinate
-            if color == "White":
-                x_typ = x_act.get("avg")
-                y_typ = y_act.get("avg")
-            else:
-                x_typ = coordinates[coordinate_names.index(f"{color}_x")]
-                y_typ = coordinates[coordinate_names.index(f"{color}_y")]
-
-            table_data.extend([
-                [
-                    f"{color} X",
-                    f"{x_act.get('min')}",
-                    f"{x_typ:.3f}",
-                    f"{x_act.get('max')}",
-                    x_data.get("status", "N/A")
-                ],
-                [
-                    f"{color} Y",
-                    f"{y_act.get('min')}",
-                    f"{y_typ:.3f}",
-                    f"{y_act.get('max')}",
-                    y_data.get("status", "N/A")
-                ]
-            ])
-
-        # Create and draw the table
-        table = Table(table_data, colWidths=[100, 100, 100, 100, 100])
-
-        style_list = [
-            ("BACKGROUND", (0, 0), (-1, 0), grey),
-            ("TEXTCOLOR", (0, 0), (-1, 0), whitesmoke),
-            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("BOTTOMPADDING", (0, 0), (-1, 0), 12),
-            ("BACKGROUND", (0, 1), (-1, -1), beige),
-            ("GRID", (0, 0), (-1, -1), 1, black),
-        ]
-
-        # Apply background color to the "STATUS" cell using pass_fail_color
-        for row in range(1, len(table_data)):
-            status_value = table_data[row][4]
-            style_list.append(("BACKGROUND", (4, row), (4, row), pass_fail_color(status_value)))
-
-        table.setStyle(TableStyle(style_list))
-
-        table.wrapOn(pdf, 50, 300)
-        y_table_draw = y_table_start - len(table_data) * 20
-        table.drawOn(pdf, 50, y_table_draw)
-
-    # --- Plot and Fail on minimum values ---
-    y_graph_start = y_table_draw - 320 - 20  # 320 is the plot height, 20 is the margin
-
-    pdf.drawImage(plot_picture, 100, y_graph_start, width=400, height=320)
-
-    pdf.showPage()
-    pdf.drawString(250, 750, "Fail on minimum values")
-
     try:
-        with open(min_fail, "r") as f:
+        with open(min_fail_file, "r") as f:
             min_fail_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error(f"Error reading/parsing min_fail file {min_fail}: {e}")
-        min_fail_data = []
+        logger.warning(f"Error reading min_fail file {min_fail_file}: {e}")
+        min_fail_data = {"error": f"Could not load {min_fail_file}"}
 
-    text_object = pdf.beginText()
-    text_object.setTextOrigin(inch, 10 * inch)
-    text_object.setFont("Courier", 8)
+    # --- 1.5. SVG LOAD ---
+    raw_svg_background = ""
+    try:
+        with open(cie_background_svg, "r", encoding="utf-8") as f:
+            raw_svg_background = f.read()
+        logger.debug(f"Successfully read SVG background: {cie_background_svg}")
+    except Exception as e:
+        logger.error(f"Error reading SVG background file {cie_background_svg}: {e}")
 
-    # Simplified output of min_fail_data
-    for entry in min_fail_data:
-        for test_id, details in entry.items():
-            text_object.textLine(f"Serial Number: {test_id}")
-            # Use a generator to output details
-            for key, value in details.items():
-                text_object.textLine(f"{key}: {value}")
-            text_object.textLine("")
+    # --- 2. Prepare Plot Coordinates ---
+    coord_mapper = gfx.SvgCoordinator()
+    device_points = ""
 
-    pdf.drawText(text_object)
-    pdf.save()
-
-
-def device_reports_to_pdf(folder_path, output_path, device_name):
-    """
-    Generates a PDF file containing formatted JSON content
-    from reports for the specified device.
-    """
-    c = canvas.Canvas(output_path, pagesize=letter)
-    styles = getSampleStyleSheet()
-    style_h = styles["Heading1"]
-    style_n = styles["Normal"]
-
-    y_position = 750  # Starting Y position
-
-    # Use glob to get the list of files
-    pattern = Path(folder_path) / f"{device_name}_*.json"
-    device_reports = glob.glob(str(pattern))
-
-    for file_path in device_reports:
-        file_name = Path(file_path).name
-
+    # Extract device coordinates only if not a Contrast test
+    if test_type != "Contrast":
         try:
-            with open(file_path, "r") as f:
-                data = json.load(f)
-
-            # Format JSON
-            json_string = json.dumps(data, indent=4)
-            lines = json_string.splitlines()
-
-            line_height = 12  # Approximate line height
-
-            # --- File header ---
-            p = Paragraph(f"<b>File: {file_name}</b>", style_h)
-            p.wrapOn(c, letter[0] - 2 * inch, letter[1])
-            p.drawOn(c, inch, y_position)
-            y_position -= 50
-
-            # --- JSON content ---
-            for line in lines:
-                # Use Code style to maintain monospace font for JSON
-                p = Paragraph(line, style_n)
-                p_width, p_height = p.wrapOn(c, letter[0] - 2 * inch, letter[1])
-
-                # Check for new page
-                if y_position - p_height < 50:
-                    c.showPage()
-                    y_position = 750
-
-                p.drawOn(c, inch, y_position)
-                y_position -= line_height
-
+            coordinate_names = ["Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y"]
+            device_coords = [
+                main_report_data.get(name, {}).get("actual_values", {}).get("avg")
+                for name in coordinate_names
+            ]
+            if all(c is not None for c in device_coords):
+                device_points = coord_mapper.get_triangle_pixel_points(device_coords)
+            else:
+                logger.warning("Could not get all device coordinates for plot.")
         except Exception as e:
-            logger.error(f"Error processing file {file_name}: {e}")
+            logger.error(f"Error processing device coordinates for plot: {e}")
 
-    c.save()
-    logger.success(f"PDF file with device reports created successfully at {output_path}")
+    # Calculate points for standard triangles
+    srgb_points = coord_mapper.get_triangle_pixel_points(rgb_coords)
+    ntsc_points = coord_mapper.get_triangle_pixel_points(ntsc_coords)
+    debug_points = json.loads(coord_mapper.get_debug_grid_points())
 
-
-def merge_pdfs(pdf_paths, output_path):
-    """Merges multiple PDF files into one."""
-    merger = PdfMerger()
+    # --- 3. Set up Jinja2 Environment ---
+    # Assuming template is in 'config/' folder, relative to project root
+    template_dir = Path("config")
+    env = Environment(
+        loader=FileSystemLoader(template_dir),
+        autoescape=select_autoescape(['html', 'xml'])
+    )
 
     try:
-        for path in pdf_paths:
-            merger.append(path)
-
-        with open(output_path, "wb") as output_file:
-            merger.write(output_file)
-        logger.success(f"Successfully merged PDFs to {output_path}")
-
-    except FileNotFoundError:
-        logger.error(f"Error: File not found in path list.")
+        template = env.get_template(template_name)
     except Exception as e:
-        logger.error(f"Error during PDF merge: {e}")
-    finally:
-        merger.close()
+        logger.error(f"Error loading template '{template_name}' from '{template_dir}': {e}")
+        return
 
+        # --- 4. Define Template Context ---
+
+    context = {
+        "main_report": main_report_data,
+        "min_fail_data_json": json.dumps(min_fail_data, indent=4),
+        "raw_svg_background": raw_svg_background,
+        "srgb_points": srgb_points,
+        "ntsc_points": ntsc_points,
+        "device_points": device_points,
+        "debug_points": debug_points
+    }
+
+    # --- 5. Render and Save HTML ---
+    try:
+        html_content = template.render(context)
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        logger.success(f"Successfully created HTML report: {output_file}")
+    except Exception as e:
+        logger.error(f"Error rendering or saving HTML report: {e}")
+
+
+# (Keep archive_reports and clear_folders functions as they are)
 
 def archive_reports(device_name, timestamp, source_folders):
     """
@@ -323,16 +154,26 @@ def archive_reports(device_name, timestamp, source_folders):
                     for root, _, files in os.walk(folder_path):
                         for file in files:
                             file_path = Path(root) / file
-                            name_in_archive = file_path.relative_to(folder_path.parent)
-                            zipf.write(file_path, name_in_archive)
-                            files_added += 1
-                            logger.debug(f"File added to archive: {file_path}")
+                            # Ensure we don't archive the archive itself
+                            if file_path.resolve() == zip_path.resolve():
+                                continue
+
+                            # Use relative paths for cleaner archive structure
+                            # This will create paths like 'html_reports/report.html'
+                            name_in_archive = file_path.relative_to(Path.cwd())
+
+                            # A simple check to avoid including parent folders
+                            if any(folder_path.name in part for part in file_path.parts):
+                                zipf.write(file_path, name_in_archive)
+                                files_added += 1
+                                logger.debug(f"File added to archive: {file_path} as {name_in_archive}")
                 else:
                     logger.warning(f"Folder {folder_name} not found, skipping for archive.")
 
             if files_added == 0:
                 logger.warning("No files found to archive. Deleting empty archive.")
-                zip_path.unlink()
+                if zip_path.exists():
+                    zip_path.unlink()
                 return None
 
         logger.success(f"Archive created: {zip_path}")
@@ -356,7 +197,8 @@ def clear_folders(folders):
             continue
 
         for file_path in folder_path.glob('**/*'):
-            if file_path.is_file():
+            # This check is important to not delete the .gitkeep file
+            if file_path.is_file() and file_path.name != '.gitkeep':
                 try:
                     file_path.unlink()
                     removed_count += 1

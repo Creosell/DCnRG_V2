@@ -62,7 +62,7 @@
             {% for name, data in main_report.items() %}
             {% if name in ['Brightness', 'Brightness_uniformity', 'Cg_rgb_area', 'Cg_ntsc_area', 'Contrast', 'Temperature'] %}
             <tr>
-                <td classclass="param-name">{{ name }}</td>
+                <td class="param-name">{{ name }}</td>
                 <td>{{ data.actual_values.min | default('N/A') }}</td>
                 <td>{{ data.expected_values.min | default('N/A') }}</td>
                 <td>{{ data.actual_values.avg | default('N/A') }}</td>

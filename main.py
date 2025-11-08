@@ -19,7 +19,8 @@ TIMESTAMP = CURRENT_TIME.strftime("%Y%m%d%H%M")
 
 DATA_FOLDER = Path("data")
 DEVICE_REPORTS = Path("device_reports")
-PDF_REPORTS_FOLDER = Path("pdf_reports")
+HTML_REPORTS_FOLDER = Path("html_reports")
+HTML_TEMPLATE_NAME = "report_template.html"
 TEST_REPORTS_FOLDER = Path("test_reports")
 ARCHIVE_REPORTS = Path("report_archive")
 PICTURES_FOLDER = Path("pics")
@@ -28,7 +29,7 @@ RESULTS_FOLDER = Path("results")
 
 MAIN_CONFIG = Path("config") / "main.yaml"
 COLOR_SPACE_CONFIG = Path("config") / "color_space.yaml"
-COLOR_SPACE_PICTURE = Path("config") / "space.png"
+CIE_BACKGROUND_SVG = Path("config") / "CIExy1931.svg"
 EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 
 # Logger configuration
@@ -45,7 +46,7 @@ test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
 # Create working folders if they do not exist
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
 DEVICE_REPORTS.mkdir(parents=True, exist_ok=True)
-PDF_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
+HTML_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
 PICTURES_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -104,10 +105,8 @@ for current_device_name, file_list in device_groups.items():
     current_min_fail = Path("test_reports") / f"min_fail_{current_device_name}.json"
     current_report_from_all = Path("test_reports") / f"full_report_{current_device_name}.json"
     current_final_report = Path("test_reports") / f"final_report_{current_device_name}_{TIMESTAMP}.json"
-    current_plot_picture = Path("pics") / f"plot_{current_device_name}.png"
-    current_pdf_report = Path("pdf_reports") / f"report_{current_device_name}.pdf"
-    current_pdf_report_all = Path("pdf_reports") / f"all_reports_{current_device_name}.pdf"
-    current_result = Path("results") / f"{current_device_name}_{TIMESTAMP}.pdf"
+    current_result_html = Path("results") / f"{current_device_name}.html"
+    #current_result_html = Path("results") / f"{current_device_name}_{TIMESTAMP}.html"
 
     # 2.2 Process each file in the current group
     for file, is_tv_flag, sn in file_list:
@@ -199,28 +198,25 @@ for current_device_name, file_list in device_groups.items():
         device_name_filter=current_device_name
     )
 
-    # PDF Report Generation
-    h.device_reports_to_pdf(str(DEVICE_REPORTS), str(current_pdf_report_all), current_device_name)  # Add filter
-
-    h.create_pdf(
-        str(current_final_report),
-        str(current_pdf_report),
-        RGB,
-        NTSC,
-        current_plot_picture,
-        COLOR_SPACE_PICTURE,
-        current_min_fail,
-        test,
+    # Call the new HTML report function
+    h.create_html_report(
+        input_file=current_final_report,
+        output_file=current_result_html,  # Save directly to final results path
+        min_fail_file=current_min_fail,
+        template_name=HTML_TEMPLATE_NAME,
+        cie_background_svg=CIE_BACKGROUND_SVG,
+        rgb_coords=RGB,
+        ntsc_coords=NTSC,
+        test_type=test
     )
 
-    h.merge_pdfs((current_pdf_report, current_pdf_report_all), current_result)
-
-    logger.success(f"Reports for {current_device_name} saved to {current_result}")
+    # We no longer merge PDFs
+    logger.success(f"HTML Report for {current_device_name} saved to {current_result_html}")
 
 # --- Step 3: Final Steps (Archiving and Cleanup) ---
 logger.info("--- Finalization and cleanup ---")
 
-FOLDERS_TO_PROCESS = [DEVICE_REPORTS, PDF_REPORTS_FOLDER, TEST_REPORTS_FOLDER, DATA_FOLDER, PICTURES_FOLDER]
+FOLDERS_TO_PROCESS = [DEVICE_REPORTS, HTML_REPORTS_FOLDER, TEST_REPORTS_FOLDER, DATA_FOLDER, PICTURES_FOLDER]
 ARCHIVE_SUMMARY_NAME = "Full_Report_Summary"
 
 h.archive_reports(
@@ -229,4 +225,4 @@ h.archive_reports(
     FOLDERS_TO_PROCESS
 )
 
-h.clear_folders(FOLDERS_TO_PROCESS)
+#h.clear_folders(FOLDERS_TO_PROCESS)
