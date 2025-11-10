@@ -5,12 +5,44 @@ import os
 import zipfile
 import src.calculate as cal  # Keep this import
 import src.graphics_hepler as gfx  # Import our new helper
+import src.report as r
 
 from pathlib import Path
 from loguru import logger
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 HTML_TEMPLATE_NAME = "report_template.html"
+
+# User-Friendly Name mapping for keys in the JSON results
+UFN_MAPPING = {
+    "Brightness": "Peak Brightness (nits)",
+    "Contrast": "Contrast Ratio",
+    "Temperature": "Color Temperature (K)",
+
+    "BrightnessUniformity": "Brightness Uniformity (%)",
+    "CgByAreaRGB": "Color Gamut Area (sRGB) (%)",
+    "CgByAreaNTSC": "Color Gamut Area (NTSC) (%)",
+    "cgRGB": "Gamut Coverage (sRGB) (%)",
+    "cgNTSC": "Gamut Coverage (NTSC) (%)",
+    "DeltaE": "Avg Delta E",
+
+    # Coordinates (flattened)
+    "Red_x": "Red (x)",
+    "Red_y": "Red (y)",
+    "Green_x": "Green (x)",
+    "Green_y": "Green (y)",
+    "Blue_x": "Blue (x)",
+    "Blue_y": "Blue (y)",
+    "White_x": "White (x)",
+    "White_y": "White (y)",
+    "Center_x": "Center (x)",
+    "Center_y": "Center (y)",
+}
+
+COORD_HEADERS_UFN = {
+    "Red (x)", "Red (y)", "Green (x)", "Green (y)", "Blue (x)", "Blue (y)",
+    "White (x)", "White (y)", "Center (x)", "Center (y)"
+}
 
 def parse_one_file(file_path):
     """Loads and returns data from a single JSON file."""
@@ -21,7 +53,6 @@ def parse_one_file(file_path):
     except (FileNotFoundError, json.JSONDecodeError) as e:
         logger.error(f"Error reading/parsing file {file_path}: {e}")
         return None
-
 
 def create_html_report(
         input_file: Path,
@@ -114,6 +145,19 @@ def create_html_report(
 
         # --- 4. Define Template Context ---
 
+    # 1. Collect and process raw device reports for the new table
+    all_device_reports_data = process_device_reports(device_reports, UFN_MAPPING)
+
+    # 2. Get the list of all unique UFN keys for the table header, preserving UFN order
+    unique_ufn_keys = set()
+    for report in all_device_reports_data.values():
+        unique_ufn_keys.update(report["results"].keys())
+
+    # Sort keys based on the order defined in UFN_MAPPING values
+    ufn_order = {name: i for i, name in enumerate(UFN_MAPPING.values())}
+    sorted_ufn_keys = sorted(list(unique_ufn_keys),
+                             key=lambda x: ufn_order.get(x, float('inf')))
+
     context = {
         "main_report": main_report_data,
         "min_fail_data_json": json.dumps(min_fail_data, indent=4),
@@ -121,7 +165,9 @@ def create_html_report(
         "srgb_points": srgb_points,
         "ntsc_points": ntsc_points,
         "device_points": device_points,
-        "debug_points": debug_points
+        "debug_points": debug_points,
+        'individual_reports': all_device_reports_data,
+        'report_headers': sorted_ufn_keys
     }
 
     # --- 5. Render and Save HTML ---
@@ -208,3 +254,64 @@ def clear_folders(folders):
                     logger.error(f"Error deleting file {file_path}: {e}")
 
     logger.info(f"Total files removed during cleanup: {removed_count}")
+
+
+def process_device_reports(device_reports: list, ufn_mapping: dict) -> dict:
+    """
+    Loads raw device reports, flattens coordinates, applies UFN mapping,
+    and formats values using precision from report.REPORT_PRECISION.
+
+    Returns:
+        dict: Processed reports keyed by SerialNumber.
+    """
+    all_reports_data = {}
+
+    for file_path in device_reports:
+        # Load data using the local helper function
+        data = parse_one_file(Path(file_path))
+
+        if data and "SerialNumber" in data and "Results" in data:
+            serial_number = data["SerialNumber"]
+            raw_results = data["Results"]
+            processed_results = {}
+
+            # Flatten results and apply UFN/Formatting
+            for key, value in raw_results.items():
+                if key == "Coordinates":
+                    # Flatten coordinates from dictionary
+                    for coord_key, coord_value in value.items():
+                        ufn_key = ufn_mapping.get(coord_key, coord_key)
+                        # Get precision from report.py, default to 3 for coordinates
+                        precision = r.REPORT_PRECISION.get(coord_key, 3)
+
+                        try:
+                            # Format value using the specified precision
+                            formatted_value = f"{coord_value:.{precision}f}"
+                        except (TypeError, ValueError):
+                            formatted_value = str(coord_value)
+
+                        processed_results[ufn_key] = formatted_value
+
+                # Skip the verbose Measurements array
+                elif key != "Measurements":
+                    ufn_key = ufn_mapping.get(key, key)
+                    # Get precision from report.py, default to 0 for top-level keys
+                    precision = r.REPORT_PRECISION.get(key, 0)
+
+                    try:
+                        # Format value using the specified precision
+                        formatted_value = f"{value:.{precision}f}"
+                    except (TypeError, ValueError):
+                        formatted_value = str(value)
+
+                    processed_results[ufn_key] = formatted_value
+
+            # Store metadata and processed results
+            all_reports_data[serial_number] = {
+                "results": processed_results,
+                # Use MeasurementDateTime for display
+                "measurement_date": data.get("MeasurementDateTime", "N/A").replace('_', ' '),
+                "is_tv": data.get("IsTV", False)
+            }
+
+    return all_reports_data

@@ -47,6 +47,38 @@
 
         /* Fail Report */
         .fail-report { font-family: "Courier New", Courier, monospace; font-size: 13px; background-color: #fff; border: 1px solid #eee; padding: 15px; border-radius: 5px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+
+        /* New Table for Individual Reports Styling */
+        .individual-reports-table {
+            font-size: 12px; /* Smaller font for many columns */
+            table-layout: auto; /* Allow column width adjustment */
+            width: 100%;
+        }
+
+        .individual-reports-table th, .individual-reports-table td {
+            padding: 8px 6px;
+        }
+
+        /* Styles for filter row and inputs (NEW) */
+        .filter-cell {
+            padding: 5px 6px;
+            border-top: none; /* Make the filter row less prominent */
+        }
+
+        .filter-cell input {
+            width: 100%;
+            box-sizing: border-box; /* Include padding/border in width */
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 10px; /* Small font size for compact look */
+            text-align: center;
+        }
+
+        /* Page Break for printing/PDF generation */
+        .page-break {
+            page-break-before: always;
+        }
     </style>
 </head>
 <body>
@@ -200,6 +232,34 @@
     <div class="fail-report">
         {{ min_fail_data_json }}
     </div>
+
+    <div class="page-break"></div>
+<h2 class="individual-reports-header">Raw Results Per Device</h2>
+
+<table id="individual_reports_table" class="individual-reports-table">
+    <thead>
+        <tr>
+            <th class="param-name" style="width: 150px;">Serial Number</th>
+            <th style="width: 120px;">Meas. Date/Time</th>
+            {% for header in report_headers %}
+            <th>{{ header }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for serial_number, report_data in individual_reports.items() %}
+        <tr>
+            <td class="param-name">{{ serial_number }}</td>
+            <td>{{ report_data.measurement_date }}</td>
+            {% for header in report_headers %}
+            <td>
+                {{ report_data.results.get(header, "N/A") }}
+            </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
     <script>
         // Toggles the visibility of a specified triangle (sRGB, NTSC, Device)
