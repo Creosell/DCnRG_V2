@@ -28,13 +28,12 @@ def coordinate_ntsc(file):
     return coordinates_ntsc
 
 
-def coordinates_of_triangle(file):
-    data = h.parse_one_file(file)
+def coordinates_of_triangle(device_report):
     # Initialize a dictionary to store the coordinates
     rgb_coordinates = {"RedColor": None, "GreenColor": None, "BlueColor": None}
 
     # Iterate through the measurements and extract coordinates
-    for measurement in data["Measurements"]:
+    for measurement in device_report["Measurements"]:
         location = measurement["Location"]
         if location in rgb_coordinates:
             x = float(measurement["x"])
@@ -50,7 +49,7 @@ def coordinates_of_triangle(file):
     return result
 
 
-def get_coordinates(file, is_tv_flag):
+def get_coordinates(device_report, is_tv_flag):
     """
     Extracts the x and y coordinates for RedColor, GreenColor, BlueColor, and Center
     from the given JSON file.
@@ -59,8 +58,7 @@ def get_coordinates(file, is_tv_flag):
         file (string): Path to the JSON file.
         is_tv_flag (bool): True if the coordinates should be calculated for TV.
     """
-    data = h.parse_one_file(file)
-    if not data:
+    if not device_report:
         return {}
 
     coordinates = {f"{color}_{axis}": None for color in ["Red", "Green", "Blue", "Center"] for axis in ["x", "y"]}
@@ -78,7 +76,7 @@ def get_coordinates(file, is_tv_flag):
     # Filter out None values in the map for efficiency
     location_map = {k: v for k, v in location_map.items() if v}
 
-    for measurement in data["Measurements"]:
+    for measurement in device_report["Measurements"]:
         location = measurement["Location"]
         target_key = location_map.get(location)
 
@@ -146,9 +144,9 @@ def get_device_info(file_path):
         return None, False, None
 
     # Extract data using .get() for safety (with default values)
-    device_config = data.get("DeviceConfiguration")
+    device_config = data.get("DeviceConfiguration", "UnknownDevice")
     is_tv = data.get("IsTV", False)
-    serial_number = data.get("SerialNumber")
+    serial_number = data.get("SerialNumber", "UnknownSN")
 
     # Return DeviceConfiguration, IsTV, and SerialNumber
     return device_config, is_tv, serial_number

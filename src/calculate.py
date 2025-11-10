@@ -55,18 +55,22 @@ def calculate_overlap_percentage(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6)
     return overlap_percentage
 
 
-def brightness(file, is_tv):
+def brightness(device_report, is_tv):
     """
     Calculates the minimum (min) and maximum (max) brightness
     from all measurement points excluding color points (Red, Green, Blue, Black, White).
     Also calculates the typical (typ) brightness for the report,
     which is either 'WhiteColor' (for TV) or 'Center' (otherwise).
+        Args:
+            device_report (dict): Device report.
+            is_tv (bool): True if the report is TV.
+
     """
-    report = h.parse_one_file(file)
-    if report is None:
+
+    if device_report is None:
         return {"min": None, "typ": None, "max": None, "uniformity_center_lv": None}
 
-    measurements = report.get("Measurements", [])
+    measurements = device_report.get("Measurements", [])
 
     # Map location names to their required keys
     brightness_calculation_point = "WhiteColor" if is_tv else "Center"
@@ -111,8 +115,8 @@ def brightness_uniformity(brightness_value):
     return brightness_uniformity_percent
 
 
-def cg_by_area(file, color_space):
-    coordinate = parse.coordinates_of_triangle(file)
+def cg_by_area(device_report, color_space):
+    coordinate = parse.coordinates_of_triangle(device_report)
     if len(coordinate) != 6:
         return None
 
@@ -148,8 +152,8 @@ def cg_by_area(file, color_space):
     return return_map.get(color_space, (None, None))
 
 
-def cg(file, color_space):
-    dut_coordinates = parse.coordinates_of_triangle(file)
+def cg(device_report, color_space):
+    dut_coordinates = parse.coordinates_of_triangle(device_report)
     if len(dut_coordinates) != 6:
         return None
 
@@ -180,16 +184,16 @@ def cg(file, color_space):
     return return_map.get(color_space, (None, None))
 
 
-def contrast(file_path, is_tv):
+def contrast(device_report, is_tv):
     """
     Calculates a contrast ratio.
     Uses WhiteColor/BlackColor for TV (is_tv=True) and Center/BlackColor otherwise.
     """
-    report = h.parse_one_file(file_path)
-    if report is None:
+
+    if device_report is None:
         raise ValueError("Report is empty or could not be parsed.")
 
-    measurements = report.get("Measurements", [])
+    measurements = device_report.get("Measurements", [])
 
     # Collect Lv for the required points
     lv_values = {}
@@ -214,12 +218,12 @@ def contrast(file_path, is_tv):
     return round(numerator_lv / black_lv, 2)
 
 
-def temperature(file):
-    report = h.parse_one_file(file)
-    if report is None:
+def temperature(device_report):
+
+    if device_report is None:
         raise ValueError("Report is empty or could not be parsed.")
 
-    measurements = report.get("Measurements", [])
+    measurements = device_report.get("Measurements", [])
 
     # Use next() to find "T" in "Center"
     temperature_str = next(
@@ -237,18 +241,17 @@ def temperature(file):
         raise ValueError("Invalid temperature value found in report.")
 
 
-def delta_e(file):
+def delta_e(device_report):
     """Calculates Delta E Color Uniformity for given locations."""
     locations_to_check = {
         "BottomLeft", "BottomCenter", "BottomRight",
         "MiddleLeft", "Center", "MiddleRight",
         "TopLeft", "TopCenter", "TopRight",
     }
-    report = h.parse_one_file(file)
-    if report is None:
+    if device_report is None:
         return "Error: Report is empty or could not be parsed."
 
-    measurements = report.get("Measurements", [])
+    measurements = device_report.get("Measurements", [])
 
     # Use parse.find_closest_to_target to determine the reference point
     # Expected x/y are taken from Center
@@ -260,7 +263,7 @@ def delta_e(file):
     expected_x = float(center_data.get('x', '0.0'))
     expected_y = float(center_data.get('y', '0.0'))
 
-    ref = parse.find_closest_to_target(report, expected_x, expected_y)
+    ref = parse.find_closest_to_target(device_report, expected_x, expected_y)
 
     ref_x = ref.get("x")
     ref_y = ref.get("y")
