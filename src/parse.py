@@ -1,7 +1,7 @@
+import json
 import math
 import yaml
-import src.helpers as h
-
+from loguru import logger
 
 def parse_yaml(yaml_file, dictionary, key_name, k):
     with open(yaml_file, "r") as file:
@@ -137,7 +137,7 @@ def get_device_info(file_path):
     Returns:
         tuple: (str/None device_config, bool is_tv, str/None serial_number)
     """
-    data = h.parse_one_file(file_path)
+    data = parse_one_file(file_path)
 
     if data is None:
         # Return None and False if parsing failed
@@ -150,3 +150,13 @@ def get_device_info(file_path):
 
     # Return DeviceConfiguration, IsTV, and SerialNumber
     return device_config, is_tv, serial_number
+
+def parse_one_file(file_path):
+    """Loads and returns data from a single JSON file."""
+    try:
+        with open(file_path, "r") as file:
+            data = json.load(file)
+        return data
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.error(f"Error reading/parsing file {file_path}: {e}")
+        return None

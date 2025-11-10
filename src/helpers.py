@@ -1,9 +1,7 @@
 # helpers.py
-import glob
 import json
 import os
 import zipfile
-import src.calculate as cal  # Keep this import
 import src.graphics_hepler as gfx  # Import our new helper
 import src.report as r
 
@@ -43,16 +41,6 @@ COORD_HEADERS_UFN = {
     "Red (x)", "Red (y)", "Green (x)", "Green (y)", "Blue (x)", "Blue (y)",
     "White (x)", "White (y)", "Center (x)", "Center (y)"
 }
-
-def parse_one_file(file_path):
-    """Loads and returns data from a single JSON file."""
-    try:
-        with open(file_path, "r") as file:
-            data = json.load(file)
-        return data
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error(f"Error reading/parsing file {file_path}: {e}")
-        return None
 
 def create_html_report(
         input_file: Path,

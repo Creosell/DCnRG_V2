@@ -2,9 +2,9 @@ import numpy as np
 from colormath2.color_conversions import convert_color
 from colormath2.color_diff import delta_e_cie2000
 from colormath2.color_objects import xyYColor, LabColor
+from loguru import logger
 from shapely.geometry import Polygon
 
-import src.helpers as h
 import src.parse as parse
 
 # Format: (Standard Name, [[Red_x, Red_y], [Green_x, Green_y], [Blue_x, Blue_y]])
@@ -307,3 +307,101 @@ def delta_e(device_report):
         return avg_delta_e
     else:
         return "Error: No valid Delta E values calculated."
+
+def run_calculations(device_report, is_tv, test_type, color_space):
+    """
+    Runs calculations based on the test_type and returns a results dictionary.
+    Dictionary keys must match the arguments for r.json_report.
+    """
+    results = {}
+    logger.debug(f"Running calculations for test type: {test_type}")
+
+    # This block executes all calculations for the "FullTest"
+    if test_type == "FullTest":
+        try:
+            brightness_values = brightness(device_report, is_tv)
+            results["brightness"] = brightness_values["typ"]
+            results["brightness_uniformity"] = brightness_uniformity(brightness_values)
+        except Exception as e:
+            logger.error(f"Failed 'brightness' calculation: {e}")
+            results["brightness"] = None
+            results["brightness_uniformity"] = None
+
+        try:
+            results["contrast"] = contrast(device_report, is_tv)
+        except Exception as e:
+            logger.error(f"Failed 'contrast' calculation: {e}")
+            results["contrast"] = None
+
+        try:
+            cg_by_area_val = cg_by_area(device_report, color_space)
+            cg_val = cg(device_report, color_space)
+            # Ensure we safely access tuple elements
+            results["cg_by_area_rgb"] = cg_by_area_val[0] if cg_by_area_val else None
+            results["cg_by_area_ntsc"] = cg_by_area_val[1] if cg_by_area_val else None
+            results["cg_rgb"] = cg_val[0] if cg_val else None
+            results["cg_ntsc"] = cg_val[1] if cg_val else None
+        except Exception as e:
+            logger.error(f"Failed 'Color Gamut' calculation: {e}")
+            results.update({
+                "cg_by_area_rgb": None, "cg_by_area_ntsc": None,
+                "cg_rgb": None, "cg_ntsc": None
+            })
+
+        try:
+            results["temperature"] = temperature(device_report)
+        except Exception as e:
+            logger.error(f"Failed 'temperature' calculation: {e}")
+            results["temperature"] = None
+
+        try:
+            delta_e_val = delta_e(device_report)
+            # delta_e can return an error string, check for it
+            if isinstance(delta_e_val, str):
+                logger.error(f"'delta_e' calculation returned an error string: {delta_e_val}")
+                results["delta_e"] = None
+            else:
+                results["delta_e"] = delta_e_val
+        except Exception as e:
+            logger.error(f"Failed 'delta_e' calculation: {e}")
+            results["delta_e"] = None
+
+        try:
+            results["coordinates"] = parse.get_coordinates(device_report, is_tv)
+        except Exception as e:
+            logger.error(f"Failed 'get_coordinates': {e}")
+            results["coordinates"] = None
+
+    elif test_type == "Contrast":
+        # Example for a different test type
+        logger.info(f"Processing limited test: Contrast")
+        try:
+            results["contrast"] = contrast(device_report, is_tv)
+        except Exception as e:
+            logger.error(f"Failed 'contrast' calculation: {e}")
+            results["contrast"] = None
+
+    # elif test_type == "BrightnessUniformity":
+    #     logger.info(f"Processing limited test: BrightnessUniformity")
+    #     try:
+    #         brightness_values = brightness(device_report, is_tv)
+    #         results["brightness"] = brightness_values["typ"]
+    #         results["brightness_uniformity"] = brightness_uniformity(brightness_values)
+    #         results["coordinates"] = parse.get_coordinates(device_report, is_tv)
+    #     except Exception as e:
+    #         logger.error(f"Failed 'BrightnessUniformity' calculation: {e}")
+
+    # elif test_type == "ColorGamut":
+    #     logger.info(f"Processing limited test: ColorGamut")
+    #     try:
+    #         cg_by_area_val = cg_by_area(device_report, color_space)
+    #         cg_val = cg(device_report, color_space)
+    #         results["cg_by_area_rgb"] = cg_by_area_val[0] if cg_by_area_val else None
+    #         results["cg_by_area_ntsc"] = cg_by_area_val[1] if cg_by_area_val else None
+    #         results["cg_rgb"] = cg_val[0] if cg_val else None
+    #         results["cg_ntsc"] = cg_val[1] if cg_val else None
+    #         results["coordinates"] = parse.get_coordinates(device_report, is_tv)
+    #     except Exception as e:
+    #         logger.error(f"Failed 'ColorGamut' calculation: {e}")
+
+    return results

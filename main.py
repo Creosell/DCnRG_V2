@@ -106,7 +106,7 @@ for current_device_name, file_list in device_groups.items():
 
         #Reading the current file with device measurements data
         try:
-            current_device_report = h.parse_one_file(file)
+            current_device_report = parse.parse_one_file(file)
             if not current_device_report:
                 logger.warning(f"File {file.name} is empty or corrupted. Skipping.")
                 continue
@@ -114,7 +114,7 @@ for current_device_name, file_list in device_groups.items():
             logger.error(f"Cant read {file.name}: {e}. Skipping.")
             continue
 
-
+        time = current_device_report.get("MeasurementDateTime", None)
 
         if test == "FullTest":
             logger.info(f"Processing FullTest for {file.name}")
@@ -217,7 +217,7 @@ for current_device_name, file_list in device_groups.items():
     logger.success(f"HTML Report for {current_device_name} saved to {current_result_html}")
 
     # --- Step 3: Final Steps (Archiving and Cleanup) ---
-    folder_to_archive = [TEST_REPORTS_FOLDER, DATA_FOLDER]
+    folder_to_archive = [TEST_REPORTS_FOLDER, DATA_FOLDER, RESULTS_FOLDER]
     h.archive_reports(
         current_device_name,
         TIMESTAMP,
