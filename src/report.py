@@ -172,20 +172,18 @@ def is_effectively_all_null_stat_package(pkg):
     return True
 
 
-def calculate_full_report(input_folder, output_file, device_name):
+def calculate_full_report(device_reports, output_file, device_name):
     """
     Aggregates data from multiple device-specific JSON reports (filtered by device_name),
     calculates element-wise statistics (min, avg, max) for all numeric and list values,
     and saves the aggregated results to a new JSON file.
 
     Args:
-        input_folder (str/Path): The directory containing the individual JSON reports.
+        device_reports (list): A list of dictionaries, each representing a JSON report.
         output_file (str/Path): The path to save the final aggregated JSON report.
         device_name (str): The name of the device used to filter the reports.
-    """
 
-    pattern = os.path.join(str(input_folder), f"{device_name}_*.json")
-    device_reports = glob.glob(pattern)
+    """
 
     aggregated_data = defaultdict(list)  # Stores lists of values for each key path
     all_keys_paths = set()  # Stores all unique flattened key paths encountered
@@ -551,8 +549,7 @@ def generate_comparison_report(
         expected_result_file,
         output_json_file,
         is_tv_flag,
-        device_reports_folder=None,
-        device_name_filter=None
+        device_reports
 ):
     """
     Compares data from a JSON results file with expected values from a YAML file,
@@ -563,8 +560,7 @@ def generate_comparison_report(
         expected_result_file (Path): Path to the JSON file containing the expected data.
         output_json_file (Path): Path to the output JSON file containing the report.
         is_tv_flag (bool): Whether the report from TV or not.
-        device_reports_folder (Path, optional): Path to the folder with individual reports (for majority logic).
-        device_name_filter (str, optional): Device name to filter individual reports (for majority logic).
+        device_reports (list): List of individual JSON reports.
     """
     actual_result_data = load_json_file(actual_result_file)
     expected_result_data = load_yaml_file(expected_result_file)
@@ -600,19 +596,16 @@ def generate_comparison_report(
     total_device_count = 0
     majority_needed = 0
 
-    if is_tv_flag and device_reports_folder and device_name_filter:
+    if is_tv_flag and device_reports:
         logger.info("TV flag is ON. Loading individual reports for 'majority' logic...")
 
-        # Use glob to find all individual reports for this group
-        pattern = os.path.join(str(device_reports_folder), f"{device_name_filter}_*.json")
-        devices_report_files = glob.glob(pattern)
-        total_device_count = len(devices_report_files)
+        total_device_count = len(device_reports)
 
         if total_device_count > 0:
             majority_needed = (total_device_count // 2) + 1
             logger.info(f"Total devices: {total_device_count}, Majority needed: {majority_needed}")
 
-            for file_path in devices_report_files:
+            for file_path in device_reports:
                 report_data = load_json_file(file_path)
                 if not report_data or "Results" not in report_data:
                     logger.warning(f"Skipping device report: {file_path} (invalid or no 'Results')")
@@ -630,7 +623,7 @@ def generate_comparison_report(
                         logger.debug(f"Value for {json_key} in {file_path} is missing or not numeric.")
 
         else:
-            logger.warning(f"TV 'majority' logic active, but no individual reports found matching pattern: {pattern}")
+            logger.warning(f"TV 'majority' logic active, but no individual reports found matching pattern")
 
     full_report = {}
 
@@ -740,10 +733,15 @@ def generate_comparison_report(
             pass
 
 
-def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_path, device_name):
+def analyze_json_files_for_min_fail(device_reports, expected_result_path, output_path, device_name):
     """
     Analyzes JSON files in a folder, compares their minimum values against expected values,
     and saves the failing data to an output JSON file.
+        Args:
+            device_reports (list): Dictionary of report data for each device
+            expected_result_path (Path): Path to JSON file with expected values
+            output_path (Path): Path to output JSON file
+            device_name (str): Name of a device
     """
 
     try:
@@ -761,9 +759,6 @@ def analyze_json_files_for_min_fail(folder_path, expected_result_path, output_pa
         return
 
     output_data = []
-
-    pattern = os.path.join(str(folder_path), f"{device_name}_*.json")
-    device_reports = glob.glob(pattern)
 
     for file in device_reports:
         try:

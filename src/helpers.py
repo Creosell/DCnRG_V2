@@ -10,6 +10,7 @@ from pathlib import Path
 from loguru import logger
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+HTML_TEMPLATE_NAME = "report_template.html"
 
 def parse_one_file(file_path):
     """Loads and returns data from a single JSON file."""
@@ -26,10 +27,10 @@ def create_html_report(
         input_file: Path,
         output_file: Path,
         min_fail_file: Path,
-        template_name: str,
         cie_background_svg: Path,
         rgb_coords: list,
         ntsc_coords: list,
+        device_reports: list,
         test_type: str
 ):
     """
@@ -40,11 +41,12 @@ def create_html_report(
         input_file (Path): Path to the main JSON report data.
         output_file (Path): Path to save the final .html report.
         min_fail_file (Path): Path to the min_fail JSON file.
-        template_name (str): The name of the template file (e.g., "report_template.html").
         cie_background_svg (Path): Path to the SVG background image.
         rgb_coords (list): List of sRGB coordinates [x, y, x, y, x, y].
         ntsc_coords (list): List of NTSC coordinates [x, y, x, y, x, y].
         test_type (str): The type of test (e.g., "FullTest", "Contrast").
+        device_reports (list): List of device reports.
+
     """
     logger.info(f"Generating HTML report for {input_file.name}")
 
@@ -105,9 +107,9 @@ def create_html_report(
     )
 
     try:
-        template = env.get_template(template_name)
+        template = env.get_template(HTML_TEMPLATE_NAME)
     except Exception as e:
-        logger.error(f"Error loading template '{template_name}' from '{template_dir}': {e}")
+        logger.error(f"Error loading template '{HTML_TEMPLATE_NAME}' from '{template_dir}': {e}")
         return
 
         # --- 4. Define Template Context ---

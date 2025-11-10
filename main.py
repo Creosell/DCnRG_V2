@@ -1,4 +1,5 @@
 import datetime
+import glob
 import os
 import sys
 from collections import defaultdict
@@ -19,8 +20,6 @@ TIMESTAMP = CURRENT_TIME.strftime("%Y%m%d%H%M")
 
 DATA_FOLDER = Path("data")
 DEVICE_REPORTS = Path("device_reports")
-HTML_REPORTS_FOLDER = Path("html_reports")
-HTML_TEMPLATE_NAME = "report_template.html"
 TEST_REPORTS_FOLDER = Path("test_reports")
 ARCHIVE_REPORTS = Path("report_archive")
 PICTURES_FOLDER = Path("pics")
@@ -46,7 +45,6 @@ test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
 # Create working folders if they do not exist
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
 DEVICE_REPORTS.mkdir(parents=True, exist_ok=True)
-HTML_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
 PICTURES_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -185,25 +183,25 @@ for current_device_name, file_list in device_groups.items():
     # 2.3 --- Aggregation and Reporting for the CURRENT configuration ---
     logger.info(f"Creating final reports for {current_device_name}...")
 
-    # ATTENTION: For calculate_full_report and analyze_json_files_for_min_fail to work correctly,
-    # these functions must be able to filter files by current_device_name internally.
-    r.calculate_full_report(DEVICE_REPORTS, current_report_from_all, current_device_name)
-    r.analyze_json_files_for_min_fail(DEVICE_REPORTS, current_expected_result, current_min_fail, current_device_name)
+    pattern = os.path.join(str(DEVICE_REPORTS), f"{current_device_name}_*.json")
+    device_reports = glob.glob(pattern)
+
+    r.calculate_full_report(device_reports, current_report_from_all, current_device_name)
+    r.analyze_json_files_for_min_fail(device_reports, current_expected_result, current_min_fail, current_device_name)
     r.generate_comparison_report(
         actual_result_file=current_report_from_all,
         expected_result_file=current_expected_result,
         output_json_file=current_final_report,
         is_tv_flag=is_tv_flag,
-        device_reports_folder=DEVICE_REPORTS,
-        device_name_filter=current_device_name
+        device_reports=device_reports
     )
 
     # Call the new HTML report function
     h.create_html_report(
         input_file=current_final_report,
-        output_file=current_result_html,  # Save directly to final results path
+        output_file=current_result_html,
+        device_reports = device_reports,
         min_fail_file=current_min_fail,
-        template_name=HTML_TEMPLATE_NAME,
         cie_background_svg=CIE_BACKGROUND_SVG,
         rgb_coords=RGB,
         ntsc_coords=NTSC,
@@ -216,7 +214,7 @@ for current_device_name, file_list in device_groups.items():
 # --- Step 3: Final Steps (Archiving and Cleanup) ---
 logger.info("--- Finalization and cleanup ---")
 
-FOLDERS_TO_PROCESS = [DEVICE_REPORTS, HTML_REPORTS_FOLDER, TEST_REPORTS_FOLDER, DATA_FOLDER, PICTURES_FOLDER]
+FOLDERS_TO_PROCESS = [DEVICE_REPORTS, TEST_REPORTS_FOLDER, DATA_FOLDER, PICTURES_FOLDER]
 ARCHIVE_SUMMARY_NAME = "Full_Report_Summary"
 
 h.archive_reports(
