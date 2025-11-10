@@ -4,13 +4,23 @@
     <meta charset="UTF-m-8">
     <title>Display Analysis Report</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background-color: #f9f9f9; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f9f9f9; }
         h1 { text-align: center; color: #333; }
         h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; color: #444; }
 
+        /* Main Report Wrapper for Centering and Max-Width */
+        .report-wrapper {
+            max-width: 1100px;
+            margin: 20px auto; /* Центрирует обертку по горизонтали, добавляет отступы сверху/снизу */
+            background-color: #fff;
+            padding: 20px; /* Внутренние отступы для контента */
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
         /* Table Styles */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: left; }
+        table { border-collapse: collapse; margin-bottom: 30px; width: 100%;}
+        th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: center; }
         th { background-color: #f2f2f2; font-weight: 600; }
         td.param-name { font-weight: 500; color: #222; }
 
@@ -29,7 +39,7 @@
         #plot-svg { border: 1px solid #ccc; }
         .triangle { fill-opacity: 0.15; stroke-width: 1; }
         #srgb_triangle { fill: #007bff; stroke: #007bff; }
-        #ntsc_triangle { fill: #dc3545; stroke: #dc3545; }
+        #ntsc_triangle { fill: #dc3545; stroke: #000000; }
         #device_triangle { fill: #28a745; stroke: #28a745; }
 
         /* Debug Grid */
@@ -40,6 +50,25 @@
     </style>
 </head>
 <body>
+<div class="report-wrapper">
+    {% set main_report_names = {
+        'Brightness': 'Brightness (cd/m²)',
+        'Brightness_uniformity': 'Brightness Uniformity (%)',
+        'Cg_rgb_area': 'sRGB Gamut Area (%)',
+        'Cg_ntsc_area': 'NTSC Gamut Area (%)',
+        'Contrast': 'Contrast Ratio',
+        'Temperature': 'Color Temperature (K)',
+        'Gamma': 'Gamma (2.2)',
+        'Cct_uniformity': 'Color Temp Uniformity (%)',
+        'Cg_rgb': 'sRGB Gamut Coverage (%)',       'Cg_ntsc': 'NTSC Gamut Coverage (%)'       } %}
+
+    {% set coord_report_names = {
+        'Red_x': 'Red Coord (x)', 'Red_y': 'Red Coord (y)',
+        'Green_x': 'Green Coord (x)', 'Green_y': 'Green Coord (y)',
+        'Blue_x': 'Blue Coord (x)', 'Blue_y': 'Blue Coord (y)',
+        'White_x': 'White Coord (x)', 'White_y': 'White Coord (y)',
+        'Center_x': 'Center Coord (x)', 'Center_y': 'Center Coord (y)'
+    } %}
 
     <h1>Display Analysis Report</h1>
 
@@ -55,14 +84,13 @@
                 <th>Max (Actual)</th>
                 <th>Max (Expected)</th>
                 <th>Status</th>
-                <th>Reason</th>
             </tr>
         </thead>
         <tbody>
             {% for name, data in main_report.items() %}
-            {% if name in ['Brightness', 'Brightness_uniformity', 'Cg_rgb_area', 'Cg_ntsc_area', 'Contrast', 'Temperature'] %}
+            {% if name in main_report_names %}
             <tr>
-                <td class="param-name">{{ name }}</td>
+                <td class="param-name">{{ main_report_names.get(name, name) }}</td>
                 <td>{{ data.actual_values.min | default('N/A') }}</td>
                 <td>{{ data.expected_values.min | default('N/A') }}</td>
                 <td>{{ data.actual_values.avg | default('N/A') }}</td>
@@ -75,9 +103,28 @@
                 {% elif data.status == 'FAIL' %}{% set status_class = 'status-fail' %}
                 {% endif %}
                 <td class="status {{ status_class }}">{{ data.status | default('N/A') }}</td>
-
-                <td>{{ data.reason }}</td>
             </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h4>Fails description</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for name, data in main_report.items() %}
+            {% if name in main_report_names %}
+                {% if data.status == 'FAIL' %} <tr>
+                    <td class="param-name">{{ main_report_names.get(name, name) }}</td>
+                    <td>{{ data.reason | default('') }}</td>
+                </tr>
+                {% endif %}
             {% endif %}
             {% endfor %}
         </tbody>
@@ -94,14 +141,14 @@
                 <th>Min (Expected)</th>
                 <th>Max (Expected)</th>
                 <th>Status</th>
-                <th>Reason</th>
+                <th>Note</th>
             </tr>
         </thead>
         <tbody>
             {% for name, data in main_report.items() %}
-            {% if name in ['Red_x', 'Red_y', 'Green_x', 'Green_y', 'Blue_x', 'Blue_y', 'White_x', 'White_y', 'Center_x', 'Center_y'] %}
+            {% if name in coord_report_names %}
             <tr>
-                <td class="param-name">{{ name }}</td>
+                <td class="param-name">{{ coord_report_names.get(name, name) }}</td>
                 <td>{{ data.actual_values.min | default('N/A') }}</td>
                 <td>{{ data.actual_values.avg | default('N/A') }}</td>
                 <td>{{ data.actual_values.max | default('N/A') }}</td>
@@ -114,7 +161,7 @@
                 {% endif %}
                 <td class="status {{ status_class }}">{{ data.status | default('N/A') }}</td>
 
-                <td>{{ data.reason }}</td>
+                <td>{{ data.reason | default('') }}</td>
             </tr>
             {% endif %}
             {% endfor %}
@@ -124,9 +171,9 @@
     <h2>Color Gamut Plot</h2>
     <div class="plot-container">
         <div class="plot-controls">
-            <label><input type="checkbox" onchange="toggleTriangle('srgb_triangle')" checked> sRGB</label>
-            <label><input type="checkbox" onchange="toggleTriangle('ntsc_triangle')" checked> NTSC</label>
             <label><input type="checkbox" onchange="toggleTriangle('device_triangle')" checked> Device</label>
+            <label><input type="checkbox" onchange="toggleTriangle('ntsc_triangle')" checked> NTSC</label>
+            <label><input type="checkbox" onchange="toggleTriangle('srgb_triangle')" checked> sRGB</label>
             <label><input type="checkbox" onchange="toggleDebugGrid()"> <b>Debug Grid</b></label>
         </div>
 
@@ -155,6 +202,7 @@
     </div>
 
     <script>
+        // Toggles the visibility of a specified triangle (sRGB, NTSC, Device)
         function toggleTriangle(id) {
             const el = document.getElementById(id);
             if (el) {
@@ -162,6 +210,7 @@
             }
         }
 
+        // Toggles the visibility of the debug grid (4 corner points)
         function toggleDebugGrid() {
             const el = document.getElementById('debug_grid');
             if (el) {
@@ -169,6 +218,6 @@
             }
         }
     </script>
-
+</div>
 </body>
 </html>
