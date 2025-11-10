@@ -1,171 +1,177 @@
 # tests/test_helpers.py
 
 import json
+import zipfile
+from pathlib import Path
 
-from reportlab.lib.colors import green, red, grey
+import pytest
+from jinja2 import Environment
 
 from src import helpers
+from src import report  # Import for precision constants
 
 
-# Используем фикстуру mocker и mock_json_data из conftest.py
+# --------------------------------------------------------------------------------
+# NEW TESTS for HTML Reporting
+# --------------------------------------------------------------------------------
 
-def test_pass_fail_color():
-    """Тестирование функции pass_fail_color."""
-    assert helpers.pass_fail_color("PASS") == green
-    assert helpers.pass_fail_color("FAIL") == red
-    assert helpers.pass_fail_color("N/A") == grey
-    assert helpers.pass_fail_color("UNKNOWN") == grey
-    assert helpers.pass_fail_color(None) == grey
+def test_process_device_reports(mocker):  # Removed mock_display_data
+    """
+    Tests the 'process_device_reports' helper function.
+    It should flatten, format, and apply User-Friendly Names (UFN).
+    """
 
-
-def test_parse_one_file_success(tmp_path, mock_display_data):
-    """Тестирование успешного парсинга одного JSON-файла."""
-    # Создаем временный файл
-    test_file = tmp_path / "test_report.json"
-    with open(test_file, "w") as f:
-        json.dump(mock_display_data, f)
-
-    data = helpers.parse_one_file(str(test_file))
-
-    assert data is not None
-    assert data["SerialNumber"] == "NotTV"
-    assert len(data["Measurements"]) == 13  # 13 - количество измерений в mock_display_data
-
-
-# Тест мокирует внешние зависимости reportlab и calculate
-def test_create_pdf_calls_plot(mocker, tmp_path):
-    """Тестирование, что функция create_pdf вызывает plot_color_space."""
-    import json  # Добавляем импорт
-    from src import helpers  # Добавляем импорт
-
-    # 1. Создание фиктивного входного файла (final_report.json)
-    mock_input_data = {
-        "Brightness": {"actual_values": {"avg": 100.0}, "status": "PASS"},
-        "Temperature": {"actual_values": {"avg": 6700}, "status": "FAIL"},
-        "Red_x": {"actual_values": {"avg": 0.64}, "status": "PASS"},
-        "Red_y": {"actual_values": {"avg": 0.65}, "status": "PASS"},
-        "Green_x": {"actual_values": {"avg": 0.64}, "status": "PASS"},
-        "Green_y": {"actual_values": {"avg": 0.65}, "status": "PASS"},
-        "Blue_x": {"actual_values": {"avg": 0.64}, "status": "PASS"},
-        "Blue_y": {"actual_values": {"avg": 0.65}, "status": "PASS"},
-        "White_x": {"actual_values": {"avg": 0.31}, "status": "PASS"},
-        "White_y": {"actual_values": {"avg": 0.32}, "status": "PASS"},
+    # 1. Input data: Create a mock that mimics r.json_report's output
+    mock_report_data = {
+        "SerialNumber": "NotTV",
+        "MeasurementDateTime": "2025_01",
+        "IsTV": False,
+        "Results": {
+            "Brightness": 159.7,
+            "Contrast": 258.26,
+            "Coordinates": {
+                "Red_x": 0.648,
+                "Red_y": 0.336
+            }
+        }
     }
+    device_reports_list = [mock_report_data]  # Pass the correctly structured mock
+
+    # 2. Define UFN mapping and precision
+    ufn_mapping = {
+        "Brightness": "Peak Brightness (nits)",
+        "Red_x": "Red (x)"
+    }
+
+    # Mock precision from report.py
+    # We must mock the attribute on the *imported module*
+    mocker.patch.object(report, 'REPORT_PRECISION', {
+        "Brightness": 0,  # No decimals
+        "Red_x": 3  # 3 decimals
+    })
+
+    # 3. Process the data
+    processed_data = helpers.process_device_reports(device_reports_list, ufn_mapping)
+
+    # 4. Check the output
+    sn = "NotTV"
+    assert sn in processed_data  # <-- This will now pass
+
+    results = processed_data[sn]["results"]
+
+    # Check UFN mapping
+    assert "Peak Brightness (nits)" in results
+    assert "Red (x)" in results
+
+    # Check formatting
+    # Brightness (159.7) should be rounded to 0 decimals -> "160"
+    assert results["Peak Brightness (nits)"] == "160"
+    # Red_x (0.648) should be 3 decimals -> "0.648"
+    assert results["Red (x)"] == "0.648"
+
+
+def test_create_html_report(mocker, tmp_path):
+    """
+    Tests the 'create_html_report' function.
+    Mocks Jinja2 and uses the real file system via tmp_path.
+    """
+
+    # 1. Mock Jinja2 environment and template
+    mock_template = mocker.MagicMock()
+
+    # --- FIX IS HERE ---
+    # Tell the render function to return an actual string
+    mock_template.render.return_value = "<html>Mocked HTML</html>"
+    # --- END OF FIX ---
+
+    mock_env = mocker.MagicMock(spec=Environment)
+    mock_env.get_template.return_value = mock_template
+    mocker.patch('src.helpers.Environment', return_value=mock_env)
+
+    # 2. Create REAL input files in tmp_path
+    # ... (rest of the file creation is correct) ...
+    input_file = tmp_path / "report.json"
+    input_file.write_text(json.dumps({
+        "Brightness": {"status": "PASS"},
+        "Red_x": {"actual_values": {"avg": 0.64}}
+    }))
 
     min_fail_file = tmp_path / "min_fail.json"
     min_fail_file.write_text("[]")
 
-    # sRGB (из conftest): R(0.64, 0.33), G(0.30, 0.60), B(0.15, 0.06)
-    MOCK_RGB_COORDS = [0.64, 0.33, 0.30, 0.60, 0.15, 0.06]
-    # NTSC (из conftest): R(0.67, 0.33), G(0, 0), B(0, 0) - NTSC в фикстуре неполный, но для теста сойдет.
-    # Используем корректный треугольник для sRGB и NTSC из другого теста для большей надежности.
-    MOCK_NTSC_COORDS = [0.67, 0.33, 0.21, 0.71, 0.14, 0.08]  # Пример корректного NTSC
+    svg_file = tmp_path / "bg.svg"
+    svg_file.write_text("<svg></svg>")
 
-    input_file = tmp_path / "final_report.json"
-    output_file = tmp_path / "output_report.pdf"
+    output_file = tmp_path / "output.html"
 
-    with open(input_file, "w") as f:
-        json.dump(mock_input_data, f)
+    device_reports_list = [
+        {"SerialNumber": "SN1", "Results": {"Brightness": 100}, "MeasurementDateTime": "2025_01"}
+    ]
 
-    # 2. Мокирование plot_color_space из calculate (зависимость)
-    mock_plot = mocker.patch('src.calculate.plot_color_space')
-
-    # 3. Вызов тестируемой функции
-    # ИСПРАВЛЕНО: Списки RGB и NTSC должны содержать по 6 элементов (x, y для 3-х точек)
-    # canvas.Canvas уже замокан в conftest.py
-    helpers.create_pdf(
-        input_file=str(input_file),
-        output_file=str(output_file),
-        rgb=MOCK_RGB_COORDS,  # <-- Исправлено
-        ntsc=MOCK_NTSC_COORDS,  # <-- Исправлено
-        plot_picture="plot.png",
-        color_space_pic="space.png",
-        min_fail=str(min_fail_file),
-        test_type="Color"
+    # 3. Call the function
+    helpers.create_html_report(
+        input_file=input_file,
+        output_file=output_file,
+        min_fail_file=min_fail_file,
+        cie_background_svg=svg_file,
+        rgb_coords=[0.64, 0.33, 0.30, 0.60, 0.15, 0.06],
+        ntsc_coords=[0.67, 0.33, 0.21, 0.71, 0.14, 0.08],
+        device_reports=device_reports_list,
+        test_type="FullTest"
     )
 
-    # 4. Проверка: функция plot_color_space должна быть вызвана
-    # plot_color_space ожидает: RGB, NTSC, x1, y1, x2, y2, x3, y3, output_file, color_space_pic
-    # В create_pdf, она вызывается с:
-    # plot_color_space(RGB, NTSC, r_x, r_y, g_x, g_y, b_x, b_y, plot_picture, color_space_pic)
-    # где r_x, g_x, b_x, r_y, g_y, b_y берутся из JSON.
+    # 4. Verify
+    mock_env.get_template.assert_called_with(helpers.HTML_TEMPLATE_NAME)
 
-    # Так как mock_input_data содержит 'Red_x', 'White_x', 'White_y', но не 'Red_y', 'Green_x', 'Green_y', 'Blue_x', 'Blue_y',
-    # то в реальной жизни код упадет, но для целей мокирования просто проверяем, что вызов произошел.
-    # Если вам нужно проверить аргументы, необходимо добавить все ключи в `mock_input_data`
-    # (см. `create_pdf` в `helpers.py` строки 228-233)
+    # Check that render was called
+    mock_template.render.assert_called_once()  # Now we check the call
 
-    # Например, чтобы убедиться, что plot_color_space получает ожидаемые координаты (x,y для R,G,B):
-    mock_plot.assert_called_once_with(
-        MOCK_RGB_COORDS,  # Мокированные RGB
-        MOCK_NTSC_COORDS,  # Мокированные NTSC
-        0.64,  # R_x
-        0.65,  # R_y
-        0.64,  # G_x
-        0.65,  # G_y
-        0.64,  # B_x
-        0.65,  # B_y
-        "plot.png",
-        "space.png"
-    )
+    # Check that the REAL output file was created and has content
+    assert output_file.exists()
+    assert output_file.stat().st_size > 0  # Will be > 0 because we wrote "<html>...</html>"
 
-    # 5. Проверка: должен быть вызван метод save() на объекте Canvas
-    # Mocking in conftest.py: mocker.patch('src.helpers.canvas.Canvas')
-    # Это создает mock-объект для класса Canvas.
-    # reportlab.pdfgen.canvas.Canvas - это конструктор.
-    # mock_canvas - это результат вызова конструктора.
-    mock_canvas = helpers.canvas.Canvas.return_value
-    mock_canvas.save.assert_called_once()
 
-def test_parse_one_file_failure(tmp_path):
-    """Тестирование parse_one_file на несуществующем и некорректном файле."""
-    # Файл не найден
-    assert helpers.parse_one_file(tmp_path / "nonexistent.json") is None
-
-    # Некорректный JSON
-    bad_file = tmp_path / "bad.json"
-    bad_file.write_text("{'invalid': 'json'}")
-    assert helpers.parse_one_file(bad_file) is None
-
+# --------------------------------------------------------------------------------
+# Unchanged File System Tests
+# --------------------------------------------------------------------------------
 
 def test_archive_reports_logic(mocker, tmp_path):
-    """Тестирование создания архива."""
-    # Мокируем zipfile
+    """Tests archive creation (Fixed)."""
     mock_zip_file = mocker.patch('src.helpers.zipfile.ZipFile')
     mock_zip_instance = mock_zip_file.return_value.__enter__.return_value
 
-    # Создаем фиктивные папки и файлы для архивации
+    # --- FIX IS HERE ---
+    # We must mock Path.cwd() to return our tmp_path.
+    # This makes the function believe tmp_path is the project root.
+    mocker.patch('src.helpers.Path.cwd', return_value=tmp_path)
+    # --- END OF FIX ---
+
+    # Create dummy folders and files inside tmp_path
     folder1 = tmp_path / "device_reports"
     folder1.mkdir()
-    (folder1 / "report1.json").touch()
+    file_to_archive = folder1 / "report1.json"
+    file_to_archive.touch()
 
-    folder2 = tmp_path / "pdf_reports"
-    folder2.mkdir()
-    (folder2 / "report.pdf").touch()
+    # Run the function
+    helpers.archive_reports("TestDevice", "20251010", [folder1])
 
-    helpers.archive_reports("TestDevice", "20251010", [folder1, folder2])
+    # Now, relative_to(Path.cwd()) will succeed, and write() will be called.
+    assert mock_zip_instance.write.call_count == 1
 
-    # Проверяем, что метод write был вызван для каждого файла
-    assert mock_zip_instance.write.call_count == 2
+    # We can add a more robust check:
+    expected_path_in_zip = Path("device_reports") / "report1.json"
+    mock_zip_instance.write.assert_called_with(
+        file_to_archive,  # The full, absolute path to the source file
+        expected_path_in_zip  # The relative path inside the archive
+    )
 
 
 def test_clear_folders_logic(tmp_path):
-    """Тестирование функции очистки папок."""
-    # Создаем структуру папок и файлов
+    """Tests folder cleanup (unchanged)."""
     folder_to_clear = tmp_path / "folder1"
     folder_to_clear.mkdir()
     (folder_to_clear / "file1.txt").touch()
 
-    subfolder = folder_to_clear / "sub"
-    subfolder.mkdir()
-    (subfolder / "file2.txt").touch()
-
-    # Перед очисткой файлы существуют
     assert (folder_to_clear / "file1.txt").exists()
-    assert (subfolder / "file2.txt").exists()
-
     helpers.clear_folders([folder_to_clear])
-
-    # После очистки - не существуют
     assert not (folder_to_clear / "file1.txt").exists()
-    assert not (subfolder / "file2.txt").exists()

@@ -100,29 +100,3 @@ def mock_yaml_data():
 def mock_black_lv():
     """Фиктивное значение Lv для BlackColor (используется в расчете контраста)."""
     return 0.6183643
-
-# --- ФИКСТУРЫ ДЛЯ МОКИНГА ВНЕШНИХ ЗАВИСИМОСТЕЙ ---
-
-@pytest.fixture(autouse=True)
-def mock_external_libs(mocker):
-    """
-    Автоматическое мокирование внешних тяжелых библиотек, чтобы ускорить тесты.
-    """
-    # Мокинг reportlab (используется в helpers.py)
-    mocker.patch('src.helpers.canvas.Canvas', create=True)
-    mocker.patch('src.helpers.SimpleDocTemplate', create=True)
-    mocker.patch('src.helpers.getSampleStyleSheet')
-    mocker.patch('src.helpers.Paragraph', create=True)
-    mocker.patch('src.helpers.Table')
-    # Мокинг PyPDF2 (используется в helpers.py)
-    mocker.patch('src.helpers.PdfMerger')
-    # Мокинг matplotlib.pyplot (используется в calculate.py)
-    mocker.patch('src.calculate.plt')
-    # Мокинг os.remove, чтобы не удалять реальные файлы
-    mocker.patch('src.helpers.os.remove')
-    # Мокинг shapely.geometry.Polygon, если его не мокают напрямую в тестах
-    try:
-        mocker.patch('src.calculate.Polygon')
-    except AttributeError:
-        # Если Polygon не импортируется в calculate.py или уже замокан
-        pass

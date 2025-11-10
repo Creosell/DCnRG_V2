@@ -2,48 +2,50 @@
 
 import json
 from pathlib import Path
-
+import yaml  # Make sure yaml is imported
 import pytest
 
 from src import report
 
 
-# Используем фикстуру mocker и tmp_path из conftest.py
+# --------------------------------------------------------------------------------
+# Helper Functions & Unchanged Tests
+# --------------------------------------------------------------------------------
 
 def test_set_nested_value_new_path():
-    """Тестирование создания нового пути вложенного словаря."""
+    """Tests creating a new nested dictionary path."""
     d = {}
     report.set_nested_value(d, "Results.Brightness.min", 80.0)
     assert d["Results"]["Brightness"]["min"] == 80.0
 
 
 def test_set_nested_value_merge_dict():
-    """Тестирование объединения (update) словарей на конечном уровне."""
+    """Tests merging (update) dictionaries at the final level."""
     d = {"Results": {"Brightness": {"min": 90.0}}}
     new_data = {"avg": 100.0, "max": 110.0}
     report.set_nested_value(d, "Results.Brightness", new_data)
-    # min должен остаться, а avg и max добавиться
+    # min should remain, avg and max should be added
     assert d["Results"]["Brightness"] == {"min": 90.0, "avg": 100.0, "max": 110.0}
 
 
 def test_is_effectively_all_null_stat_package():
-    """Тестирование проверки на "пустой" пакет статистики."""
-    # Все None (должно быть True)
+    """Tests the check for an 'empty' statistics package."""
+    # All None (should be True)
     assert report.is_effectively_all_null_stat_package({"avg": None, "min": None, "max": None}) is True
-    # Список с None (должно быть True)
+    # List with None (should be True)
     assert report.is_effectively_all_null_stat_package({"avg": [None, None], "min": None, "max": None}) is True
-    # Скаляр (должно быть False)
+    # Scalar (should be False)
     assert report.is_effectively_all_null_stat_package({"avg": 100.0, "min": None, "max": None}) is False
-    # Список с числом (должно быть False)
+    # List with number (should be False)
     assert report.is_effectively_all_null_stat_package({"avg": [None, 100.0], "min": None, "max": None}) is False
 
 
-def create_mock_device_report(tmp_path, device, sn, value):
+def create_mock_device_report_dict(sn, value):
     """
-    Вспомогательная функция для создания фиктивного отчета устройства.
-    Имитирует формат вывода report.json_report, подходящий для агрегации.
+    REFACTORED: Helper function to create a mock device report *dictionary*.
+    This mimics the *return value* of report.json_report.
     """
-    report_data = {
+    return {
         "SerialNumber": sn,
         "MeasurementDateTime": "20250101",
         "Results": {
@@ -51,116 +53,107 @@ def create_mock_device_report(tmp_path, device, sn, value):
             "ArrayData": [value, value + 5]
         }
     }
-    filename = Path(tmp_path) / f"{device}_{sn}.json"
-    with open(filename, "w") as f:
-        json.dump(report_data, f)
-    return str(filename)
 
 
-def test_calculate_full_report_aggregator_logic(mocker, tmp_path):
+# --------------------------------------------------------------------------------
+# REFACTORED Core Tests
+# --------------------------------------------------------------------------------
+
+def test_json_report_returns_dict():
     """
-    Тестирование функции calculate_full_report, которая агрегирует данные
-    из отчетов отдельных устройств.
+    REFACTORED: Tests that json_report *returns* a dictionary
+    with the correct structure.
     """
-    # 1. Создание фиктивных входных файлов
-    reports = [
-        create_mock_device_report(tmp_path, "Monitor", "SN1", 100.0),
-        create_mock_device_report(tmp_path, "Monitor", "SN2", 120.0),
-        create_mock_device_report(tmp_path, "Monitor", "SN3", 110.0),
+    report_data = report.json_report(
+        sn="SN001",
+        t="Time001",
+        is_tv=False,
+        brightness=100.5,
+        contrast=1000,
+        device_name="TestDevice"
+    )
+
+    # Check the returned dictionary
+    assert report_data["SerialNumber"] == "SN001"
+    assert report_data["Results"]["Brightness"] == 100.5
+    assert report_data["Results"]["Contrast"] == 1000
+    assert report_data["Results"]["DeltaE"] is None  # Not provided keys are None
+
+
+def test_calculate_full_report_aggregator_logic(tmp_path):
+    """
+    REFACTORED: Tests the aggregator logic of calculate_full_report
+    by passing it a list of report dictionaries.
+    """
+    # 1. Create mock input data (list of dictionaries)
+    reports_list = [
+        create_mock_device_report_dict("SN1", 100.0),
+        create_mock_device_report_dict("SN2", 120.0),
+        create_mock_device_report_dict("SN3", 110.0),
     ]
-
-    # 2. Мокирование glob.glob для возврата списка файлов
-    report_paths = [str(r) for r in reports]
-    mocker.patch('src.report.glob.glob', return_value=report_paths)
 
     output_file = tmp_path / "full_report.json"
 
-    # 3. Вызов тестируемой функции
+    # 2. Call the function with the list
     report.calculate_full_report(
-        input_folder=tmp_path,
+        device_reports=reports_list,
         output_file=str(output_file),
         device_name="Monitor"
     )
 
-    # 4. Проверка результатов в выходном файле
+    # 3. Check the results in the output file
     with open(output_file, "r") as f:
         result_data = json.load(f)
 
-    # --- ЛОГИЧНЫЕ ОЖИДАНИЯ (Агрегация всех 3-х отчетов: 100.0, 120.0, 110.0) ---
-    # Min: 100.0, Max: 120.0, Avg: (100 + 120 + 110) / 3 = 110.0
+    # Expectations: 100.0, 120.0, 110.0 -> Min: 100.0, Max: 120.0, Avg: 110.0
 
-    # Проверка агрегированной статистики для скаляра (Brightness)
+    # Check scalar stats (Brightness)
     brightness_stats = result_data["Results"]["Brightness"]
     assert brightness_stats["min"] == pytest.approx(100.0)
     assert brightness_stats["max"] == pytest.approx(120.0)
     assert brightness_stats["avg"] == pytest.approx(110.0)
 
-    # Проверка агрегированной статистики для списка (ArrayData)
-    # Массив: [100.0, 105.0], [120.0, 125.0], [110.0, 115.0]
-    # Min: [100.0, 105.0]
-    # Max: [120.0, 125.0]
-    # Avg: [(100+120+110)/3, (105+125+115)/3] = [110.0, 115.0]
+    # Check list stats (ArrayData)
+    # [100.0, 105.0], [120.0, 125.0], [110.0, 115.0]
+    # Min: [100.0, 105.0], Max: [120.0, 125.0], Avg: [110.0, 115.0]
     array_stats = result_data["Results"]["ArrayData"]
     assert array_stats["min"] == pytest.approx([100.0, 105.0])
     assert array_stats["max"] == pytest.approx([120.0, 125.0])
     assert array_stats["avg"] == pytest.approx([110.0, 115.0])
 
-def test_json_report_creates_file(tmp_path):
-    """Тестирование, что json_report успешно создает файл с корректной структурой."""
-    output_folder = tmp_path
-    device_name = "TestDevice"
-    sn = "SN001"
-    t = "Time001"
 
-    report.json_report(
-        sn=sn, t=t, brightness=100.5, contrast=1000,
-        output_folder=output_folder, device_name=device_name
-    )
-
-    expected_file = output_folder / f"{device_name}_{sn}_{t}.json"
-    assert expected_file.exists()
-
-    with open(expected_file, "r") as f:
-        data = json.load(f)
-
-    assert data["SerialNumber"] == sn
-    assert data["Results"]["Brightness"] == 100.5
-    assert data["Results"]["Contrast"] == 1000
-
-
-def test_calculate_full_report_file_errors(mocker, tmp_path):
-    """Тестирование calculate_full_report на устойчивость к ошибкам в файлах."""
-    # Файл с ошибкой декодирования JSON
-    bad_json_path = tmp_path / "Monitor_SN1.json"
-    with open(bad_json_path, "w") as f:
-        f.write("{'bad': json,}")
-
-    # Файл с корректным JSON, но без ключа 'Results'
-    no_results_path = tmp_path / "Monitor_SN2.json"
-    with open(no_results_path, "w") as f:
-        json.dump({"SerialNumber": "SN2"}, f)
-
-    mocker.patch('src.report.glob.glob', return_value=[str(bad_json_path), str(no_results_path)])
+def test_calculate_full_report_handles_bad_data(tmp_path):
+    """
+    REFACTORED: Tests calculate_full_report with problematic dictionaries in the list.
+    """
+    reports_list = [
+        {"SerialNumber": "SN1", "Results": None},  # 'Results' is None
+        {"SerialNumber": "SN2"},  # Missing 'Results'
+        create_mock_device_report_dict("SN3", 100.0)  # Good data
+    ]
 
     output_file = tmp_path / "full_report.json"
-    # Функция должна отработать без ошибок, пропустив "плохие" файлы
-    report.calculate_full_report(tmp_path, str(output_file), "Monitor")
 
-    # Проверяем, что выходной файл создан, но пуст, так как все входные файлы были проблемными
+    report.calculate_full_report(reports_list, str(output_file), "Monitor")
+
     with open(output_file, "r") as f:
         result = json.load(f)
 
-    assert result["SerialNumber"] == ["SN2"]  # SN1 не добавился из-за ошибки парсинга
-    assert result["Results"] == {}  # Данных для агрегации не было
+    # Serial numbers are still collected
+    assert sorted(result["SerialNumber"]) == ["SN1", "SN2", "SN3"]
+    # Only data from SN3 is aggregated
+    assert result["Results"]["Brightness"]["avg"] == 100.0
 
 
 def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
-    """Тестирование основной логики generate_comparison_report (PASS/FAIL/N/A)."""
-    # 1. Создаем JSON с результатами
+    """
+    Tests the main logic (PASS/FAIL/N/A) of generate_comparison_report.
+    """
+    # 1. Create JSON with aggregated results
     full_report_data = {
         "Results": {
             "Brightness": {"avg": 110.0, "min": 85.0},
-            "Temperature": {"avg": 6900, "max": 7000, "min": 6000},  # <-- Добавлен 'min'
+            "Temperature": {"avg": 6900, "max": 7000, "min": 6000},
             "Coordinates": {
                 "Red_x": {"min": 0.61, "max": 0.65}
             }
@@ -170,17 +163,30 @@ def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
     with open(json_file, "w") as f:
         json.dump(full_report_data, f)
 
-    # 2. Создаем YAML с ожиданиями
+    # 2. Create YAML with expectations
     mock_yaml_data["main_tests"]["Temperature"].update({"typ": 6500.0, "min": 5500.0})
     yaml_file = tmp_path / "expected.yaml"
     with open(yaml_file, "w") as f:
-        json.dump(mock_yaml_data, f)
+        # Use yaml.safe_dump, not json.dump
+        yaml.safe_dump(mock_yaml_data, f)
 
-    # 3. Выполняем сравнение
+        # 3. Create mock device list
+    mock_devices_list = [
+        {"SerialNumber": "SN1", "Results": {"Brightness": 110}},
+        {"SerialNumber": "SN2", "Results": {"Brightness": 112}}
+    ]
+
+    # 4. Run comparison
     output_file = tmp_path / "comparison.json"
-    report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file), is_tv_flag=False)
+    report.generate_comparison_report(
+        actual_result_file=str(json_file),
+        expected_result_file=str(yaml_file),
+        output_json_file=str(output_file),
+        is_tv_flag=False,
+        device_reports=mock_devices_list  # Pass the new argument
+    )
 
-    # 4. Проверяем результат
+    # 5. Check result
     with open(output_file, "r") as f:
         result = json.load(f)
 
@@ -200,16 +206,16 @@ def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
 @pytest.mark.parametrize(
     "actual_avg, expected_status, expected_reason_part",
     [
-        # Случай 1: Явный PASS. Среднее значение выше ожидаемого.
+        # Case 1: Clear PASS. Average is above expected.
         (1100.0, "PASS", "Actual avg (1100.0) >= Expected typ (935.0)"),
 
-        # Случай 2: Граничный PASS. Среднее значение находится точно на границе допуска (1000 - 6.5% = 935).
+        # Case 2: Boundary PASS. Average is exactly at the tolerance limit (1000 - 6.5% = 935).
         (935.0, "PASS", "Actual avg (935.0) >= Expected typ (935.0)"),
 
-        # Случай 3: Граничный FAIL. Среднее значение чуть ниже границы допуска.
+        # Case 3: Boundary FAIL. Average is just below the tolerance limit.
         (934.9, "FAIL", "Actual avg (934.9) < Expected typ (935.0)"),
 
-        # Случай 4: Явный FAIL. Среднее значение значительно ниже допуска.
+        # Case 4: Clear FAIL. Average is well below tolerance.
         (900.0, "FAIL", "Actual avg (900.0) < Expected typ (935.0)"),
     ],
 )
@@ -217,11 +223,11 @@ def test_generate_comparison_report_tv_contrast_tolerance_scenarios(
         tmp_path, mock_yaml_data, actual_avg, expected_status, expected_reason_part
 ):
     """
-    Тестирование различных сценариев (PASS/FAIL) для допуска контраста на ТВ.
+    Tests various scenarios (PASS/FAIL) for TV contrast tolerance.
     """
-    # 1. Настройка данных
+    # 1. Setup data
     full_report_data = {
-        "Results": {"Contrast": {"avg": actual_avg, "min": 850.0}}  # min проходит всегда
+        "Results": {"Contrast": {"avg": actual_avg, "min": 850.0}}  # min always passes
     }
     mock_yaml_data["main_tests"]["Contrast"] = {"min": 800.0, "typ": 1000.0}
 
@@ -231,13 +237,21 @@ def test_generate_comparison_report_tv_contrast_tolerance_scenarios(
 
     yaml_file = tmp_path / "expected.yaml"
     with open(yaml_file, "w") as f:
-        json.dump(mock_yaml_data, f)
+        # Use yaml.safe_dump
+        yaml.safe_dump(mock_yaml_data, f)
 
-    # 2. Выполнение сравнения с флагом is_tv_flag=True
+        # 2. Execution
     output_file = tmp_path / "comparison.json"
-    report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file), is_tv_flag=True)
+    report.generate_comparison_report(
+        str(json_file),
+        str(yaml_file),
+        str(output_file),
+        is_tv_flag=True,
+        # We need to pass the new arg here too, even if empty
+        device_reports=[]
+    )
 
-    # 3. Проверка результата
+    # 3. Check result
     with open(output_file, "r") as f:
         result = json.load(f)
 
@@ -245,80 +259,156 @@ def test_generate_comparison_report_tv_contrast_tolerance_scenarios(
     assert expected_reason_part in result["Contrast"]["reason"]
 
 
-# Параметризация по всем ключам, где для ТВ пропускается проверка avg
-# @pytest.mark.parametrize("skipped_key_yaml", list(report.AVG_FAIL_SKIP_KEYS_FOR_TV))
-# def test_generate_comparison_report_tv_avg_skip_pass_on_min(
-#         tmp_path, mock_yaml_data, skipped_key_yaml
-# ):
-#     """
-#     Проверяет, что для всех пропускаемых ключей ТВ получает PASS,
-#     если min значение в норме, даже если avg ниже ожидаемого.
-#     """
-#     # 1. Настройка данных
-#     # avg ниже typ, но min выше порога
-#     actual_values = {"avg": 90.0, "min": 85.0}
-#     expected_values = {"min": 80.0, "typ": 100.0}
-#
-#     # В YAML ключи могут быть с подчеркиванием, а в JSON - CamelCase
-#     key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
-#
-#
-#     full_report_data = {"Results": {key_in_json: actual_values}}
-#     mock_yaml_data["main_tests"][skipped_key_yaml] = expected_values
-#
-#     json_file = tmp_path / "full_report.json"
-#     with open(json_file, "w") as f:
-#         json.dump(full_report_data, f)
-#
-#     yaml_file = tmp_path / "expected.yaml"
-#     with open(yaml_file, "w") as f:
-#         json.dump(mock_yaml_data, f)
-#
-#     # 2. Выполнение сравнения
-#     output_file = tmp_path / "comparison.json"
-#     report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file), is_tv_flag=True)
-#
-#     # 3. Проверка
-#     with open(output_file, "r") as f:
-#         result = json.load(f)
-#
-#     assert result[skipped_key_yaml]["status"] == "PASS"
-#     assert "(TV) Actual min (85.0) >= Expected min (80.0)" in result[skipped_key_yaml]["reason"]
+@pytest.mark.parametrize("skipped_key_yaml", list(report.AVG_FAIL_SKIP_KEYS_FOR_TV))
+def test_generate_comparison_report_tv_avg_skip_pass_on_min(
+        tmp_path, mock_yaml_data, skipped_key_yaml
+):
+    """
+    Checks that for all skipped keys, TV gets PASS
+    if min is ok, even if avg is below expected.
+    """
+    # 1. Setup data
+    # avg is below typ, but min is above threshold
+    actual_values = {"avg": 90.0, "min": 85.0}
+    expected_values = {"min": 80.0, "typ": 100.0}
+
+    # Map YAML key (e.g., Cg_rgb_area) to JSON key (e.g., CgByAreaRGB)
+    key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
+
+    full_report_data = {"Results": {key_in_json: actual_values}}
+    mock_yaml_data["main_tests"][skipped_key_yaml] = expected_values
+
+    json_file = tmp_path / "full_report.json"
+    with open(json_file, "w") as f:
+        json.dump(full_report_data, f)
+
+    yaml_file = tmp_path / "expected.yaml"
+    with open(yaml_file, "w") as f:
+        yaml.safe_dump(mock_yaml_data, f)
+
+    # 2. Run comparison
+    output_file = tmp_path / "comparison.json"
+    report.generate_comparison_report(
+        str(json_file),
+        str(yaml_file),
+        str(output_file),
+        is_tv_flag=True,
+        device_reports=[]
+    )
+
+    # 3. Check
+    with open(output_file, "r") as f:
+        result = json.load(f)
+
+    assert result[skipped_key_yaml]["status"] == "PASS"
+    assert "(TV) Actual min (85.0) >= Expected min (80.0)" in result[skipped_key_yaml]["reason"]
 
 
-# @pytest.mark.parametrize("skipped_key_yaml", list(report.AVG_FAIL_SKIP_KEYS_FOR_TV))
-# def test_generate_comparison_report_tv_avg_skip_fail_on_min(
-#         tmp_path, mock_yaml_data, skipped_key_yaml
-# ):
-#     """
-#     Проверяет, что для всех пропускаемых ключей ТВ получает FAIL,
-#     если min значение ниже нормы, несмотря на пропуск проверки avg.
-#     """
-#     # 1. Настройка данных
-#     # avg ниже typ, и min тоже ниже порога
-#     actual_values = {"avg": 90.0, "min": 75.0}
-#     expected_values = {"min": 80.0, "typ": 100.0}
-#
-#     key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
-#
-#     full_report_data = {"Results": {key_in_json: actual_values}}
-#     mock_yaml_data["main_tests"][skipped_key_yaml] = expected_values
-#
-#     json_file = tmp_path / "full_report.json"
-#     with open(json_file, "w") as f:
-#         json.dump(full_report_data, f)
-#
-#     yaml_file = tmp_path / "expected.yaml"
-#     with open(yaml_file, "w") as f:
-#         json.dump(mock_yaml_data, f)
-#
-#     # 2. Выполнение сравнения
-#     output_file = tmp_path / "comparison.json"
-#     report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file), is_tv_flag=True)
-#
-#     # 3. Проверка
-#     with open(output_file, "r") as f:
-#         result = json.load(f)
-#
-#     assert result[skipped_key_yaml]["status"] == "FAIL"
-#     assert "Actual min (75.0) < Expected min threshold (80.0)" in result[skipped_key_yaml]["reason"]
+@pytest.mark.parametrize("skipped_key_yaml", list(report.AVG_FAIL_SKIP_KEYS_FOR_TV))
+def test_generate_comparison_report_tv_avg_skip_fail_on_min(
+        tmp_path, mock_yaml_data, skipped_key_yaml
+):
+    """
+    Checks that for all skipped keys, TV gets FAIL
+    if min is below threshold, despite skipping the avg check.
+    """
+    # 1. Setup data
+    # avg is below typ, AND min is also below threshold
+    actual_values = {"avg": 90.0, "min": 75.0}
+    expected_values = {"min": 80.0, "typ": 100.0}
+
+    key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
+
+    full_report_data = {"Results": {key_in_json: actual_values}}
+    mock_yaml_data["main_tests"][skipped_key_yaml] = expected_values
+
+    json_file = tmp_path / "full_report.json"
+    with open(json_file, "w") as f:
+        json.dump(full_report_data, f)
+
+    yaml_file = tmp_path / "expected.yaml"
+    with open(yaml_file, "w") as f:
+        yaml.safe_dump(mock_yaml_data, f)
+
+    # 2. Run comparison
+    output_file = tmp_path / "comparison.json"
+    report.generate_comparison_report(
+        str(json_file),
+        str(yaml_file),
+        str(output_file),
+        is_tv_flag=True,
+        device_reports=[]
+    )
+
+    # 3. Check
+    with open(output_file, "r") as f:
+        result = json.load(f)
+
+    assert result[skipped_key_yaml]["status"] == "FAIL"
+    assert "Actual min (75.0) < Expected min threshold (80.0)" in result[skipped_key_yaml]["reason"]
+
+
+def test_analyze_json_files_for_min_fail(tmp_path, mock_yaml_data):
+    """
+    REFACTORED: Tests the min_fail logic by passing a list of dictionaries.
+    """
+    # 1. Setup expected YAML
+    expected_values_path = tmp_path / "expected.yaml"
+    # We only care about Brightness and Red_x for this test
+    mock_yaml_data["main_tests"] = {
+        "Brightness": {"min": 100.0},
+        "Red_x": {"min": 0.60}
+    }
+    with open(expected_values_path, "w") as f:
+        yaml.safe_dump(mock_yaml_data, f)
+
+    # 2. Setup input data (list of dicts)
+    device_reports = [
+        {
+            "SerialNumber": "SN1_PASS",
+            "Results": {
+                "Brightness": 110.0,
+                "Coordinates": {"Red_x": 0.61}
+            }
+        },
+        {
+            "SerialNumber": "SN2_FAIL_BRIGHTNESS",
+            "Results": {
+                "Brightness": 90.0,  # <-- Fails ( < 100.0)
+                "Coordinates": {"Red_x": 0.61}
+            }
+        },
+        {
+            "SerialNumber": "SN3_FAIL_REDX",
+            "Results": {
+                "Brightness": 110.0,
+                "Coordinates": {"Red_x": 0.59}  # <-- Fails ( < 0.60)
+            }
+        }
+    ]
+
+    output_path = tmp_path / "min_fail.json"
+
+    # 3. Run function
+    report.analyze_json_files_for_min_fail(
+        device_reports=device_reports,
+        expected_result_path=expected_values_path,
+        output_path=output_path,
+        device_name="TestDevice"
+    )
+
+    # 4. Check results
+    with open(output_path, "r") as f:
+        results = json.load(f)
+
+    assert len(results) == 2  # Two failures
+
+    # Check failure 1
+    assert "SN2_FAIL_BRIGHTNESS" in results[0]
+    assert results[0]["SN2_FAIL_BRIGHTNESS"]["key"] == "Brightness"
+    assert results[0]["SN2_FAIL_BRIGHTNESS"]["min_value"] == 90.0
+
+    # Check failure 2
+    assert "SN3_FAIL_REDX" in results[1]
+    assert results[1]["SN3_FAIL_REDX"]["key"] == "Red_x"
+    assert results[1]["SN3_FAIL_REDX"]["min_value"] == 0.59
