@@ -116,77 +116,22 @@ for current_device_name, file_list in device_groups.items():
 
         time = current_device_report.get("MeasurementDateTime", None)
 
-        if test == "FullTest":
-            logger.info(f"Processing FullTest for {file.name}")
-            time = current_device_report.get("MeasurementDateTime", None) if current_device_report else None
+        calculation_results = cal.run_calculations(
+            device_report=current_device_report,
+            is_tv=is_tv_flag,
+            test_type=test,  # Pass the test type
+            color_space=COLOR_SPACE  # Pass the color space
+        )
 
-            brightness_values = cal.brightness(current_device_report, is_tv_flag)
-            brightness = brightness_values["typ"]
-            brightness_uniformity = cal.brightness_uniformity(brightness_values)
-            contrast = cal.contrast(current_device_report, is_tv_flag)
-            cg_by_area = cal.cg_by_area(current_device_report, COLOR_SPACE)
-            cg = cal.cg(current_device_report, COLOR_SPACE)
-            temperature = cal.temperature(current_device_report)
-            delta_e = cal.delta_e(current_device_report)
-            coordinates = parse.get_coordinates(current_device_report, is_tv_flag)
+        device_calculated_report = r.json_report(
+            sn=sn,
+            t=time,
+            is_tv=is_tv_flag,
+            device_name=current_device_name,
+            **calculation_results  # Unpack results dictionary into kwargs
+        )
 
-            device_calculated_report = r.json_report(
-                sn=sn,
-                t=time,
-                is_tv=is_tv_flag,
-                brightness=brightness,
-                brightness_uniformity=brightness_uniformity,
-                cg_by_area_rgb=cg_by_area[0],
-                cg_by_area_ntsc=cg_by_area[1],
-                cg_rgb=cg[0],
-                cg_ntsc=cg[1],
-                contrast=contrast,
-                temperature=temperature,
-                delta_e=delta_e,
-                coordinates=coordinates,
-                device_name=current_device_name
-            )
-
-            device_reports_list.append(device_calculated_report)
-
-
-        # elif test == "Contrast":
-        #     logger.info(f"Processing Contrast test for {file.name}")
-        #     contrast = cal.contrast(file, is_tv_flag)
-        #     r.json_report(sn=sn, t=t, contrast=contrast, output_folder=DEVICE_REPORTS, device_name=current_device_name)
-        #
-        # elif test == "BrightnessUniformity":
-        #     logger.info(f"Processing BrightnessUniformity test for {file.name}")
-        #     brightness_values = cal.brightness(file, is_tv_flag)
-        #     brightness = brightness_values["typ"]
-        #     brightness_uniformity = cal.brightness_uniformity(brightness_values)
-        #     coordinates = parse.get_coordinates(file, is_tv_flag)
-        #     r.json_report(
-        #         sn=sn,
-        #         t=t,
-        #         brightness=brightness,
-        #         brightness_uniformity=brightness_uniformity,
-        #         coordinates=coordinates,
-        #         output_folder=DEVICE_REPORTS,
-        #         device_name=current_device_name
-        #     )
-        #
-        # elif test == "ColorGamut":
-        #     logger.info(f"Processing ColorGamut test for {file.name}")
-        #     cg_by_area = cal.cg_by_area(file, COLOR_SPACE)
-        #     cg = cal.cg(file, COLOR_SPACE)
-        #     coordinates = parse.get_coordinates(file, is_tv_flag)
-        #     r.json_report(
-        #         sn=sn,
-        #         t=t,
-        #         cg_by_area_rgb=cg_by_area[0],
-        #         cg_by_area_ntsc=cg_by_area[1],
-        #         cg_rgb=cg[0],
-        #         cg_ntsc=cg[1],
-        #         coordinates=coordinates,
-        #         output_folder=DEVICE_REPORTS,
-        #         device_name=current_device_name
-        #     )
+        device_reports_list.append(device_calculated_report)
 
     # 2.3 --- Aggregation and Reporting for the CURRENT configuration ---
     logger.info(f"Creating final reports for {current_device_name}...")
