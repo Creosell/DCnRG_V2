@@ -33,7 +33,7 @@ EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 
 # Logger configuration
 logger.remove()
-logger.add(sys.stderr, level="INFO")
+logger.add(sys.stderr, level="SUCCESS")
 logger.add(LOGS_FOLDER / f"{TIMESTAMP}.log", level="DEBUG", encoding="utf-8")
 
 # Parsing general settings
