@@ -307,15 +307,3 @@ def delta_e(device_report):
         return avg_delta_e
     else:
         return "Error: No valid Delta E values calculated."
-
-
-def serial_number(file):
-    report = h.parse_one_file(file)
-    sn = report.get("SerialNumber", None) if report else None
-    return sn
-
-
-def measurement_time(file):
-    report = h.parse_one_file(file)
-    time = report.get("MeasurementDateTime", None) if report else None
-    return time

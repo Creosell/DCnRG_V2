@@ -19,7 +19,6 @@ CURRENT_TIME = datetime.datetime.now()
 TIMESTAMP = CURRENT_TIME.strftime("%Y%m%d%H%M")
 
 DATA_FOLDER = Path("data")
-DEVICE_REPORTS = Path("device_reports")
 TEST_REPORTS_FOLDER = Path("test_reports")
 ARCHIVE_REPORTS = Path("report_archive")
 PICTURES_FOLDER = Path("pics")
@@ -44,7 +43,6 @@ test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
 
 # Create working folders if they do not exist
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
-DEVICE_REPORTS.mkdir(parents=True, exist_ok=True)
 TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
 PICTURES_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -102,6 +100,7 @@ for current_device_name, file_list in device_groups.items():
     current_result_html = Path("results") / f"{current_device_name}.html"
     #current_result_html = Path("results") / f"{current_device_name}_{TIMESTAMP}.html"
 
+    device_reports_list = []
     # 2.2 Process each file in the current group
     for file, is_tv_flag, sn in file_list:
 
@@ -114,6 +113,8 @@ for current_device_name, file_list in device_groups.items():
         except Exception as e:
             logger.error(f"Cant read {file.name}: {e}. Skipping.")
             continue
+
+
 
         if test == "FullTest":
             logger.info(f"Processing FullTest for {file.name}")
@@ -129,7 +130,7 @@ for current_device_name, file_list in device_groups.items():
             delta_e = cal.delta_e(current_device_report)
             coordinates = parse.get_coordinates(current_device_report, is_tv_flag)
 
-            r.json_report(
+            device_calculated_report = r.json_report(
                 sn=sn,
                 t=time,
                 is_tv=is_tv_flag,
@@ -143,9 +144,11 @@ for current_device_name, file_list in device_groups.items():
                 temperature=temperature,
                 delta_e=delta_e,
                 coordinates=coordinates,
-                output_folder=DEVICE_REPORTS,
                 device_name=current_device_name
             )
+
+            device_reports_list.append(device_calculated_report)
+
 
         # elif test == "Contrast":
         #     logger.info(f"Processing Contrast test for {file.name}")
@@ -188,24 +191,21 @@ for current_device_name, file_list in device_groups.items():
     # 2.3 --- Aggregation and Reporting for the CURRENT configuration ---
     logger.info(f"Creating final reports for {current_device_name}...")
 
-    pattern = os.path.join(str(DEVICE_REPORTS), f"{current_device_name}_*.json")
-    device_reports = glob.glob(pattern)
-
-    r.calculate_full_report(device_reports, current_report_from_all, current_device_name)
-    r.analyze_json_files_for_min_fail(device_reports, current_expected_result, current_min_fail, current_device_name)
+    r.calculate_full_report(device_reports_list, current_report_from_all, current_device_name)
+    r.analyze_json_files_for_min_fail(device_reports_list, current_expected_result, current_min_fail, current_device_name)
     r.generate_comparison_report(
         actual_result_file=current_report_from_all,
         expected_result_file=current_expected_result,
         output_json_file=current_final_report,
         is_tv_flag=is_tv_flag,
-        device_reports=device_reports
+        device_reports=device_reports_list
     )
 
     # Call the new HTML report function
     h.create_html_report(
         input_file=current_final_report,
         output_file=current_result_html,
-        device_reports = device_reports,
+        device_reports = device_reports_list,
         min_fail_file=current_min_fail,
         cie_background_svg=CIE_BACKGROUND_SVG,
         rgb_coords=RGB,
@@ -216,16 +216,12 @@ for current_device_name, file_list in device_groups.items():
     # We no longer merge PDFs
     logger.success(f"HTML Report for {current_device_name} saved to {current_result_html}")
 
-# --- Step 3: Final Steps (Archiving and Cleanup) ---
-logger.info("--- Finalization and cleanup ---")
-
-FOLDERS_TO_PROCESS = [DEVICE_REPORTS, TEST_REPORTS_FOLDER, DATA_FOLDER, PICTURES_FOLDER]
-ARCHIVE_SUMMARY_NAME = "Full_Report_Summary"
-
-h.archive_reports(
-    ARCHIVE_SUMMARY_NAME,
-    TIMESTAMP,
-    FOLDERS_TO_PROCESS
-)
-
-#h.clear_folders(FOLDERS_TO_PROCESS)
+    # --- Step 3: Final Steps (Archiving and Cleanup) ---
+    folder_to_archive = [TEST_REPORTS_FOLDER, DATA_FOLDER]
+    h.archive_reports(
+        current_device_name,
+        TIMESTAMP,
+        folder_to_archive
+    )
+    logger.info("--- Cleanup ---")
+    #h.clear_folders(folder_to_archive)

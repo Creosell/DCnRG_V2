@@ -206,9 +206,7 @@ def archive_reports(device_name, timestamp, source_folders):
                             if file_path.resolve() == zip_path.resolve():
                                 continue
 
-                            # Use relative paths for cleaner archive structure
-                            # This will create paths like 'html_reports/report.html'
-                            name_in_archive = file_path.relative_to(Path.cwd())
+                            name_in_archive = file_path.resolve().relative_to(Path.cwd().resolve())
 
                             # A simple check to avoid including parent folders
                             if any(folder_path.name in part for part in file_path.parts):
@@ -266,10 +264,7 @@ def process_device_reports(device_reports: list, ufn_mapping: dict) -> dict:
     """
     all_reports_data = {}
 
-    for file_path in device_reports:
-        # Load data using the local helper function
-        data = parse_one_file(Path(file_path))
-
+    for data in device_reports:
         if data and "SerialNumber" in data and "Results" in data:
             serial_number = data["SerialNumber"]
             raw_results = data["Results"]

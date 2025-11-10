@@ -91,10 +91,10 @@ def get_coordinates(device_report, is_tv_flag):
     return coordinates
 
 
-def find_closest_to_target(file, target_x, target_y):
+def find_closest_to_target(device_report, target_x, target_y):
     # Parse the JSON data if it's a string
     # Extract measurements
-    measurements = file.get("Measurements", [])
+    measurements = device_report.get("Measurements", [])
 
     # Initialize variables to track the closest location
     closest_location = None

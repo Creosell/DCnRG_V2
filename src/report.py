@@ -110,11 +110,12 @@ def json_report(
             "Coordinates": coordinates,
         },
     }
+    # # Save the JSON file in the output folder
+    # output_path = output_folder / json_filename
+    # with open(output_path, "w") as json_file:
+    #     json.dump(json_data, json_file, indent=4)
 
-    # Save the JSON file in the output folder
-    output_path = output_folder / json_filename
-    with open(output_path, "w") as json_file:
-        json.dump(json_data, json_file, indent=4)
+    return json_data
 
 
 def safe_round(value, decimals=0):
@@ -189,64 +190,53 @@ def calculate_full_report(device_reports, output_file, device_name):
     all_keys_paths = set()  # Stores all unique flattened key paths encountered
     serial_numbers = []
 
-    for file in device_reports:
-        if file.endswith(".json"):
-            try:
-                with open(file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-            except json.JSONDecodeError as e:
-                logger.error(f"Error decoding JSON from file {file}: {e}. Skipping file.")
-                continue
-            except Exception as e:
-                logger.error(f"Error reading file {file}: {e}. Skipping file.")
-                continue
+    for data in device_reports:
+        if "SerialNumber" in data and data["SerialNumber"] is not None:
+            serial_numbers.append(data["SerialNumber"])
+        else:
+            logger.warning(f"'SerialNumber' not found or is null in {data}.")
 
-            if "SerialNumber" in data and data["SerialNumber"] is not None:
-                serial_numbers.append(data["SerialNumber"])
-            else:
-                logger.warning(f"'SerialNumber' not found or is null in {file}.")
+        if "Results" not in data or not isinstance(data["Results"], dict):
+            logger.warning(
+                f"'Results' not found or not a dictionary in {data}. Skipping."
+            )
+            continue
 
-            if "Results" not in data or not isinstance(data["Results"], dict):
-                logger.warning(
-                    f"'Results' not found or not a dictionary in {file}. Skipping."
-                )
-                continue
+        def process_items(current_dict, current_path_parts):
+            for key, value in current_dict.items():
+                new_path_parts = current_path_parts + [key]
+                flat_key = ".".join(new_path_parts)
+                all_keys_paths.add(flat_key)
 
-            def process_items(current_dict, current_path_parts):
-                for key, value in current_dict.items():
-                    new_path_parts = current_path_parts + [key]
-                    flat_key = ".".join(new_path_parts)
-                    all_keys_paths.add(flat_key)
-
-                    if isinstance(value, dict):
-                        if not value:  # Empty dictionary
-                            aggregated_data[flat_key].append(
-                                {}
-                            )  # Mark the presence of this key with an empty dict
-                        process_items(value, new_path_parts)  # Recurse
-                    elif value is None:
+                if isinstance(value, dict):
+                    if not value:  # Empty dictionary
+                        aggregated_data[flat_key].append(
+                            {}
+                        )  # Mark the presence of this key with an empty dict
+                    process_items(value, new_path_parts)  # Recurse
+                elif value is None:
+                    aggregated_data[flat_key].append(None)
+                elif isinstance(value, (int, float)):
+                    if math.isnan(value) or math.isinf(value):
                         aggregated_data[flat_key].append(None)
-                    elif isinstance(value, (int, float)):
-                        if math.isnan(value) or math.isinf(value):
-                            aggregated_data[flat_key].append(None)
-                        else:
-                            aggregated_data[flat_key].append(value)
-                    elif isinstance(value, list):
-                        sanitized_list = []
-                        for item_in_list in value:
-                            if isinstance(item_in_list, float) and (
-                                    math.isnan(item_in_list) or math.isinf(item_in_list)
-                            ):
-                                sanitized_list.append(None)
-                            elif isinstance(
-                                    item_in_list, (int, float, type(None))
-                            ):  # Allow numbers and None
-                                sanitized_list.append(item_in_list)
-                            # Else: non-numeric/non-None items in a list are skipped for this element's stats
-                        aggregated_data[flat_key].append(sanitized_list)
-                    # Other data types (e.g., strings) are noted by all_keys_paths but not aggregated for stats
+                    else:
+                        aggregated_data[flat_key].append(value)
+                elif isinstance(value, list):
+                    sanitized_list = []
+                    for item_in_list in value:
+                        if isinstance(item_in_list, float) and (
+                                math.isnan(item_in_list) or math.isinf(item_in_list)
+                        ):
+                            sanitized_list.append(None)
+                        elif isinstance(
+                                item_in_list, (int, float, type(None))
+                        ):  # Allow numbers and None
+                            sanitized_list.append(item_in_list)
+                        # Else: non-numeric/non-None items in a list are skipped for this element's stats
+                    aggregated_data[flat_key].append(sanitized_list)
+                # Other data types (e.g., strings) are noted by all_keys_paths but not aggregated for stats
 
-            process_items(data["Results"], [])
+        process_items(data["Results"], [])
 
     final_results_data = {}
     sorted_key_paths = sorted(list(all_keys_paths))
@@ -605,13 +595,12 @@ def generate_comparison_report(
             majority_needed = (total_device_count // 2) + 1
             logger.info(f"Total devices: {total_device_count}, Majority needed: {majority_needed}")
 
-            for file_path in device_reports:
-                report_data = load_json_file(file_path)
-                if not report_data or "Results" not in report_data:
-                    logger.warning(f"Skipping device report: {file_path} (invalid or no 'Results')")
+            for data in device_reports:
+                if not data or "Results" not in data:
+                    logger.warning(f"Skipping device report: {data.get("SerialNumber")} (invalid or no 'Results')")
                     continue
 
-                current_device_results = report_data.get("Results", {})
+                current_device_results = data.get("Results", {})
 
                 for yaml_key in MAJORITY_TYP_CHECK_KEYS_FOR_TV:
                     json_key = YAML_TO_JSON_KEY_MAP.get(yaml_key,yaml_key)
@@ -620,7 +609,7 @@ def generate_comparison_report(
                     if isinstance(value, (int, float)):
                         devices_values_map[yaml_key].append(value)
                     else:
-                        logger.debug(f"Value for {json_key} in {file_path} is missing or not numeric.")
+                        logger.debug(f"Value for {json_key} in {data.get("SerialNumber")} is missing or not numeric.")
 
         else:
             logger.warning(f"TV 'majority' logic active, but no individual reports found matching pattern")
@@ -760,59 +749,49 @@ def analyze_json_files_for_min_fail(device_reports, expected_result_path, output
 
     output_data = []
 
-    for file in device_reports:
-        try:
-            with open(file, "r") as json_file:
-                data = json.load(json_file)
-                serial_number = data.get("SerialNumber", "Unknown")
-                results = data.get("Results", {})
+    for data in device_reports:
+        serial_number = data.get("SerialNumber", "Unknown")
+        results = data.get("Results", {})
 
-                for key, expected in expected_values.items():
-                    min_value = None
+        for key, expected in expected_values.items():
+            min_value = None
 
-                    if key in results:
-                        value = results[key]
-                        if isinstance(value, dict) and "min" in value:
-                            min_value = value["min"]
-                        else:
-                            min_value = value
-                    elif key in [
-                        "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y",
-                        "Center_x", "Center_y",
-                    ]:
-                        if "Coordinates" in results:
-                            try:
-                                min_value = results["Coordinates"][key]
-                            except KeyError:
-                                pass
-                    else:
-                        continue
+            if key in results:
+                value = results[key]
+                if isinstance(value, dict) and "min" in value:
+                    min_value = value["min"]
+                else:
+                    min_value = value
+            elif key in [
+                "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y",
+                "Center_x", "Center_y",
+            ]:
+                if "Coordinates" in results:
+                    try:
+                        min_value = results["Coordinates"][key]
+                    except KeyError:
+                        pass
+            else:
+                continue
 
-                    if min_value is not None:
-                        try:
-                            min_value = float(min_value)
-                            if min_value < expected["min"]:
-                                output_data.append(
-                                    {
-                                        serial_number: {
-                                            "key": key,
-                                            "min_value": min_value,
-                                            "expected_min": expected["min"],
-                                        }
-                                    }
-                                )
-                        except (ValueError, TypeError):
-                            logger.warning(
-                                f"Could not convert value to float in {file} for key {key}. Skipping."
-                            )
-                            continue
-
-        except FileNotFoundError:
-            logger.error(f"JSON file not found: {file}")
-        except json.JSONDecodeError as e:
-            logger.error(f"Could not decode JSON file {file}: {e}")
-        except Exception as e:
-            logger.error(f"An unexpected error occurred while processing {file}: {e}")
+            if min_value is not None:
+                try:
+                    min_value = float(min_value)
+                    if min_value < expected["min"]:
+                        output_data.append(
+                            {
+                                serial_number: {
+                                    "key": key,
+                                    "min_value": min_value,
+                                    "expected_min": expected["min"],
+                                }
+                            }
+                        )
+                except (ValueError, TypeError):
+                    logger.warning(
+                        f"Could not convert value to float in {data} for key {key}. Skipping."
+                    )
+                    continue
 
     try:
         with open(output_path, "w") as outfile:
