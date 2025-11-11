@@ -298,3 +298,68 @@ def process_device_reports(device_reports: list, ufn_mapping: dict) -> dict:
             }
 
     return all_reports_data
+
+
+def archive_specific_files(zip_path, files_to_archive, base_folder):
+    """
+    Archives a specific list of files into a zip file, preserving
+    their relative path structure from the base_folder.
+    """
+    logger.info(f"Archiving {len(files_to_archive)} specific files to {zip_path}...")
+
+    try:
+        files_added = 0
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file_path in files_to_archive:
+                if not file_path.exists() or not file_path.is_file():
+                    logger.warning(f"File {file_path} not found, skipping for archive.")
+                    continue
+
+                # Ensure we don't archive the archive itself
+                if file_path.resolve() == zip_path.resolve():
+                    continue
+
+                try:
+                    # Calculate path inside the zip
+                    # e.g., 'data/report.json' or 'results/device.html'
+                    name_in_archive = file_path.resolve().relative_to(base_folder.resolve())
+
+                    zipf.write(file_path, name_in_archive)
+                    files_added += 1
+                except ValueError as e:
+                    # Fallback if relative_to fails (e.g., different drives)
+                    logger.error(f"Cannot calculate relative path for {file_path}: {e}. Using flat name.")
+                    zipf.write(file_path, file_path.name)
+
+        if files_added == 0:
+            logger.warning("No valid files were added to the archive.")
+            if zip_path.exists():
+                zip_path.unlink()
+            return None
+
+        logger.success(f"Archive created with {files_added} files: {zip_path}")
+        return str(zip_path)
+
+    except Exception as e:
+        logger.error(f"Error during archive creation: {e}")
+        return None
+
+
+def clear_specific_files(files_to_delete):
+    """
+    Deletes a specific list of files.
+    """
+    removed_count = 0
+    logger.info(f"Cleaning up {len(files_to_delete)} specific files...")
+
+    for file_path in files_to_delete:
+        if file_path.exists() and file_path.is_file():
+            try:
+                file_path.unlink()
+                removed_count += 1
+            except Exception as e:
+                logger.error(f"Error deleting file {file_path}: {e}")
+        else:
+            logger.warning(f"File {file_path} not found, skipping cleanup.")
+
+    logger.info(f"Total files removed during cleanup: {removed_count}")

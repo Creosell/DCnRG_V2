@@ -21,7 +21,6 @@ TIMESTAMP = CURRENT_TIME.strftime("%Y%m%d%H%M")
 DATA_FOLDER = Path("data")
 TEST_REPORTS_FOLDER = Path("test_reports")
 ARCHIVE_REPORTS = Path("report_archive")
-PICTURES_FOLDER = Path("pics")
 LOGS_FOLDER = Path("logs")
 RESULTS_FOLDER = Path("results")
 
@@ -33,7 +32,7 @@ EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 # Logger configuration
 logger.remove()
 logger.add(sys.stderr, level="SUCCESS")
-logger.add(LOGS_FOLDER / f"{TIMESTAMP}.log", level="DEBUG", encoding="utf-8")
+logger.add(LOGS_FOLDER / f"report_generator.log", level="DEBUG", encoding="utf-8", rotation="1 MB", retention=3, compression="zip")
 
 # Parsing general settings
 RGB = parse.coordinate_srgb(COLOR_SPACE_CONFIG)
@@ -45,7 +44,6 @@ test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
 TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
-PICTURES_FOLDER.mkdir(parents=True, exist_ok=True)
 LOGS_FOLDER.mkdir(parents=True, exist_ok=True)
 RESULTS_FOLDER.mkdir(parents=True, exist_ok=True)
 
@@ -162,11 +160,40 @@ for current_device_name, file_list in device_groups.items():
     logger.success(f"HTML Report for {current_device_name} saved to {current_result_html}")
 
     # --- Step 3: Final Steps (Archiving and Cleanup) ---
-    folder_to_archive = [TEST_REPORTS_FOLDER, DATA_FOLDER, RESULTS_FOLDER]
-    h.archive_reports(
-        current_device_name,
-        TIMESTAMP,
-        folder_to_archive
+    logger.info(f"Starting archiving and cleanup for {current_device_name}...")
+
+    # 1. Collect all files related to this group
+
+    # Get paths from the file_list (source data files)
+    source_files = [file_path for file_path, is_tv, sn in file_list]
+
+    # Get generated report files
+    report_files = [
+        current_min_fail,
+        current_report_from_all,
+        current_final_report
+    ]
+
+    # Get generated result file
+    result_files = [current_result_html]
+
+    # Combine all files into one list for processing
+    # We will archive and delete ALL of them
+    all_files_to_process = source_files + report_files + result_files
+
+    # 2. Define zip path
+    zip_path = ARCHIVE_REPORTS / f"{current_device_name}_{TIMESTAMP}.zip"
+
+    # 3. Call new helper functions
+
+    # Archive all files relative to the project's root directory
+    h.archive_specific_files(
+        zip_path=zip_path,
+        files_to_archive=all_files_to_process,
+        base_folder=Path.cwd()  # Use project root for relative paths
     )
+
     logger.info("--- Cleanup ---")
-    #h.clear_folders(folder_to_archive)
+
+    # Clear only the files we just processed
+    h.clear_specific_files(source_files+report_files)
