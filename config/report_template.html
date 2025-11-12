@@ -35,8 +35,35 @@
         .plot-controls { margin-bottom: 15px; }
         .plot-controls label { margin-right: 15px; font-size: 14px; user-select: none; }
 
+        /* === CSS MODIFICATION: STYLES FOR CLICK-TO-ZOOM === */
+        #plot-wrapper {
+            width: 494px; /* Match SVG width */
+            height: 555px; /* Match SVG height */
+            overflow: hidden; /* This clips the zoomed SVG */
+            margin: auto;
+            border: 1px solid #ccc;
+            cursor: zoom-in; /* Default cursor: click to zoom in */
+            position: relative;
+        }
+
+        /* New class for the wrapper to control cursor when zoomed */
+        #plot-wrapper.is-zoomed {
+            cursor: zoom-out; /* Cursor when zoomed in: click to zoom out */
+        }
+
+        #plot-svg {
+            /* border: 1px solid #ccc;  <-- Border moved to wrapper */
+            border: none;
+            transform-origin: center center;
+            transition: transform 0.1s ease;
+        }
+
+        #plot-svg.zoomed {
+            transform: scale(5);
+        }
+        /* === END CSS MODIFICATION === */
+
         /* SVG Plot Elements */
-        #plot-svg { border: 1px solid #ccc; }
         .triangle { fill-opacity: 0.15; stroke-width: 1; }
         #srgb_triangle { fill: #007bff; stroke: #007bff; }
         #ntsc_triangle { fill: #dc3545; stroke: #000000; }
@@ -206,26 +233,27 @@
             <label><input type="checkbox" onchange="toggleTriangle('device_triangle')" checked> Device</label>
             <label><input type="checkbox" onchange="toggleTriangle('ntsc_triangle')" checked> NTSC</label>
             <label><input type="checkbox" onchange="toggleTriangle('srgb_triangle')" checked> sRGB</label>
-<!--            <label><input type="checkbox" onchange="toggleDebugGrid()"> <b>Debug Grid</b></label>-->
+</div>
+
+        <div id="plot-wrapper">
+            <svg id="plot-svg" width="494" height="555" viewBox="0 0 494 525" xmlns="http://www.w3.org/2000/svg">
+
+                <image href="{{ cie_background_svg }}" width="494" height="525" x="0" y="0" />
+
+                {{ raw_svg_background | safe }}
+
+                <polygon id="srgb_triangle" class="triangle" points="{{ srgb_points }}" />
+                <polygon id="ntsc_triangle" class="triangle" points="{{ ntsc_points }}" />
+                <polygon id="device_triangle" class="triangle" points="{{ device_points }}" />
+
+                <g id="debug_grid" style="display: none;">
+                    <circle class="debug-grid-point" cx="{{ debug_points.bottom_left[0] }}" cy="{{ debug_points.bottom_left[1] }}" r="5" />
+                    <circle class="debug-grid-point" cx="{{ debug_points.bottom_right[0] }}" cy="{{ debug_points.bottom_right[1] }}" r="5" />
+                    <circle class="debug-grid-point" cx="{{ debug_points.top_left[0] }}" cy="{{ debug_points.top_left[1] }}" r="5" />
+                    <circle class="debug-grid-point" cx="{{ debug_points.top_right[0] }}" cy="{{ debug_points.top_right[1] }}" r="5" />
+                </g>
+            </svg>
         </div>
-
-        <svg id="plot-svg" width="494" height="555" viewBox="0 0 494 525" xmlns="http://www.w3.org/2000/svg">
-
-            <image href="{{ cie_background_svg }}" width="494" height="525" x="0" y="0" />
-
-            {{ raw_svg_background | safe }}
-
-            <polygon id="srgb_triangle" class="triangle" points="{{ srgb_points }}" />
-            <polygon id="ntsc_triangle" class="triangle" points="{{ ntsc_points }}" />
-            <polygon id="device_triangle" class="triangle" points="{{ device_points }}" />
-
-            <g id="debug_grid" style="display: none;">
-                <circle class="debug-grid-point" cx="{{ debug_points.bottom_left[0] }}" cy="{{ debug_points.bottom_left[1] }}" r="5" />
-                <circle class="debug-grid-point" cx="{{ debug_points.bottom_right[0] }}" cy="{{ debug_points.bottom_right[1] }}" r="5" />
-                <circle class="debug-grid-point" cx="{{ debug_points.top_left[0] }}" cy="{{ debug_points.top_left[1] }}" r="5" />
-                <circle class="debug-grid-point" cx="{{ debug_points.top_right[0] }}" cy="{{ debug_points.top_right[1] }}" r="5" />
-            </g>
-        </svg>
     </div>
 
     <h2>Fail on Minimum Values Report</h2>
@@ -277,6 +305,54 @@
                 el.style.display = (el.style.display === 'none') ? 'block' : 'none';
             }
         }
+
+        // === JAVASCRIPT MODIFICATION: Click-to-Zoom Logic (Updated) ===
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const wrapper = document.getElementById('plot-wrapper');
+            const svg = document.getElementById('plot-svg');
+            if (!wrapper || !svg) return; // Safety check
+
+            // 1. Click: Toggle zoom and set origin
+            wrapper.addEventListener('click', (e) => {
+                // Toggle the 'zoomed' class on both SVG and wrapper
+                svg.classList.toggle('zoomed');
+                wrapper.classList.toggle('is-zoomed');
+
+                if (svg.classList.contains('zoomed')) {
+                    // --- МЫ ТОЛЬКО ЧТО УВЕЛИЧИЛИ ---
+                    // Немедленно устанавливаем transform-origin в место клика
+                    const rect = wrapper.getBoundingClientRect();
+                    const x = e.clientX - rect.left; // x pos inside wrapper
+                    const y = e.clientY - rect.top;  // y pos inside wrapper
+                    svg.style.transformOrigin = `${x}px ${y}px`;
+                } else {
+                    // --- МЫ ТОЛЬКО ЧТО УМЕНЬШИЛИ ---
+                    // Сбрасываем transform-origin
+                    svg.style.transformOrigin = 'center center';
+                }
+            });
+
+            // 2. Mouse leaves: Always reset zoom
+            wrapper.addEventListener('mouseleave', () => {
+                svg.classList.remove('zoomed');
+                wrapper.classList.remove('is-zoomed');
+                svg.style.transformOrigin = 'center center';
+            });
+
+            // 3. Mouse move: Update the zoom origin (panning)
+            wrapper.addEventListener('mousemove', (e) => {
+                // Only pan if we are zoomed in
+                if (svg.classList.contains('zoomed')) {
+                    const rect = wrapper.getBoundingClientRect();
+                    const x = e.clientX - rect.left; // x pos inside wrapper
+                    const y = e.clientY - rect.top;  // y pos inside wrapper
+
+                    // Set transform-origin to follow the mouse
+                    svg.style.transformOrigin = `${x}px ${y}px`;
+                }
+            });
+        });
+        // === END JAVASCRIPT MODIFICATION ===
     </script>
 </div>
 </body>

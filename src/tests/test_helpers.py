@@ -78,18 +78,13 @@ def test_create_html_report(mocker, tmp_path):
 
     # 1. Mock Jinja2 environment and template
     mock_template = mocker.MagicMock()
-
-    # --- FIX IS HERE ---
-    # Tell the render function to return an actual string
     mock_template.render.return_value = "<html>Mocked HTML</html>"
-    # --- END OF FIX ---
 
     mock_env = mocker.MagicMock(spec=Environment)
     mock_env.get_template.return_value = mock_template
     mocker.patch('src.helpers.Environment', return_value=mock_env)
 
     # 2. Create REAL input files in tmp_path
-    # ... (rest of the file creation is correct) ...
     input_file = tmp_path / "report.json"
     input_file.write_text(json.dumps({
         "Brightness": {"status": "PASS"},
@@ -109,68 +104,74 @@ def test_create_html_report(mocker, tmp_path):
     ]
 
     # 3. Call the function
+    # REFACTORED: Removed rgb_coords and ntsc_coords
     helpers.create_html_report(
         input_file=input_file,
         output_file=output_file,
         min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
-        rgb_coords=[0.64, 0.33, 0.30, 0.60, 0.15, 0.06],
-        ntsc_coords=[0.67, 0.33, 0.21, 0.71, 0.14, 0.08],
         device_reports=device_reports_list
     )
 
     # 4. Verify
     mock_env.get_template.assert_called_with(helpers.HTML_TEMPLATE_NAME)
-
-    # Check that render was called
-    mock_template.render.assert_called_once()  # Now we check the call
-
-    # Check that the REAL output file was created and has content
+    mock_template.render.assert_called_once()
     assert output_file.exists()
-    assert output_file.stat().st_size > 0  # Will be > 0 because we wrote "<html>...</html>"
+    assert output_file.stat().st_size > 0
 
 
 # --------------------------------------------------------------------------------
-# Unchanged File System Tests
+# NEW TESTS for Refactored File System Helpers
 # --------------------------------------------------------------------------------
 
-def test_archive_reports_logic(mocker, tmp_path):
-    """Tests archive creation (Fixed)."""
+def test_archive_specific_files(mocker, tmp_path):
+    """
+    Tests the new 'archive_specific_files' helper.
+    """
     mock_zip_file = mocker.patch('src.helpers.zipfile.ZipFile')
     mock_zip_instance = mock_zip_file.return_value.__enter__.return_value
 
-    # --- FIX IS HERE ---
-    # We must mock Path.cwd() to return our tmp_path.
-    # This makes the function believe tmp_path is the project root.
-    mocker.patch('src.helpers.Path.cwd', return_value=tmp_path)
-    # --- END OF FIX ---
+    # We mock 'base_folder' to be tmp_path
+    base_folder = tmp_path
 
-    # Create dummy folders and files inside tmp_path
-    folder1 = tmp_path / "device_reports"
-    folder1.mkdir()
-    file_to_archive = folder1 / "report1.json"
-    file_to_archive.touch()
+    # Create dummy files
+    file1 = tmp_path / "data" / "report1.json"
+    file2 = tmp_path / "results" / "report.html"
+    (tmp_path / "data").mkdir()
+    (tmp_path / "results").mkdir()
+    file1.touch()
+    file2.touch()
+
+    files_to_archive = [file1, file2]
+    zip_path = tmp_path / "archive.zip"
 
     # Run the function
-    helpers.archive_reports("TestDevice", "20251010", [folder1])
+    helpers.archive_specific_files(zip_path, files_to_archive, base_folder)
 
-    # Now, relative_to(Path.cwd()) will succeed, and write() will be called.
-    assert mock_zip_instance.write.call_count == 1
+    # Check that write was called twice
+    assert mock_zip_instance.write.call_count == 2
 
-    # We can add a more robust check:
-    expected_path_in_zip = Path("device_reports") / "report1.json"
-    mock_zip_instance.write.assert_called_with(
-        file_to_archive,  # The full, absolute path to the source file
-        expected_path_in_zip  # The relative path inside the archive
-    )
+    # Check that paths in zip are correct
+    mock_zip_instance.write.assert_any_call(file1, Path("data") / "report1.json")
+    mock_zip_instance.write.assert_any_call(file2, Path("results") / "report.html")
 
 
-def test_clear_folders_logic(tmp_path):
-    """Tests folder cleanup (unchanged)."""
-    folder_to_clear = tmp_path / "folder1"
-    folder_to_clear.mkdir()
-    (folder_to_clear / "file1.txt").touch()
+def test_clear_specific_files(tmp_path):
+    """
+    Tests the new 'clear_specific_files' helper.
+    """
+    # Create dummy files
+    file1 = tmp_path / "file1.txt"
+    file2 = tmp_path / "file2.json"
+    file1.touch()
+    file2.touch()
 
-    assert (folder_to_clear / "file1.txt").exists()
-    helpers.clear_folders([folder_to_clear])
-    assert not (folder_to_clear / "file1.txt").exists()
+    assert file1.exists()
+    assert file2.exists()
+
+    # Run cleanup
+    helpers.clear_specific_files([file1, file2])
+
+    # Check that files are gone
+    assert not file1.exists()
+    assert not file2.exists()

@@ -5,6 +5,8 @@ import pytest
 
 from src import calculate
 from src import parse  # Import parse to use its functions if needed
+# We need to import the Enum to check the new dictionary keys
+from src.calculate import ColorSpace
 
 
 # We use fixtures from conftest.py (mock_tv_data, mock_display_data, etc.)
@@ -58,7 +60,7 @@ def test_brightness_empty_report():
     """Tests brightness function when passed None."""
     # REFACTORED: Pass None directly
     result = calculate.brightness(None, is_tv=False)
-    expected = {"min": None, "typ": None, "max": None, "uniformity_center_lv": None}
+    expected = {"min": None, "typ": None, "max": None, 'uniformity_center_lv': None}
     assert result == expected
 
 
@@ -81,14 +83,16 @@ def test_contrast_logic(mock_tv_data, mock_display_data):
     # Case 1: TV (is_tv = True). Contrast = WhiteColor (200.0) / BlackColor
     # REFACTORED: Pass dict
     contrast_tv = calculate.contrast(mock_tv_data, is_tv=True)
-    expected_tv = 200.0 / black_lv
-    assert contrast_tv == pytest.approx(expected_tv, abs=0.01)
+    # The function now rounds to 2 decimal places
+    expected_tv = round(200.0 / black_lv, 2) # 323.44
+    assert contrast_tv == pytest.approx(expected_tv)
 
     # Case 2: Not-TV (is_tv = False). Contrast = Center Lv (159.7) / BlackColor
     # REFACTORED: Pass dict
     contrast_nottv = calculate.contrast(mock_display_data, is_tv=False)
-    expected_nottv = 159.7 / black_lv
-    assert contrast_nottv == pytest.approx(expected_nottv, abs=0.01)
+    # The function now rounds to 2 decimal places
+    expected_nottv = round(159.7 / black_lv, 2) # 258.26
+    assert contrast_nottv == pytest.approx(expected_nottv)
 
 
 def test_contrast_zero_lv(mock_display_data):
@@ -124,20 +128,17 @@ def test_temperature_missing_data(mock_display_data):
 
 def test_cg_by_area_logic(mocker, mock_display_data):
     """Tests color gamut calculation by area."""
-    # REFACTORED: Pass dict. We mock the dependency 'parse.coordinates_of_triangle'
-    # This dependency is already fixed to accept a dict.
+    # REFACTORED: Function signature changed.
     mock_coords = [0.636, 0.329, 0.311, 0.615, 0.156, 0.049]
     mocker.patch('src.parse.coordinates_of_triangle', return_value=mock_coords)
 
-    # Check 'sRGB, NTSC'
-    result_srgb_ntsc = calculate.cg_by_area(mock_display_data, "sRGB, NTSC")
-    assert result_srgb_ntsc[0] == pytest.approx(101.86, 0.01)
-    assert result_srgb_ntsc[1] == pytest.approx(72.24, 0.01)
+    # Call the new function (no 'color_space' argument)
+    result_map = calculate.cg_by_area(mock_display_data)
 
-    # Check 'sRGB'
-    result_srgb = calculate.cg_by_area(mock_display_data, "sRGB")
-    assert result_srgb[0] == pytest.approx(101.86, 0.01)
-    assert result_srgb[1] is None
+    # Check the dictionary result using the Enum
+    assert result_map[ColorSpace.SRGB] == pytest.approx(101.86, 0.01)
+    assert result_map[ColorSpace.NTSC] == pytest.approx(72.24, 0.01)
+    assert result_map[ColorSpace.DCI_P3] is not None # Check that it was calculated
 
 
 def test_delta_e_success(mock_display_data):
@@ -155,16 +156,13 @@ def test_delta_e_success(mock_display_data):
 
 def test_run_calculations_fulltest(mock_display_data):
     """
-    Tests the main 'run_calculations' function for a 'FullTest'.
+    Tests the main 'run_calculations' function.
     Ensures all keys are calculated and returned.
     """
-    color_space = "sRGB, NTSC"
-
+    # REFACTORED: Call the new function signature (no test_type or color_space)
     results = calculate.run_calculations(
         mock_display_data,
-        is_tv=False,
-        test_type="FullTest",
-        color_space=color_space
+        is_tv=False
     )
 
     # Check that all keys are present
@@ -180,19 +178,19 @@ def test_run_calculations_fulltest(mock_display_data):
     assert results["contrast"] == pytest.approx(round(159.7 / 0.6183643, 2))
     assert results["temperature"] == 6752
 
+
 def test_run_calculations_handles_error(mock_display_data):
     """
     Tests that 'run_calculations' handles an internal error gracefully
-    (as we designed in Step 3) and returns None for the failed key.
+    and returns None for the failed key.
     """
     # Remove 'Center' to force 'temperature' to fail
     no_center_data = {"Measurements": [m for m in mock_display_data["Measurements"] if m["Location"] != "Center"]}
 
+    # REFACTORED: Call the new function signature
     results = calculate.run_calculations(
         no_center_data,
-        is_tv=False,
-        test_type="FullTest",
-        color_space="sRGB"
+        is_tv=False
     )
 
     # Check that the failing key exists and is None

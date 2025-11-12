@@ -31,7 +31,7 @@ REPORT_PRECISION = {
 }
 
 # Special requirements for TV's
-TOLERANCE_FOR_TV = 0.065  # Tolerance 6.5% for some TV checks
+CONTRAST_TOLERANCE_FOR_TV = 0.065  # Tolerance 6.5% for some TV checks
 AVG_FAIL_SKIP_KEYS_FOR_TV = {  # Keys which we skip while checking for FAIL by avg
     "Brightness_uniformity",
     "Cg_rgb_area",
@@ -453,12 +453,12 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         if devices_passed_count >= majority_needed:
             return "PASS", (
                 f"(TV Majority) PASS. {devices_passed_count}/{len(devices_values_list)} devices "
-                f">= threshold ({typ_with_threshold:.2f}). (Need: {majority_needed})"
+                f">= typ wih threshold 1% ({typ_with_threshold:.2f}). Major quantity is {majority_needed} devices"
             )
         else:
             return "FAIL", (
                 f"(TV Majority) FAIL. {devices_passed_count}/{len(devices_values_list)} devices "
-                f">= threshold ({typ_with_threshold:.2f}). (Need: {majority_needed})"
+                f"with values >= expected typical with threshold 1% ({typ_with_threshold:.2f}). Major quantity is {majority_needed} devices"
             )
 
     # --- 2. STANDARD LOGIC (if MAJORITY LOGIC isn't active) ---
@@ -488,7 +488,7 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     # Special rules for TV
     # Applying tolerance for contrast value
     if yaml_key == "Contrast" and is_tv_flag:
-        tolerance_for_contract = expected_typ * TOLERANCE_FOR_TV
+        tolerance_for_contract = expected_typ * CONTRAST_TOLERANCE_FOR_TV
         expected_typ = expected_typ - tolerance_for_contract
     # Skipping checks for typical values according to a TV quality standard
     if is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_TV:
@@ -612,6 +612,12 @@ def generate_comparison_report(
         else:
             logger.warning(f"TV 'majority' logic active, but no individual reports found matching pattern")
 
+    # This is true if it's a TV and we have individual reports to check.
+    is_tv_majority_report = (is_tv_flag and len(devices_values_map) > 0)
+
+    # DISABLE MAJORITY LOGIC FLAG
+    is_tv_majority_report = False
+
     full_report = {}
 
     # --- 4. MAIN COMPARISON LOOP ---
@@ -659,7 +665,10 @@ def generate_comparison_report(
             continue
 
         # C. DETERMINE STATUS (using helper functions)
-        if is_coordinate_test:
+        if is_tv_majority_report and is_coordinate_test:
+            status = "SKIPPED"
+            reason = "Skipped for TV"
+        elif is_coordinate_test:
             actual_min = actual_test_details.get("min")
             actual_max = actual_test_details.get("max")
             expected_min = expected_test_data.get("min")
@@ -668,14 +677,10 @@ def generate_comparison_report(
             # Helper function: check_coordinate_bounds(...)
             status, reason = check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max)
         else:
-            # use_majority_logic = (
-            #         is_tv_flag
-            #         and test_name in MAJORITY_TYP_CHECK_KEYS_FOR_TV
-            #         and total_device_count > 0
-            # )
-
-            # DISABLE MAJORITY LOGIC FLAG
-            use_majority_logic = False
+            use_majority_logic = (
+                    is_tv_majority_report
+                    and test_name in MAJORITY_TYP_CHECK_KEYS_FOR_TV
+            )
 
             majority_check_data = {
                 "active": use_majority_logic,
@@ -695,6 +700,8 @@ def generate_comparison_report(
         # D. SINGLE REPORT UPDATE
         report_item.update({"status": status, "reason": reason})
         full_report[test_name] = report_item
+
+
 
     # --- 5. SAVE REPORT ---
     try:

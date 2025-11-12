@@ -27,3 +27,4 @@ TODO:
 4) Optimize using of color_space.yaml
 5) Uploading reports result to cloud
 6) Change report to HTML
+
