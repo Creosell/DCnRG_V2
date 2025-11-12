@@ -2,12 +2,13 @@
 import json
 import os
 import zipfile
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from loguru import logger
+
 import src.graphics_hepler as gfx  # Import our new helper
 import src.report as r
-
-from pathlib import Path
-from loguru import logger
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 HTML_TEMPLATE_NAME = "report_template.html"
 
@@ -49,8 +50,7 @@ def create_html_report(
         cie_background_svg: Path,
         rgb_coords: list,
         ntsc_coords: list,
-        device_reports: list,
-        test_type: str
+        device_reports: list
 ):
     """
     Generates an interactive HTML report from a JSON test result file
@@ -63,7 +63,6 @@ def create_html_report(
         cie_background_svg (Path): Path to the SVG background image.
         rgb_coords (list): List of sRGB coordinates [x, y, x, y, x, y].
         ntsc_coords (list): List of NTSC coordinates [x, y, x, y, x, y].
-        test_type (str): The type of test (e.g., "FullTest", "Contrast").
         device_reports (list): List of device reports.
 
     """
@@ -97,20 +96,18 @@ def create_html_report(
     coord_mapper = gfx.SvgCoordinator()
     device_points = ""
 
-    # Extract device coordinates only if not a Contrast test
-    if test_type != "Contrast":
-        try:
-            coordinate_names = ["Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y"]
-            device_coords = [
-                main_report_data.get(name, {}).get("actual_values", {}).get("avg")
-                for name in coordinate_names
-            ]
-            if all(c is not None for c in device_coords):
-                device_points = coord_mapper.get_triangle_pixel_points(device_coords)
-            else:
-                logger.warning("Could not get all device coordinates for plot.")
-        except Exception as e:
-            logger.error(f"Error processing device coordinates for plot: {e}")
+    try:
+        coordinate_names = ["Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y"]
+        device_coords = [
+            main_report_data.get(name, {}).get("actual_values", {}).get("avg")
+            for name in coordinate_names
+        ]
+        if all(c is not None for c in device_coords):
+            device_points = coord_mapper.get_triangle_pixel_points(device_coords)
+        else:
+            logger.warning("Could not get all device coordinates for plot.")
+    except Exception as e:
+        logger.error(f"Error processing device coordinates for plot: {e}")
 
     # Calculate points for standard triangles
     srgb_points = coord_mapper.get_triangle_pixel_points(rgb_coords)

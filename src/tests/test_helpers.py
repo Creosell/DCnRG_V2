@@ -116,8 +116,7 @@ def test_create_html_report(mocker, tmp_path):
         cie_background_svg=svg_file,
         rgb_coords=[0.64, 0.33, 0.30, 0.60, 0.15, 0.06],
         ntsc_coords=[0.67, 0.33, 0.21, 0.71, 0.14, 0.08],
-        device_reports=device_reports_list,
-        test_type="FullTest"
+        device_reports=device_reports_list
     )
 
     # 4. Verify

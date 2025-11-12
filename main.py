@@ -1,5 +1,4 @@
 import datetime
-import glob
 import os
 import sys
 from collections import defaultdict
@@ -16,7 +15,7 @@ import src.report as r
 
 # Path configuration
 CURRENT_TIME = datetime.datetime.now()
-TIMESTAMP = CURRENT_TIME.strftime("%Y%m%d%H%M")
+TIMESTAMP = CURRENT_TIME.strftime("%Y%m%d_%H%M")
 
 DATA_FOLDER = Path("data")
 TEST_REPORTS_FOLDER = Path("test_reports")
@@ -38,7 +37,7 @@ logger.add(LOGS_FOLDER / f"report_generator.log", level="DEBUG", encoding="utf-8
 RGB = parse.coordinate_srgb(COLOR_SPACE_CONFIG)
 NTSC = parse.coordinate_ntsc(COLOR_SPACE_CONFIG)
 COLOR_SPACE = parse.parse_yaml(MAIN_CONFIG, "Task", "color_space", "type")
-test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
+#test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
 
 # Create working folders if they do not exist
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -95,8 +94,8 @@ for current_device_name, file_list in device_groups.items():
     current_min_fail = Path("test_reports") / f"min_fail_{current_device_name}.json"
     current_report_from_all = Path("test_reports") / f"full_report_{current_device_name}.json"
     current_final_report = Path("test_reports") / f"final_report_{current_device_name}_{TIMESTAMP}.json"
-    current_result_html = Path("results") / f"{current_device_name}.html"
-    #current_result_html = Path("results") / f"{current_device_name}_{TIMESTAMP}.html"
+    #current_result_html = Path("results") / f"{current_device_name}.html"
+    current_result_html = Path("results") / f"{current_device_name}_{TIMESTAMP}.html"
 
     device_reports_list = []
     # 2.2 Process each file in the current group
@@ -117,7 +116,6 @@ for current_device_name, file_list in device_groups.items():
         calculation_results = cal.run_calculations(
             device_report=current_device_report,
             is_tv=is_tv_flag,
-            test_type=test,  # Pass the test type
             color_space=COLOR_SPACE  # Pass the color space
         )
 
@@ -152,8 +150,7 @@ for current_device_name, file_list in device_groups.items():
         min_fail_file=current_min_fail,
         cie_background_svg=CIE_BACKGROUND_SVG,
         rgb_coords=RGB,
-        ntsc_coords=NTSC,
-        test_type=test
+        ntsc_coords=NTSC
     )
 
     # We no longer merge PDFs

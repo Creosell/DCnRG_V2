@@ -1,7 +1,9 @@
 import json
 import math
+
 import yaml
 from loguru import logger
+
 
 def parse_yaml(yaml_file, dictionary, key_name, k):
     with open(yaml_file, "r") as file:

@@ -180,30 +180,6 @@ def test_run_calculations_fulltest(mock_display_data):
     assert results["contrast"] == pytest.approx(round(159.7 / 0.6183643, 2))
     assert results["temperature"] == 6752
 
-
-def test_run_calculations_limited_test(mock_display_data):
-    """
-    Tests the 'run_calculations' function for a limited test ('Contrast').
-    Ensures ONLY the specified keys are calculated.
-    """
-    color_space = "sRGB, NTSC"
-
-    results = calculate.run_calculations(
-        mock_display_data,
-        is_tv=False,
-        test_type="Contrast",
-        color_space=color_space
-    )
-
-    # Only 'contrast' should be in the dictionary
-    assert "contrast" in results
-    assert results["contrast"] == pytest.approx(round(159.7 / 0.6183643, 2))
-
-    # Other keys should be absent
-    assert "brightness" not in results
-    assert "temperature" not in results
-
-
 def test_run_calculations_handles_error(mock_display_data):
     """
     Tests that 'run_calculations' handles an internal error gracefully
