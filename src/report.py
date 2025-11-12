@@ -616,7 +616,7 @@ def generate_comparison_report(
     is_tv_majority_report = (is_tv_flag and len(devices_values_map) > 0)
 
     # DISABLE MAJORITY LOGIC FLAG
-    is_tv_majority_report = False
+    #is_tv_majority_report = False
 
     full_report = {}
 

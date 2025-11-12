@@ -35,7 +35,7 @@
         .plot-controls { margin-bottom: 15px; }
         .plot-controls label { margin-right: 15px; font-size: 14px; user-select: none; }
 
-        /* === CSS MODIFICATION: STYLES FOR CLICK-TO-ZOOM === */
+        /* === CSS FOR CLICK-TO-ZOOM === */
         #plot-wrapper {
             width: 494px; /* Match SVG width */
             height: 555px; /* Match SVG height */
@@ -61,7 +61,7 @@
         #plot-svg.zoomed {
             transform: scale(5);
         }
-        /* === END CSS MODIFICATION === */
+        /* === END CSS FOR ZOOM === */
 
         /* SVG Plot Elements */
         .triangle { fill-opacity: 0.15; stroke-width: 1; }
@@ -85,6 +85,32 @@
         .individual-reports-table th, .individual-reports-table td {
             padding: 8px 6px;
         }
+
+        /* === STYLES FOR SORTING === */
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        /* Default arrow (unsorted) - subtle */
+        .sortable-header::after {
+            content: ' \2195'; /* Up/Down Arrow */
+            opacity: 0.3;
+            position: absolute;
+            right: 8px;
+        }
+        /* Ascending arrow */
+        .sortable-header.sort-asc::after {
+            content: ' \25B2'; /* Black Up-Pointing Triangle */
+            opacity: 1;
+        }
+        /* Descending arrow */
+        .sortable-header.sort-desc::after {
+            content: ' \25BC'; /* Black Down-Pointing Triangle */
+            opacity: 1;
+        }
+        /* === END STYLES FOR SORTING === */
+
 
         /* Styles for filter row and inputs (NEW) */
         .filter-cell {
@@ -122,13 +148,23 @@
         'Cg_rgb': 'sRGB Gamut Coverage (%)',       'Cg_ntsc': 'NTSC Gamut Coverage (%)'       } %}
 
     {% set coord_report_names = {
-        'Red_x': 'Red Coord (x)', 'Red_y': 'Red Coord (y)',
-        'Green_x': 'Green Coord (x)', 'Green_y': 'Green Coord (y)',
-        'Blue_x': 'Blue Coord (x)', 'Blue_y': 'Blue Coord (y)',
-        'White_x': 'White Coord (x)', 'White_y': 'White Coord (y)',
-        'Center_x': 'Center Coord (x)', 'Center_y': 'Center Coord (y)'
+        'Red_x': 'Red (x)', 'Red_y': 'Red (y)',
+        'Green_x': 'Green (x)', 'Green_y': 'Green (y)',
+        'Blue_x': 'Blue (x)', 'Blue_y': 'Blue (y)',
+        'White_x': 'White (x)', 'White_y': 'White (y)',
+        'Center_x': 'Center (x)', 'Center_y': 'Center (y)'
     } %}
 
+    {% set coord_headers_set = coord_report_names.values() | list %}
+    {% set main_headers = [] %}
+    {% set coord_headers = [] %}
+    {% for header in report_headers %}
+        {% if header in coord_headers_set %}
+            {% set _ = coord_headers.append(header) %}
+        {% else %}
+            {% set _ = main_headers.append(header) %}
+        {% endif %}
+    {% endfor %}
     <h1>Display Analysis Report</h1>
 
     <h2>Main Test Results</h2>
@@ -226,7 +262,6 @@
             {% endfor %}
         </tbody>
     </table>
-
     <h2>Color Gamut Plot</h2>
     <div class="plot-container">
         <div class="plot-controls">
@@ -262,32 +297,55 @@
     </div>
 
     <div class="page-break"></div>
-<h2 class="individual-reports-header">Raw Results Per Device</h2>
 
-<table id="individual_reports_table" class="individual-reports-table">
-    <thead>
-        <tr>
-            <th class="param-name" style="width: 150px;">Serial Number</th>
-            <th style="width: 120px;">Meas. Date/Time</th>
-            {% for header in report_headers %}
-            <th>{{ header }}</th>
+    <h2 class="individual-reports-header">Device reports - Main Data</h2>
+    <table id="individual_reports_table_main" class="individual-reports-table">
+        <thead id="individual-table-head-main"> <tr>
+                <th class="sortable-header" style="width: 150px;" onclick="sortTable('main', 0)">Serial Number</th>
+                <th class="sortable-header" style="width: 120px;" onclick="sortTable('main', 1)">Meas. Date/Time</th>
+                {% for header in main_headers %}
+                <th class="sortable-header" onclick="sortTable('main', {{ loop.index0 + 2 }})">{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody id="individual-table-body-main"> {% for serial_number, report_data in individual_reports.items() %}
+            <tr>
+                <td class="param-name">{{ serial_number }}</td>
+                <td>{{ report_data.measurement_date }}</td>
+                {% for header in main_headers %}
+                <td>
+                    {{ report_data.results.get(header, "N/A") }}
+                </td>
+                {% endfor %}
+            </tr>
             {% endfor %}
-        </tr>
-    </thead>
-    <tbody>
-        {% for serial_number, report_data in individual_reports.items() %}
-        <tr>
-            <td class="param-name">{{ serial_number }}</td>
-            <td>{{ report_data.measurement_date }}</td>
-            {% for header in report_headers %}
-            <td>
-                {{ report_data.results.get(header, "N/A") }}
-            </td>
+        </tbody>
+    </table>
+
+    <h2 class="individual-reports-header">Device reports - Coordinates</h2>
+    <table id="individual_reports_table_coords" class="individual-reports-table">
+        <thead id="individual-table-head-coords"> <tr>
+                <th class="sortable-header" style="width: 150px;" onclick="sortTable('coords', 0)">Serial Number</th>
+                <th class="sortable-header" style="width: 120px;" onclick="sortTable('coords', 1)">Meas. Date/Time</th>
+                {% for header in coord_headers %}
+                <th class="sortable-header" onclick="sortTable('coords', {{ loop.index0 + 2 }})">{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody id="individual-table-body-coords"> {% for serial_number, report_data in individual_reports.items() %}
+            <tr>
+                <td class="param-name">{{ serial_number }}</td>
+                <td>{{ report_data.measurement_date }}</td>
+                {% for header in coord_headers %}
+                <td>
+                    {{ report_data.results.get(header, "N/A") }}
+                </td>
+                {% endfor %}
+            </tr>
             {% endfor %}
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+        </tbody>
+    </table>
+
 
     <script>
         // Toggles the visibility of a specified triangle (sRGB, NTSC, Device)
@@ -306,7 +364,7 @@
             }
         }
 
-        // === JAVASCRIPT MODIFICATION: Click-to-Zoom Logic (Updated) ===
+        // === JAVASCRIPT FOR ZOOM (без изменений) ===
         window.addEventListener('DOMContentLoaded', (event) => {
             const wrapper = document.getElementById('plot-wrapper');
             const svg = document.getElementById('plot-svg');
@@ -314,20 +372,15 @@
 
             // 1. Click: Toggle zoom and set origin
             wrapper.addEventListener('click', (e) => {
-                // Toggle the 'zoomed' class on both SVG and wrapper
                 svg.classList.toggle('zoomed');
                 wrapper.classList.toggle('is-zoomed');
 
                 if (svg.classList.contains('zoomed')) {
-                    // --- МЫ ТОЛЬКО ЧТО УВЕЛИЧИЛИ ---
-                    // Немедленно устанавливаем transform-origin в место клика
                     const rect = wrapper.getBoundingClientRect();
-                    const x = e.clientX - rect.left; // x pos inside wrapper
-                    const y = e.clientY - rect.top;  // y pos inside wrapper
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
                     svg.style.transformOrigin = `${x}px ${y}px`;
                 } else {
-                    // --- МЫ ТОЛЬКО ЧТО УМЕНЬШИЛИ ---
-                    // Сбрасываем transform-origin
                     svg.style.transformOrigin = 'center center';
                 }
             });
@@ -341,17 +394,83 @@
 
             // 3. Mouse move: Update the zoom origin (panning)
             wrapper.addEventListener('mousemove', (e) => {
-                // Only pan if we are zoomed in
                 if (svg.classList.contains('zoomed')) {
                     const rect = wrapper.getBoundingClientRect();
-                    const x = e.clientX - rect.left; // x pos inside wrapper
-                    const y = e.clientY - rect.top;  // y pos inside wrapper
-
-                    // Set transform-origin to follow the mouse
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
                     svg.style.transformOrigin = `${x}px ${y}px`;
                 }
             });
-        });
+
+            // === JAVASCRIPT MODIFICATION: Table Sorting Logic ===
+
+            // Store current sort direction (now an object for multiple tables)
+            let sortDirections = {
+                'main': {},
+                'coords': {}
+            };
+
+            // Helper function to parse values
+            function parseValue(val, dir) {
+                // Push "N/A" or "None" to the bottom regardless of sort direction
+                if (val === 'N/A' || val === 'None' || val.trim() === '') {
+                    return dir === 'asc' ? Infinity : -Infinity;
+                }
+                // Try to convert to number
+                const num = parseFloat(val.replace(',', '.')); // Handle decimal commas
+                // If it's not a number, return lowercase string. Otherwise, return the number.
+                return isNaN(num) ? val.toLowerCase() : num;
+            }
+
+            // Main sort function (now takes tableSuffix)
+            window.sortTable = function(tableSuffix, colIndex) {
+                const tbody = document.getElementById('individual-table-body-' + tableSuffix);
+                const thead = document.getElementById('individual-table-head-' + tableSuffix);
+                if (!tbody || !thead) return;
+
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                // Determine direction (toggle or default to 'asc')
+                const currentDir = sortDirections[tableSuffix][colIndex];
+                const dir = currentDir === 'asc' ? 'desc' : 'asc';
+
+                // Reset directions for this table
+                sortDirections[tableSuffix] = {};
+                // Set direction for the clicked column
+                sortDirections[tableSuffix][colIndex] = dir;
+
+                // Sort the rows
+                rows.sort((rowA, rowB) => {
+                    const cellA = rowA.querySelectorAll('td')[colIndex].innerText;
+                    const cellB = rowB.querySelectorAll('td')[colIndex].innerText;
+
+                    const valA = parseValue(cellA, dir);
+                    const valB = parseValue(cellB, dir);
+
+                    let comparison = 0;
+                    if (valA > valB) {
+                        comparison = 1;
+                    } else if (valA < valB) {
+                        comparison = -1;
+                    }
+
+                    return dir === 'asc' ? comparison : -comparison;
+                });
+
+                // Update visual arrows
+                const headers = thead.querySelectorAll('.sortable-header');
+                headers.forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+                headers[colIndex].classList.add(dir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+                // Re-append sorted rows to the tbody
+                rows.forEach(row => tbody.appendChild(row));
+            }
+
+            // Default sort by Serial Number (Column 0) on page load FOR BOTH tables
+            sortTable('main', 0);
+            sortTable('coords', 0);
+
+        }); // End DOMContentLoaded
         // === END JAVASCRIPT MODIFICATION ===
     </script>
 </div>
