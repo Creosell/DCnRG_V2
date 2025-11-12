@@ -11,25 +11,6 @@ def parse_yaml(yaml_file, dictionary, key_name, k):
     value = yaml_data[dictionary].get(key_name, {}).get(k, None)
     return value
 
-
-def coordinate_srgb(file):
-    coordinates_rgb = []
-    for coordinates_list in ("Red", "Green", "Blue"):
-        for z in ("x", "y"):
-            temp = parse_yaml(file, "sRGB", coordinates_list, z)
-            coordinates_rgb.append(temp)
-    return coordinates_rgb
-
-
-def coordinate_ntsc(file):
-    coordinates_ntsc = []
-    for coordinates_list in ("Red", "Green", "Blue"):
-        for z in ("x", "y"):
-            temp = parse_yaml(file, "NTSC", coordinates_list, z)
-            coordinates_ntsc.append(temp)
-    return coordinates_ntsc
-
-
 def coordinates_of_triangle(device_report):
     # Initialize a dictionary to store the coordinates
     rgb_coordinates = {"RedColor": None, "GreenColor": None, "BlueColor": None}
