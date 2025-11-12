@@ -23,7 +23,6 @@ ARCHIVE_REPORTS = Path("report_archive")
 LOGS_FOLDER = Path("logs")
 RESULTS_FOLDER = Path("results")
 
-COLOR_SPACE_CONFIG = Path("config") / "color_space.yaml"
 CIE_BACKGROUND_SVG = Path("config") / "CIExy1931.svg"
 EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 
@@ -31,10 +30,6 @@ EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 logger.remove()
 logger.add(sys.stderr, level="SUCCESS")
 logger.add(LOGS_FOLDER / f"report_generator.log", level="DEBUG", encoding="utf-8", rotation="1 MB", retention=3, compression="zip")
-
-# Parsing general settings
-RGB = parse.coordinate_srgb(COLOR_SPACE_CONFIG)
-NTSC = parse.coordinate_ntsc(COLOR_SPACE_CONFIG)
 
 # Create working folders if they do not exist
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -91,8 +86,8 @@ for current_device_name, file_list in device_groups.items():
     current_min_fail = Path("test_reports") / f"min_fail_{current_device_name}.json"
     current_report_from_all = Path("test_reports") / f"full_report_{current_device_name}.json"
     current_final_report = Path("test_reports") / f"final_report_{current_device_name}_{TIMESTAMP}.json"
-    #current_result_html = Path("results") / f"{current_device_name}.html"
-    current_result_html = Path("results") / f"{current_device_name}_{TIMESTAMP}.html"
+    current_result_html = Path("results") / f"{current_device_name}.html"
+    #current_result_html = Path("results") / f"{current_device_name}_{TIMESTAMP}.html"
 
     device_reports_list = []
     # 2.2 Process each file in the current group
@@ -144,9 +139,7 @@ for current_device_name, file_list in device_groups.items():
         output_file=current_result_html,
         device_reports = device_reports_list,
         min_fail_file=current_min_fail,
-        cie_background_svg=CIE_BACKGROUND_SVG,
-        rgb_coords=RGB,
-        ntsc_coords=NTSC
+        cie_background_svg=CIE_BACKGROUND_SVG
     )
 
     # We no longer merge PDFs

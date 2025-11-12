@@ -9,6 +9,7 @@ from loguru import logger
 
 import src.graphics_hepler as gfx  # Import our new helper
 import src.report as r
+import src.calculate as calc
 
 HTML_TEMPLATE_NAME = "report_template.html"
 
@@ -48,8 +49,6 @@ def create_html_report(
         output_file: Path,
         min_fail_file: Path,
         cie_background_svg: Path,
-        rgb_coords: list,
-        ntsc_coords: list,
         device_reports: list
 ):
     """
@@ -61,8 +60,6 @@ def create_html_report(
         output_file (Path): Path to save the final .html report.
         min_fail_file (Path): Path to the min_fail JSON file.
         cie_background_svg (Path): Path to the SVG background image.
-        rgb_coords (list): List of sRGB coordinates [x, y, x, y, x, y].
-        ntsc_coords (list): List of NTSC coordinates [x, y, x, y, x, y].
         device_reports (list): List of device reports.
 
     """
@@ -97,21 +94,40 @@ def create_html_report(
     device_points = ""
 
     try:
-        coordinate_names = ["Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y"]
-        device_coords = [
-            main_report_data.get(name, {}).get("actual_values", {}).get("avg")
-            for name in coordinate_names
-        ]
-        if all(c is not None for c in device_coords):
-            device_points = coord_mapper.get_triangle_pixel_points(device_coords)
+        # Helper function to get avg value
+        def get_avg_coord(name):
+            return main_report_data.get(name, {}).get("actual_values", {}).get("avg")
+
+        # Get individual coordinates
+        r_x = get_avg_coord("Red_x")
+        r_y = get_avg_coord("Red_y")
+        g_x = get_avg_coord("Green_x")
+        g_y = get_avg_coord("Green_y")
+        b_x = get_avg_coord("Blue_x")
+        b_y = get_avg_coord("Blue_y")
+
+        all_coords = [r_x, r_y, g_x, g_y, b_x, b_y]
+
+        # Check if all 6 coordinates were successfully found
+        if all(c is not None for c in all_coords):
+
+            # Assemble them in the NEW format: [[x,y], [x,y], [x,y]]
+            device_coords_list = [
+                [r_x, r_y],
+                [g_x, g_y],
+                [b_x, b_y]
+            ]
+
+            # Pass the new list structure to the updated function
+            device_points = coord_mapper.get_triangle_pixel_points(device_coords_list)
         else:
-            logger.warning("Could not get all device coordinates for plot.")
+            logger.warning("Could not get all device coordinates for plot (some values were missing).")
     except Exception as e:
         logger.error(f"Error processing device coordinates for plot: {e}")
 
     # Calculate points for standard triangles
-    srgb_points = coord_mapper.get_triangle_pixel_points(rgb_coords)
-    ntsc_points = coord_mapper.get_triangle_pixel_points(ntsc_coords)
+    srgb_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.SRGB))
+    ntsc_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.NTSC))
     debug_points = json.loads(coord_mapper.get_debug_grid_points())
 
     # --- 3. Set up Jinja2 Environment ---
