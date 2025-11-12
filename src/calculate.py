@@ -4,22 +4,30 @@ from colormath2.color_diff import delta_e_cie2000
 from colormath2.color_objects import xyYColor, LabColor
 from loguru import logger
 from shapely.geometry import Polygon
+from enum import Enum
 
 import src.parse as parse
 
+
+class ColorSpace(Enum):
+    """Defines the supported color spaces."""
+    NTSC = "NTSC"
+    SRGB = "sRGB"
+    DCI_P3 = "DCI-P3"
+
 # Format: (Standard Name, [[Red_x, Red_y], [Green_x, Green_y], [Blue_x, Blue_y]])
 COLOR_STANDARDS = {
-    "NTSC": [
+    ColorSpace.NTSC: [
         [0.67, 0.33],
         [0.21, 0.71],
         [0.14, 0.08]
     ],
-    "sRGB": [
+    ColorSpace.SRGB: [
         [0.64, 0.33],
         [0.3, 0.6],
         [0.15, 0.06]
     ],
-    "DCI-P3": [
+    ColorSpace.DCI_P3: [
         [0.680, 0.320],
         [0.265, 0.690],
         [0.150, 0.060]
@@ -115,7 +123,7 @@ def brightness_uniformity(brightness_value):
     return brightness_uniformity_percent
 
 
-def cg_by_area(device_report, color_space):
+def cg_by_area(device_report):
     coordinate = parse.coordinates_of_triangle(device_report)
     if len(coordinate) != 6:
         return None
@@ -126,15 +134,12 @@ def cg_by_area(device_report, color_space):
     if dut_triangle_area == 0:
         return None
 
-    srgb_triangle = np.array(COLOR_STANDARDS.get("sRGB"))
-    ntsc_triangle = np.array(COLOR_STANDARDS.get("NTSC"))
-    dci_p3_triangle = np.array(COLOR_STANDARDS.get("DCI-P3"))
+    srgb_triangle = np.array(COLOR_STANDARDS.get(ColorSpace.SRGB))
+    ntsc_triangle = np.array(COLOR_STANDARDS.get(ColorSpace.NTSC))
+    dci_p3_triangle = np.array(COLOR_STANDARDS.get(ColorSpace.DCI_P3))
     srgb_triangle_area = area(srgb_triangle)
     ntsc_triangle_area = area(ntsc_triangle)
     dci_p3_triangle_area = area(dci_p3_triangle)
-
-    # color_gamut_srgb = (dut_triangle_area / 0.112) * 100
-    # color_gamut_ntsc = (dut_triangle_area / 0.158) * 100
 
     color_gamut_srgb = (dut_triangle_area / srgb_triangle_area) * 100
     color_gamut_ntsc = (dut_triangle_area / ntsc_triangle_area) * 100
@@ -142,25 +147,23 @@ def cg_by_area(device_report, color_space):
 
     # Use a dictionary for concise return
     return_map = {
-        "sRGB, NTSC": (float(color_gamut_srgb), float(color_gamut_ntsc)),
-        "sRGB": (float(color_gamut_srgb), None),
-        "NTSC": (None, float(color_gamut_ntsc)),
-        "DCI-P3": (float(color_gamut_dci_p3), None)
+        ColorSpace.SRGB: color_gamut_srgb,
+        ColorSpace.NTSC: color_gamut_ntsc,
+        ColorSpace.DCI_P3: color_gamut_dci_p3
     }
 
-    # Return (None, None) by default
-    return return_map.get(color_space, (None, None))
+    return return_map
 
 
-def cg(device_report, color_space):
+def cg(device_report):
     dut_coordinates = parse.coordinates_of_triangle(device_report)
     if len(dut_coordinates) != 6:
         return None
 
     x1, y1, x2, y2, x3, y3 = dut_coordinates
-    ntsc = [coord for point in COLOR_STANDARDS.get("NTSC") for coord in point]
-    srgb = [coord for point in COLOR_STANDARDS.get("sRGB") for coord in point]
-    dci_p3 = [coord for point in COLOR_STANDARDS.get("DCI-P3") for coord in point]
+    ntsc = [coord for point in COLOR_STANDARDS.get(ColorSpace.NTSC) for coord in point]
+    srgb = [coord for point in COLOR_STANDARDS.get(ColorSpace.SRGB) for coord in point]
+    dci_p3 = [coord for point in COLOR_STANDARDS.get(ColorSpace.DCI_P3) for coord in point]
 
     # Calculate overlap percentage once
     ntsc_overlap = calculate_overlap_percentage(*ntsc, x1, y1, x2, y2, x3, y3)
@@ -170,18 +173,16 @@ def cg(device_report, color_space):
     # Error handling if area is 0
     if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str):
         # If there is an error (e.g., area is 0), return None, None
-        return None, None
+        return None
 
     # Use a dictionary for concise return
     return_map = {
-        "sRGB, NTSC": (rgb_overlap, ntsc_overlap),
-        "sRGB": (rgb_overlap, None),
-        "NTSC": (None, ntsc_overlap),
-        "DCI-P3": (dci_p3_overlap, None)
+        ColorSpace.SRGB: rgb_overlap,
+        ColorSpace.NTSC: ntsc_overlap,
+        ColorSpace.DCI_P3: dci_p3_overlap
     }
 
-    # Return (None, None) by default
-    return return_map.get(color_space, (None, None))
+    return return_map
 
 
 def contrast(device_report, is_tv):
@@ -308,7 +309,7 @@ def delta_e(device_report):
     else:
         return "Error: No valid Delta E values calculated."
 
-def run_calculations(device_report, is_tv, color_space):
+def run_calculations(device_report, is_tv):
     """
     Runs calculations based on the test_type and returns a results dictionary.
     Dictionary keys must match the arguments for r.json_report.
@@ -332,13 +333,13 @@ def run_calculations(device_report, is_tv, color_space):
         results["contrast"] = None
 
     try:
-        cg_by_area_val = cg_by_area(device_report, color_space)
-        cg_val = cg(device_report, color_space)
+        cg_by_area_val = cg_by_area(device_report)
+        cg_val = cg(device_report)
         # Ensure we safely access tuple elements
-        results["cg_by_area_rgb"] = cg_by_area_val[0] if cg_by_area_val else None
-        results["cg_by_area_ntsc"] = cg_by_area_val[1] if cg_by_area_val else None
-        results["cg_rgb"] = cg_val[0] if cg_val else None
-        results["cg_ntsc"] = cg_val[1] if cg_val else None
+        results["cg_by_area_rgb"] = cg_by_area_val.get(ColorSpace.SRGB) if cg_by_area_val else None
+        results["cg_by_area_ntsc"] = cg_by_area_val.get(ColorSpace.NTSC) if cg_by_area_val else None
+        results["cg_rgb"] = cg_val.get(ColorSpace.SRGB) if cg_val else None
+        results["cg_ntsc"] = cg_val.get(ColorSpace.NTSC) if cg_val else None
     except Exception as e:
         logger.error(f"Failed 'Color Gamut' calculation: {e}")
         results.update({

@@ -23,7 +23,6 @@ ARCHIVE_REPORTS = Path("report_archive")
 LOGS_FOLDER = Path("logs")
 RESULTS_FOLDER = Path("results")
 
-MAIN_CONFIG = Path("config") / "main.yaml"
 COLOR_SPACE_CONFIG = Path("config") / "color_space.yaml"
 CIE_BACKGROUND_SVG = Path("config") / "CIExy1931.svg"
 EXPECTED_RESULT = Path("config") / "expected_result.yaml"
@@ -36,8 +35,6 @@ logger.add(LOGS_FOLDER / f"report_generator.log", level="DEBUG", encoding="utf-8
 # Parsing general settings
 RGB = parse.coordinate_srgb(COLOR_SPACE_CONFIG)
 NTSC = parse.coordinate_ntsc(COLOR_SPACE_CONFIG)
-COLOR_SPACE = parse.parse_yaml(MAIN_CONFIG, "Task", "color_space", "type")
-#test = parse.parse_yaml(MAIN_CONFIG, "Task", "test", "type")
 
 # Create working folders if they do not exist
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -115,8 +112,7 @@ for current_device_name, file_list in device_groups.items():
 
         calculation_results = cal.run_calculations(
             device_report=current_device_report,
-            is_tv=is_tv_flag,
-            color_space=COLOR_SPACE  # Pass the color space
+            is_tv=is_tv_flag
         )
 
         device_calculated_report = r.json_report(
