@@ -1,0 +1,106 @@
+{
+  "SerialNumber": "TSDPB20S10AV011220",
+  "DeviceConfiguration": "SDX-43U4169_CH19",
+  "IsTV": true,
+  "MeasurementDateTime": "20251101_144948",
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": 0.299,
+      "y": 0.311,
+      "Lv": 229.1,
+      "T": 7614
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": 0.298,
+      "y": 0.312,
+      "Lv": 261.1,
+      "T": 7621
+    },
+    {
+      "Location": "BottomLeft",
+      "x": 0.296,
+      "y": 0.306,
+      "Lv": 236.2,
+      "T": 7881
+    },
+    {
+      "Location": "TopCenter",
+      "x": 0.299,
+      "y": 0.31,
+      "Lv": 283.5,
+      "T": 7587
+    },
+    {
+      "Location": "Center",
+      "x": 0.299,
+      "y": 0.31,
+      "Lv": 287.6,
+      "T": 7607
+    },
+    {
+      "Location": "BottomCenter",
+      "x": 0.298,
+      "y": 0.306,
+      "Lv": 303,
+      "T": 7766
+    },
+    {
+      "Location": "TopRight",
+      "x": 0.301,
+      "y": 0.315,
+      "Lv": 233.8,
+      "T": 7411
+    },
+    {
+      "Location": "MiddleRight",
+      "x": 0.301,
+      "y": 0.315,
+      "Lv": 267.7,
+      "T": 7392
+    },
+    {
+      "Location": "BottomRight",
+      "x": 0.299,
+      "y": 0.31,
+      "Lv": 235.1,
+      "T": 7573
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.673,
+      "y": 0.307,
+      "Lv": 55.5,
+      "T": -1
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.281,
+      "y": 0.65,
+      "Lv": 223.1,
+      "T": -1
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.154,
+      "y": 0.052,
+      "Lv": 28.6,
+      "T": -1
+    },
+    {
+      "Location": "WhiteColor",
+      "x": 0.282,
+      "y": 0.286,
+      "Lv": 308.1,
+      "T": 9965
+    },
+    {
+      "Location": "BlackColor",
+      "x": 0.232,
+      "y": 0.198,
+      "Lv": 0.0378629,
+      "T": -1
+    }
+  ]
+}

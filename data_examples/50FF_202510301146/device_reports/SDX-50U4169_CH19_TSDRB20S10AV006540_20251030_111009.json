@@ -1,0 +1,25 @@
+{
+    "SerialNumber": "TSDRB20S10AV006540",
+    "MeasurementDateTime": "20251030_111009",
+    "Results": {
+        "Brightness": 352.3,
+        "BrightnessUniformity": 66.7433831990794,
+        "CgByAreaRGB": 127.49576082106206,
+        "CgByAreaNTSC": 90.30278128950697,
+        "CgRGB": 99.71499408394111,
+        "CgNTSC": 80.1175366987674,
+        "Contrast": 5084.13,
+        "Temperature": 8606.0,
+        "DeltaE": 6.996069283776111,
+        "Coordinates": {
+            "Red_x": 0.665,
+            "Red_y": 0.303,
+            "Green_x": 0.273,
+            "Green_y": 0.668,
+            "Blue_x": 0.155,
+            "Blue_y": 0.049,
+            "Center_x": 0.274,
+            "Center_y": 0.287
+        }
+    }
+}

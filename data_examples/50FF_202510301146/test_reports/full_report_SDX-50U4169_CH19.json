@@ -1,0 +1,103 @@
+{
+    "SerialNumber": [
+        "TSDRB20S10AV005786",
+        "TSDRB20S10AV006438",
+        "TSDRB20S10AV006461",
+        "TSDRB20S10AV006471",
+        "TSDRB20S10AV006481",
+        "TSDRB20S10AV006501",
+        "TSDRB20S10AV006540",
+        "TSDRB20S10AV006585",
+        "TSDRB20S10AV006659",
+        "TSDRB20S10AV006699"
+    ],
+    "Results": {
+        "Brightness": {
+            "avg": 355,
+            "min": 335,
+            "max": 372
+        },
+        "BrightnessUniformity": {
+            "avg": 68.9,
+            "min": 66.7,
+            "max": 73.0
+        },
+        "CgByAreaNTSC": {
+            "avg": 90.6,
+            "min": 90.1,
+            "max": 91.0
+        },
+        "CgByAreaRGB": {
+            "avg": 127.9,
+            "min": 127.2,
+            "max": 128.5
+        },
+        "CgNTSC": {
+            "avg": 80.04,
+            "min": 79.59,
+            "max": 80.62
+        },
+        "CgRGB": {
+            "avg": 99.67,
+            "min": 99.58,
+            "max": 99.74
+        },
+        "Contrast": {
+            "avg": 4760,
+            "min": 3756,
+            "max": 5106
+        },
+        "Coordinates": {
+            "Blue_x": {
+                "avg": 0.155,
+                "min": 0.155,
+                "max": 0.156
+            },
+            "Blue_y": {
+                "avg": 0.048,
+                "min": 0.047,
+                "max": 0.049
+            },
+            "Center_x": {
+                "avg": 0.272,
+                "min": 0.269,
+                "max": 0.274
+            },
+            "Center_y": {
+                "avg": 0.284,
+                "min": 0.279,
+                "max": 0.287
+            },
+            "Green_x": {
+                "avg": 0.274,
+                "min": 0.272,
+                "max": 0.276
+            },
+            "Green_y": {
+                "avg": 0.669,
+                "min": 0.667,
+                "max": 0.67
+            },
+            "Red_x": {
+                "avg": 0.666,
+                "min": 0.663,
+                "max": 0.667
+            },
+            "Red_y": {
+                "avg": 0.303,
+                "min": 0.303,
+                "max": 0.304
+            }
+        },
+        "DeltaE": {
+            "avg": 5.3,
+            "min": 2.6,
+            "max": 7.0
+        },
+        "Temperature": {
+            "avg": 8803,
+            "min": 8468,
+            "max": 9142
+        }
+    }
+}

@@ -1,0 +1,106 @@
+{
+  "SerialNumber": "TSDRB20S10AV006501",
+  "DeviceConfiguration": "SDX-50U4169_CH19",
+  "IsTV": true,
+  "MeasurementDateTime": "20251030_113821",
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": 0.286,
+      "y": 0.309,
+      "Lv": 240.8,
+      "T": 8664
+    },
+    {
+      "Location": "TopCenter",
+      "x": 0.284,
+      "y": 0.308,
+      "Lv": 282.8,
+      "T": 8900
+    },
+    {
+      "Location": "TopRight",
+      "x": 0.284,
+      "y": 0.307,
+      "Lv": 246.5,
+      "T": 8899
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": 0.285,
+      "y": 0.313,
+      "Lv": 278.1,
+      "T": 8653
+    },
+    {
+      "Location": "Center",
+      "x": 0.284,
+      "y": 0.307,
+      "Lv": 356.8,
+      "T": 8926
+    },
+    {
+      "Location": "MiddleRight",
+      "x": 0.284,
+      "y": 0.307,
+      "Lv": 287.8,
+      "T": 8875
+    },
+    {
+      "Location": "BottomLeft",
+      "x": 0.283,
+      "y": 0.306,
+      "Lv": 271.8,
+      "T": 8954
+    },
+    {
+      "Location": "BottomCenter",
+      "x": 0.285,
+      "y": 0.304,
+      "Lv": 293.9,
+      "T": 8874
+    },
+    {
+      "Location": "BottomRight",
+      "x": 0.283,
+      "y": 0.3,
+      "Lv": 267.8,
+      "T": 9247
+    },
+    {
+      "Location": "WhiteColor",
+      "x": 0.27,
+      "y": 0.285,
+      "Lv": 362,
+      "T": 11558
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.665,
+      "y": 0.303,
+      "Lv": 58.6,
+      "T": -1
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.272,
+      "y": 0.67,
+      "Lv": 270.6,
+      "T": -1
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.155,
+      "y": 0.048,
+      "Lv": 32,
+      "T": -1
+    },
+    {
+      "Location": "BlackColor",
+      "x": 0.24,
+      "y": 0.211,
+      "Lv": 0.07117185,
+      "T": -1
+    }
+  ]
+}

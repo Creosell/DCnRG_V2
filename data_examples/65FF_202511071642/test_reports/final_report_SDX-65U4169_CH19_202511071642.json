@@ -1,0 +1,240 @@
+{
+    "Brightness": {
+        "status": "PASS",
+        "reason": "Actual avg (402) >= Expected typ (400)",
+        "actual_values": {
+            "avg": 402,
+            "min": 385,
+            "max": 437
+        },
+        "expected_values": {
+            "min": 350,
+            "typ": 400,
+            "max": "None"
+        }
+    },
+    "Brightness_uniformity": {
+        "status": "PASS",
+        "reason": "Actual avg (77.6) >= Expected typ (70)",
+        "actual_values": {
+            "avg": 77.6,
+            "min": 70.8,
+            "max": 84.5
+        },
+        "expected_values": {
+            "min": 65,
+            "typ": 70,
+            "max": "None"
+        }
+    },
+    "Contrast": {
+        "status": "PASS",
+        "reason": "Actual avg (8207) >= Expected typ (5610.0)",
+        "actual_values": {
+            "avg": 8207,
+            "min": 5391,
+            "max": 9467
+        },
+        "expected_values": {
+            "min": 4500,
+            "typ": 6000,
+            "max": "None"
+        }
+    },
+    "Cg_rgb_area": {
+        "status": "PASS",
+        "reason": "Actual avg (119.7) >= Expected typ (85)",
+        "actual_values": {
+            "avg": 119.7,
+            "min": 119.1,
+            "max": 120.3
+        },
+        "expected_values": {
+            "min": 80,
+            "typ": 85,
+            "max": "None"
+        }
+    },
+    "Cg_ntsc_area": {
+        "status": "FAIL",
+        "reason": "Actual avg (84.8) < Expected typ (85)",
+        "actual_values": {
+            "avg": 84.8,
+            "min": 84.3,
+            "max": 85.2
+        },
+        "expected_values": {
+            "min": 80,
+            "typ": 85,
+            "max": "None"
+        }
+    },
+    "Cg_rgb": {
+        "status": "PASS",
+        "reason": "Actual avg (99.77) >= Expected typ (85)",
+        "actual_values": {
+            "avg": 99.77,
+            "min": 99.54,
+            "max": 99.92
+        },
+        "expected_values": {
+            "min": 80,
+            "typ": 85,
+            "max": "None"
+        }
+    },
+    "Cg_ntsc": {
+        "status": "FAIL",
+        "reason": "Actual avg (80.33) < Expected typ (85)",
+        "actual_values": {
+            "avg": 80.33,
+            "min": 79.73,
+            "max": 81.03
+        },
+        "expected_values": {
+            "min": 80,
+            "typ": 85,
+            "max": "None"
+        }
+    },
+    "Temperature": {
+        "status": "FAIL",
+        "reason": "Actual avg (8165) < Expected typ (9300)",
+        "actual_values": {
+            "avg": 8165,
+            "min": 7774,
+            "max": 8639
+        },
+        "expected_values": {
+            "min": 7300,
+            "typ": 9300,
+            "max": 11300
+        }
+    },
+    "Delta_e": {
+        "status": "PASS",
+        "reason": "Actual avg (5.1) >= Expected typ (3)",
+        "actual_values": {
+            "avg": 5.1,
+            "min": 4.3,
+            "max": 6.7
+        },
+        "expected_values": {
+            "min": 4,
+            "typ": 3,
+            "max": 2
+        }
+    },
+    "Red_x": {
+        "status": "PASS",
+        "reason": "All coordinate checks passed.",
+        "actual_values": {
+            "avg": 0.665,
+            "min": 0.665,
+            "max": 0.666
+        },
+        "expected_values": {
+            "min": 0.619,
+            "typ": 0.679,
+            "max": 0.739
+        }
+    },
+    "Red_y": {
+        "status": "PASS",
+        "reason": "All coordinate checks passed.",
+        "actual_values": {
+            "avg": 0.32,
+            "min": 0.32,
+            "max": 0.321
+        },
+        "expected_values": {
+            "min": 0.245,
+            "typ": 0.305,
+            "max": 0.365
+        }
+    },
+    "Green_x": {
+        "status": "PASS",
+        "reason": "All coordinate checks passed.",
+        "actual_values": {
+            "avg": 0.272,
+            "min": 0.271,
+            "max": 0.273
+        },
+        "expected_values": {
+            "min": 0.218,
+            "typ": 0.278,
+            "max": 0.338
+        }
+    },
+    "Green_y": {
+        "status": "PASS",
+        "reason": "All coordinate checks passed.",
+        "actual_values": {
+            "avg": 0.638,
+            "min": 0.635,
+            "max": 0.641
+        },
+        "expected_values": {
+            "min": 0.575,
+            "typ": 0.635,
+            "max": 0.695
+        }
+    },
+    "Blue_x": {
+        "status": "PASS",
+        "reason": "All coordinate checks passed.",
+        "actual_values": {
+            "avg": 0.142,
+            "min": 0.141,
+            "max": 0.142
+        },
+        "expected_values": {
+            "min": 0.093,
+            "typ": 0.153,
+            "max": 0.213
+        }
+    },
+    "Blue_y": {
+        "status": "PASS",
+        "reason": "All coordinate checks passed.",
+        "actual_values": {
+            "avg": 0.061,
+            "min": 0.059,
+            "max": 0.064
+        },
+        "expected_values": {
+            "min": 0.006,
+            "typ": 0.056,
+            "max": 0.106
+        }
+    },
+    "White_x": {
+        "status": "PASS",
+        "reason": "All coordinate checks passed.",
+        "actual_values": {
+            "avg": 0.277,
+            "min": 0.274,
+            "max": 0.28
+        },
+        "expected_values": {
+            "min": 0.22,
+            "typ": 0.28,
+            "max": 0.34
+        }
+    },
+    "White_y": {
+        "status": "PASS",
+        "reason": "All coordinate checks passed.",
+        "actual_values": {
+            "avg": 0.291,
+            "min": 0.282,
+            "max": 0.297
+        },
+        "expected_values": {
+            "min": 0.23,
+            "typ": 0.29,
+            "max": 0.35
+        }
+    }
+}

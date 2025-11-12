@@ -1,0 +1,106 @@
+{
+  "SerialNumber": "TSDSB20S10AV008101",
+  "DeviceConfiguration": "SDX-55U4169_CH19",
+  "IsTV": true,
+  "MeasurementDateTime": "20251028_141415",
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": 0.29,
+      "y": 0.293,
+      "Lv": 205.4,
+      "T": 8775
+    },
+    {
+      "Location": "TopCenter",
+      "x": 0.289,
+      "y": 0.287,
+      "Lv": 218.9,
+      "T": 9109
+    },
+    {
+      "Location": "TopRight",
+      "x": 0.289,
+      "y": 0.287,
+      "Lv": 204.5,
+      "T": 9145
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": 0.29,
+      "y": 0.292,
+      "Lv": 243.7,
+      "T": 8847
+    },
+    {
+      "Location": "Center",
+      "x": 0.289,
+      "y": 0.286,
+      "Lv": 293.4,
+      "T": 9169
+    },
+    {
+      "Location": "MiddleRight",
+      "x": 0.29,
+      "y": 0.289,
+      "Lv": 248.5,
+      "T": 8957
+    },
+    {
+      "Location": "BottomLeft",
+      "x": 0.291,
+      "y": 0.293,
+      "Lv": 213.5,
+      "T": 8661
+    },
+    {
+      "Location": "BottomCenter",
+      "x": 0.29,
+      "y": 0.288,
+      "Lv": 230.1,
+      "T": 8988
+    },
+    {
+      "Location": "BottomRight",
+      "x": 0.291,
+      "y": 0.291,
+      "Lv": 210.7,
+      "T": 8780
+    },
+    {
+      "Location": "BlackColor",
+      "x": 0.248,
+      "y": 0.223,
+      "Lv": 0.28556775,
+      "T": -1
+    },
+    {
+      "Location": "WhiteColor",
+      "x": 0.279,
+      "y": 0.284,
+      "Lv": 329.9,
+      "T": 10531
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.678,
+      "y": 0.305,
+      "Lv": 54,
+      "T": -1
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.282,
+      "y": 0.653,
+      "Lv": 234.6,
+      "T": -1
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.154,
+      "y": 0.046,
+      "Lv": 25.8,
+      "T": -1
+    }
+  ]
+}

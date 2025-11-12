@@ -179,7 +179,7 @@ for current_device_name, file_list in device_groups.items():
 
     # Combine all files into one list for processing
     # We will archive and delete ALL of them
-    all_files_to_process = source_files + report_files + result_files
+    files_to_archive = source_files + result_files
 
     # 2. Define zip path
     zip_path = ARCHIVE_REPORTS / f"{current_device_name}_{TIMESTAMP}.zip"
@@ -189,11 +189,12 @@ for current_device_name, file_list in device_groups.items():
     # Archive all files relative to the project's root directory
     h.archive_specific_files(
         zip_path=zip_path,
-        files_to_archive=all_files_to_process,
+        files_to_archive=files_to_archive,
         base_folder=Path.cwd()  # Use project root for relative paths
     )
 
     logger.info("--- Cleanup ---")
+
 
     # Clear only the files we just processed
     h.clear_specific_files(source_files+report_files)
