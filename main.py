@@ -194,4 +194,4 @@ for current_device_name, file_list in device_groups.items():
 
 
     # Clear only the files we just processed
-    h.clear_specific_files(source_files+report_files)
+    #h.clear_specific_files(source_files+report_files)
