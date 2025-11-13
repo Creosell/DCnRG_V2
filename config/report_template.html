@@ -18,6 +18,21 @@
             border-radius: 8px;
         }
 
+        /* Report Header Info */
+        .report-header-info {
+        text-align: left;
+        margin: 10px 0px 0px 0px;
+        color: #555;
+        font-size: 21px;
+        display: inline-grid;
+        }
+        .report-header-info span {
+        display: inline-block;
+        }
+        .report-header-info strong {
+        color: #222;
+        }
+
         /* Table Styles */
         table { border-collapse: collapse; margin-bottom: 30px; width: 100%;}
         th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: center; }
@@ -81,7 +96,7 @@
 
         /* New Table for Individual Reports Styling */
         .individual-reports-table {
-            font-size: 12px; /* Smaller font for many columns */
+            font-size: 13px; /* Smaller font for many columns */
             table-layout: auto; /* Allow column width adjustment */
             width: 100%;
         }
@@ -173,7 +188,10 @@
         {% endif %}
     {% endfor %}
     <h1>Display Analysis Report</h1>
-
+    <div class="report-header-info">
+        <span><strong>Device configuration:</strong> {{ current_device_name }}</span>
+        <span><strong>Inspection date:</strong> {{ inspection_date }}</span>
+    </div>
     <h2>Main Test Results</h2>
     <table>
         <thead>
@@ -181,7 +199,7 @@
                 <th>Parameter</th>
                 <th>Min (Actual)</th>
                 <th>Min (Expected)</th>
-                <th>Avg (Actual)</th>
+                <th>Typ (Actual)</th>
                 <th>Typ (Expected)</th>
                 <th>Max (Actual)</th>
                 <th>Max (Expected)</th>
@@ -238,9 +256,10 @@
             <tr>
                 <th>Coordinate</th>
                 <th>Min (Actual)</th>
-                <th>Avg (Actual)</th>
-                <th>Max (Actual)</th>
                 <th>Min (Expected)</th>
+                <th>Typ (Actual)</th>
+                <th>Typ (Expected)</th>
+                <th>Max (Actual)</th>
                 <th>Max (Expected)</th>
                 <th>Status</th>
                 <th>Note</th>
@@ -252,9 +271,10 @@
             <tr>
                 <td class="param-name">{{ coord_report_names.get(name, name) }}</td>
                 <td>{{ data.actual_values.min | default('N/A') }}</td>
-                <td>{{ data.actual_values.avg | default('N/A') }}</td>
-                <td>{{ data.actual_values.max | default('N/A') }}</td>
                 <td>{{ data.expected_values.min | default('N/A') }}</td>
+                <td>{{ data.actual_values.avg | default('N/A') }}</td>
+                <td>{{ data.expected_values.typ | default('N/A') }}</td>
+                <td>{{ data.actual_values.max | default('N/A') }}</td>
                 <td>{{ data.expected_values.max | default('N/A') }}</td>
 
                 {% set status_class = 'status-na' %}

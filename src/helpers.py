@@ -3,6 +3,7 @@ import json
 import os
 import zipfile
 from pathlib import Path
+import datetime
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from loguru import logger
@@ -49,7 +50,8 @@ def create_html_report(
         output_file: Path,
         min_fail_file: Path,
         cie_background_svg: Path,
-        device_reports: list
+        device_reports: list,
+        current_device_name: str
 ):
     """
     Generates an interactive HTML report from a JSON test result file
@@ -61,6 +63,7 @@ def create_html_report(
         min_fail_file (Path): Path to the min_fail JSON file.
         cie_background_svg (Path): Path to the SVG background image.
         device_reports (list): List of device reports.
+        current_device_name (str): Name of the current device.
 
     """
     logger.info(f"Generating HTML report for {input_file.name}")
@@ -154,6 +157,9 @@ def create_html_report(
     for report in all_device_reports_data.values():
         unique_ufn_keys.update(report["results"].keys())
 
+    # 3. NEW: Calculate inspection date
+    inspection_date = get_inspection_date_range(all_device_reports_data)
+
     # Sort keys based on the order defined in UFN_MAPPING values
     ufn_order = {name: i for i, name in enumerate(UFN_MAPPING.values())}
     sorted_ufn_keys = sorted(list(unique_ufn_keys),
@@ -168,7 +174,9 @@ def create_html_report(
         "device_points": device_points,
         "debug_points": debug_points,
         'individual_reports': all_device_reports_data,
-        'report_headers': sorted_ufn_keys
+        'report_headers': sorted_ufn_keys,
+        'current_device_name': current_device_name,
+        'inspection_date': inspection_date
     }
 
     # --- 5. Render and Save HTML ---
@@ -301,3 +309,70 @@ def clear_specific_files(files_to_delete):
             logger.warning(f"File {file_path} not found, skipping cleanup.")
 
     logger.info(f"Total files removed during cleanup: {removed_count}")
+
+# helpers.py
+
+def get_day_suffix(day):
+    """Returns the English ordinal suffix (st, nd, rd, th) for a day."""
+    if 11 <= day <= 13:
+        return 'th'
+    if day % 10 == 1:
+        return 'st'
+    if day % 10 == 2:
+        return 'nd'
+    if day % 10 == 3:
+        return 'rd'
+    return 'th'
+
+def get_inspection_date_range(all_device_reports_data: dict) -> str:
+    """
+    Parses all 'measurement_date' fields and returns a formatted date string.
+    """
+    if not all_device_reports_data:
+        return "N/A"
+
+    dates = set()
+    # Format based on 'measurement_date' in process_device_reports
+    date_format = "%Y%m%d%H%M%S"
+
+    for report in all_device_reports_data.values():
+        date_str = report.get("measurement_date")
+        if date_str and date_str != "N/A":
+            try:
+                # We only care about the date part
+                dt = datetime.datetime.strptime(date_str, date_format).date()
+                dates.add(dt)
+            except ValueError:
+                logger.warning(f"Invalid date format skipped: {date_str}")
+                continue
+
+    if not dates:
+        return "N/A"
+
+    min_date = min(dates)
+    max_date = max(dates)
+
+    # Helper for formatting: e.g., "1st November 2025"
+    def format_date(dt):
+        day = dt.day
+        suffix = get_day_suffix(day)
+        # %B gives full month name (e.g., November)
+        return dt.strftime(f"{day}{suffix} %B %Y")
+
+    if min_date == max_date:
+        # Condition 1: Single date
+        return format_date(min_date)
+    else:
+        # Condition 2: Date range
+        min_day = min_date.day
+        max_day = max_date.day
+        min_suffix = get_day_suffix(min_day)
+        max_suffix = get_day_suffix(max_day)
+
+        # Check if they are in the same month/year
+        if min_date.month == max_date.month and min_date.year == max_date.year:
+            # e.g., "1st - 3rd November 2025"
+            return f"{min_day}{min_suffix} - {max_day}{max_suffix} {min_date.strftime('%B %Y')}"
+        else:
+            # e.g., "30th November - 2nd December 2025"
+            return f"{format_date(min_date)} - {format_date(max_date)}"

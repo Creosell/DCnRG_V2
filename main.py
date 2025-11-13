@@ -139,7 +139,8 @@ for current_device_name, file_list in device_groups.items():
         output_file=current_result_html,
         device_reports = device_reports_list,
         min_fail_file=current_min_fail,
-        cie_background_svg=CIE_BACKGROUND_SVG
+        cie_background_svg=CIE_BACKGROUND_SVG,
+        current_device_name = current_device_name
     )
 
     # We no longer merge PDFs

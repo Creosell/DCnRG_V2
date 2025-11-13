@@ -90,7 +90,7 @@
 	<line id="physical-xy-limit" fill="none" stroke="#BABABA" stroke-width="1.5" stroke-linecap="round" x1="99" y1="32" x2="457.4" y2="390.4"/>
 	<polygon fill="white" opacity="0.7" stroke="#BABABA" stroke-width="1.5" stroke-linecap="round" points="99,32 457.4,390.4 457.4,32"/>
 </g>
-<g id="nm-ticks" fill="none" stroke="black" stroke-width="0.5" style="display: None">
+<g id="nm-ticks" fill="none" stroke="black" stroke-width="0.5" style="display: visible">
 	<line id="tick-380nm" x1="137.9" y1="490.7" x2="135  " y2="496.3" />
 	<line id="tick-460nm" x1="121.1" y1="477.2" x2="116.8" y2="481.7" />
 	<line id="tick-470nm" x1="111.6" y1="462.6" x2="106.1" y2="465.7" />
@@ -105,7 +105,7 @@
 	<line id="tick-620nm" x1="402.3" y1="334.3" x2="406.7" y2="329.8" />
 	<line id="tick-700nm" x1="426.8" y1="358.8" x2="431.2" y2="354.3" />
 </g>
-<g id="nm-labels" style="font-size: 16px; fill: #06C; font-family: sans-serif; display: None;">
+<g id="nm-labels" style="font-size: 16px; fill: #06C; font-family: sans-serif; display: visible;">
 	<text x="110"     y="507"     >380</text>
 	<text x= "89.491" y="490.2227">460</text>
 	<text x= "77.491" y="472.2227">470</text>
