@@ -15,16 +15,16 @@ HTML_TEMPLATE_NAME = "report_template.html"
 
 # User-Friendly Name mapping for keys in the JSON results
 UFN_MAPPING = {
-    "Brightness": "Peak Brightness (nits)",
+    "Brightness": "Brightness (cd/m²)",
     "Contrast": "Contrast Ratio",
     "Temperature": "Color Temperature (K)",
 
     "BrightnessUniformity": "Brightness Uniformity (%)",
-    "CgByAreaRGB": "Color Gamut Area (sRGB) (%)",
-    "CgByAreaNTSC": "Color Gamut Area (NTSC) (%)",
-    "cgRGB": "Gamut Coverage (sRGB) (%)",
-    "cgNTSC": "Gamut Coverage (NTSC) (%)",
-    "DeltaE": "Avg Delta E",
+    "CgByAreaRGB": "sRGB Gamut Area (%)",
+    "CgByAreaNTSC": "NTSC Gamut Area (%)",
+    "CgRGB": "sRGB Gamut Coverage (%)",
+    "CgNTSC": "NTSC Gamut Coverage (%)",
+    "DeltaE": "ΔE",
 
     # Coordinates (flattened)
     "Red_x": "Red (x)",
@@ -231,7 +231,7 @@ def process_device_reports(device_reports: list, ufn_mapping: dict) -> dict:
             all_reports_data[serial_number] = {
                 "results": processed_results,
                 # Use MeasurementDateTime for display
-                "measurement_date": data.get("MeasurementDateTime", "N/A").replace('_', ' '),
+                "measurement_date": data.get("MeasurementDateTime", "N/A").replace('_', ''),
                 "is_tv": data.get("IsTV", False)
             }
 

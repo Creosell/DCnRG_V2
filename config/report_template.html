@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-m-8">
+    <meta charset="UTF-8">
     <title>Display Analysis Report</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f9f9f9; }
@@ -69,6 +69,10 @@
         #ntsc_triangle { fill: #dc3545; stroke: #000000; }
         #device_triangle { fill: #28a745; stroke: #28a745; }
 
+        #device_checkbox_label {color: #28a745; }
+        #ntsc_checkbox_label {color: #000000; }
+        #srgb_checkbox_label {color: #007bff; }
+
         /* Debug Grid */
         .debug-grid-point { fill: #ff00ff; opacity: 0.7; }
 
@@ -83,7 +87,7 @@
         }
 
         .individual-reports-table th, .individual-reports-table td {
-            padding: 8px 6px;
+            padding: 8px 14px;
         }
 
         /* === STYLES FOR SORTING === */
@@ -91,13 +95,15 @@
             cursor: pointer;
             user-select: none;
             position: relative;
+            padding-left: 10px;
         }
         /* Default arrow (unsorted) - subtle */
         .sortable-header::after {
             content: ' \2195'; /* Up/Down Arrow */
             opacity: 0.3;
             position: absolute;
-            right: 8px;
+            right: 3px;
+            padding-left: 10px;
         }
         /* Ascending arrow */
         .sortable-header.sort-asc::after {
@@ -141,11 +147,12 @@
         'Brightness_uniformity': 'Brightness Uniformity (%)',
         'Cg_rgb_area': 'sRGB Gamut Area (%)',
         'Cg_ntsc_area': 'NTSC Gamut Area (%)',
-        'Contrast': 'Contrast Ratio',
-        'Temperature': 'Color Temperature (K)',
-        'Gamma': 'Gamma (2.2)',
         'Cct_uniformity': 'Color Temp Uniformity (%)',
-        'Cg_rgb': 'sRGB Gamut Coverage (%)',       'Cg_ntsc': 'NTSC Gamut Coverage (%)'       } %}
+        'Cg_rgb': 'sRGB Gamut Coverage (%)',
+        'Cg_ntsc': 'NTSC Gamut Coverage (%)',
+        'Contrast': 'Contrast Ratio',
+        'Temperature': 'Color Temperature (K)'
+     } %}
 
     {% set coord_report_names = {
         'Red_x': 'Red (x)', 'Red_y': 'Red (y)',
@@ -265,10 +272,10 @@
     <h2>Color Gamut Plot</h2>
     <div class="plot-container">
         <div class="plot-controls">
-            <label><input type="checkbox" onchange="toggleTriangle('device_triangle')" checked> Device</label>
-            <label><input type="checkbox" onchange="toggleTriangle('ntsc_triangle')" checked> NTSC</label>
-            <label><input type="checkbox" onchange="toggleTriangle('srgb_triangle')" checked> sRGB</label>
-</div>
+            <label id="ntsc_checkbox_label"><input type="checkbox" onchange="toggleTriangle('ntsc_triangle')" checked> NTSC</label>
+            <label id="srgb_checkbox_label"><input type="checkbox" onchange="toggleTriangle('srgb_triangle')" checked> sRGB</label>
+            <label id="device_checkbox_label"><input type="checkbox" onchange="toggleTriangle('device_triangle')" checked> Device</label>
+        </div>
 
         <div id="plot-wrapper">
             <svg id="plot-svg" width="494" height="555" viewBox="0 0 494 525" xmlns="http://www.w3.org/2000/svg">
