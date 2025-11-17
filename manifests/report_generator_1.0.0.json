@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "ReportGenerator.exe",
-      "hash": "b0743d8ad8877cd4424dd1f32a4b54dbb2371f1549084b40c07eec9e59ceca15"
+      "hash": "42e2f7d0366a89c1d65b317468da9d2b23dd77b0290c4d0252aa12aed603a688"
     },
     {
       "path": "config/CIExy1931.svg",
@@ -22,7 +22,7 @@
     },
     {
       "path": "lib_report_generator/base_library.zip",
-      "hash": "fe4de75e56afa140c61442e69e171a53a4c388b4257bf805a7acc8f5337f7d41"
+      "hash": "524878e0d39a62f0ed47e4d1f1117a0d5e5e26c1ed3c5fb288e7a9ee86770b61"
     },
     {
       "path": "lib_report_generator/libcrypto-3.dll",

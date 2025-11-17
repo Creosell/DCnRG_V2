@@ -171,7 +171,7 @@ def create_zip_manifest(zip_file, product_id, version):
     logger.info(f"Generating 'zip' manifest for: {zip_file}")
     file_name = zip_path.name
     file_hash = get_sha256(zip_path)
-    base_url = f"modules/{product_id}/{version}"
+    base_url = f"versions/{product_id}/{version}"
 
     manifest = {
         "product_id": product_id,
@@ -207,7 +207,7 @@ def create_files_manifest(build_dir, product_id, version):
         logger.error(f"Error: Directory not found: {build_dir}")
         return None, None, None
 
-    base_url = f"modules/{product_id}/{version}"
+    base_url = f"versions/{product_id}/{version}"
     manifest_files = []
     upload_file_list = []
 

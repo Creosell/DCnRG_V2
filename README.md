@@ -15,16 +15,11 @@ Install dependencies
 ````bash
   pip install -r requirements.txt
 ````
-Command for generating .exe file
+Command for generating .exe file and upload version. Instead of @version put required version number (1.0.0, for exampe)  
 ```bash
-  pyinstaller main.py --onefile --name "ReportGenerator" --hidden-import "src.parse" --hidden-import "src.calculate" --hidden-import "src.report" --hidden-import "src.helpers" --distpath .
+  python build_and_upload.py files build/dist/ReportGenerator report_generator @version --upload
 ```
 
 TODO:
 1) Optimize names for variables in JSON reports, make one name across all functions
-2) Optimize temp working folders
-3) Add support for configuration enabled/disabled tests through YAML file (can be mixed with optimizing names)
-4) Optimize using of color_space.yaml
-5) Uploading reports result to cloud
-6) Change report to HTML
 
