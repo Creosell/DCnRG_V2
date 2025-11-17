@@ -1,12 +1,12 @@
 {
   "product_id": "report_generator",
   "version": "1.0.0",
-  "base_url": "modules/report_generator/1.0.0",
+  "base_url": "versions/report_generator/1.0.0",
   "package_mode": "files",
   "files": [
     {
       "path": "ReportGenerator.exe",
-      "hash": "42e2f7d0366a89c1d65b317468da9d2b23dd77b0290c4d0252aa12aed603a688"
+      "hash": "4a3f779399e454fcc036547b585b7be34fd1f448de07dd61fbb95ccd8eedc861"
     },
     {
       "path": "config/CIExy1931.svg",
@@ -22,7 +22,7 @@
     },
     {
       "path": "lib_report_generator/base_library.zip",
-      "hash": "524878e0d39a62f0ed47e4d1f1117a0d5e5e26c1ed3c5fb288e7a9ee86770b61"
+      "hash": "addc373b4938b14ae6fb081b94cb57b6573eee0464a6a4ac0eebc9a1e87a8483"
     },
     {
       "path": "lib_report_generator/libcrypto-3.dll",

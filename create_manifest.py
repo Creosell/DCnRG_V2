@@ -260,7 +260,7 @@ def upload_to_nextcloud(nc_client, manifest_path, files_to_upload, product_id, v
 
     # 2. Upload the application files
     logger.info("--- Starting Application Files Upload ---")
-    remote_modules_base = f"/SCT/Updater/modules/{product_id}/{version}"
+    remote_versions_base = f"/SCT/Updater/versions/{product_id}/{version}"
 
     if mode == 'zip':
         # ZIP mode is just one file, no parallelism needed
@@ -269,7 +269,7 @@ def upload_to_nextcloud(nc_client, manifest_path, files_to_upload, product_id, v
             return False
 
         zip_file_path = files_to_upload[0]
-        remote_path = f"{remote_modules_base}/{zip_file_path.name}"
+        remote_path = f"{remote_versions_base}/{zip_file_path.name}"
         logger.info(f"Uploading file: {zip_file_path.name} to {remote_path}")
         if not upload_file(nc_client, str(zip_file_path), remote_path):
             return False  # Failed zip upload
@@ -281,7 +281,7 @@ def upload_to_nextcloud(nc_client, manifest_path, files_to_upload, product_id, v
             return True
 
         total_files = len(files_to_upload)
-        logger.info(f"Queuing {total_files} files for parallel upload using {MAX_WORKERS} workers...")
+        logger.info(f"Queuing {total_files} files for parallel upload to {remote_versions_base}...")
 
         failed_uploads = []
 
@@ -291,7 +291,7 @@ def upload_to_nextcloud(nc_client, manifest_path, files_to_upload, product_id, v
             futures_map = {}
             for local_path in files_to_upload:
                 relative_path = local_path.relative_to(source_base_dir)
-                remote_path = f"{remote_modules_base}/{relative_path.as_posix()}"
+                remote_path = f"{remote_versions_base}/{relative_path.as_posix()}"
 
                 # Submit the upload_file task to the pool
                 future = executor.submit(upload_file, nc_client, str(local_path), remote_path)
