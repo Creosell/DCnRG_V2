@@ -20,7 +20,7 @@ def run_command(command_list):
     """
     Helper to run a subprocess and stream its output live.
     """
-    logger.info(f"Running command: {' '.join(command_list)}")
+    logger.debug(f"Running command: {' '.join(command_list)}")
     try:
         subprocess.run(
             command_list,
@@ -78,7 +78,7 @@ def main():
     target_config_dir = dist_path / "config"
 
     # --- Шаг 1: Запуск PyInstaller (ИЗМЕНЕННЫЙ СПОСОБ) ---
-    logger.info(f"--- 1. Building {app_name} from {spec_file} ---")
+    logger.debug(f"--- 1. Building {app_name} from {spec_file} ---")
 
     # --- НОВЫЙ БЛОК: Находим pyinstaller.exe ---
     # Мы должны вызвать .exe напрямую, а не 'python -m PyInstaller'
@@ -113,7 +113,7 @@ def main():
     logger.success(f"Successfully built {app_name}.")
 
     # --- Шаг 2: Копирование папки 'config' (без изменений) ---
-    logger.info(f"--- 2. Copying '{source_config_dir}' to '{target_config_dir}' ---")
+    logger.debug(f"--- 2. Copying '{source_config_dir}' to '{target_config_dir}' ---")
 
     if not source_config_dir.is_dir():
         logger.error(f"Source config directory not found at: {source_config_dir.resolve()}")
@@ -132,7 +132,7 @@ def main():
         sys.exit(1)
 
     # --- Шаг 3: Запуск create_manifest.py (без изменений) ---
-    logger.info("--- 3. Running create_manifest.py ---")
+    logger.debug("--- 3. Running create_manifest.py ---")
 
     manifest_command = [
         "python", "create_manifest.py",
@@ -143,7 +143,7 @@ def main():
     ]
 
     if args.upload:
-        logger.info("Adding --upload-now flag for create_manifest.")
+        logger.debug("Adding --upload-now flag for create_manifest.")
         manifest_command.append("--upload-now")
 
     if not run_command(manifest_command):

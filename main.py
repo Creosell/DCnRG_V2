@@ -12,6 +12,7 @@ import src.parse as parse
 import src.report as r
 
 # --- Step 0: Initialization and Settings ---
+CURRENT_VERSION_OF_PROGRAM = "1.0.0"
 
 # Path configuration
 CURRENT_TIME = datetime.datetime.now()
@@ -28,8 +29,12 @@ EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 
 # Logger configuration
 logger.remove()
-logger.add(sys.stderr, level="SUCCESS")
-logger.add(LOGS_FOLDER / f"report_generator.log", level="DEBUG", encoding="utf-8", rotation="1 MB", retention=3, compression="zip")
+logger.add(
+    sys.stderr,
+    level="INFO",
+    format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>"
+)
+logger.add(LOGS_FOLDER / f"report_generator.log", level="DEBUG", encoding="utf-8", rotation="1 MB", retention=2, compression="zip")
 
 # Create working folders if they do not exist
 DATA_FOLDER.mkdir(parents=True, exist_ok=True)
@@ -37,6 +42,8 @@ TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
 ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
 LOGS_FOLDER.mkdir(parents=True, exist_ok=True)
 RESULTS_FOLDER.mkdir(parents=True, exist_ok=True)
+
+logger.info(f"Report Generator {CURRENT_VERSION_OF_PROGRAM}")
 
 # --- Step 1: File Collection and Grouping by Device Configuration ---
 # Group files by DeviceConfiguration
@@ -46,7 +53,7 @@ if not files:
     logger.warning(f"The folder {DATA_FOLDER} contains no files for processing.")
     exit()
 
-logger.info(f"Found {len(files)} files for processing. Starting grouping...")
+logger.debug(f"Found {len(files)} files for processing. Starting grouping...")
 
 # Setting default flag for tested devices to false
 is_tv_flag = False
@@ -71,7 +78,7 @@ if not device_groups:
 # --- Step 2: Process Each Device Group ---
 
 for current_device_name, file_list in device_groups.items():
-    logger.info(f"--- Processing device configuration: {current_device_name} ({len(file_list)} files) ---")
+    logger.debug(f"--- Processing device configuration: {current_device_name} ({len(file_list)} files) ---")
 
     # 2.1 Dynamic path definition for the CURRENT device
 
@@ -86,8 +93,7 @@ for current_device_name, file_list in device_groups.items():
     current_min_fail = Path("test_reports") / f"min_fail_{current_device_name}.json"
     current_report_from_all = Path("test_reports") / f"full_report_{current_device_name}.json"
     current_final_report = Path("test_reports") / f"final_report_{current_device_name}_{TIMESTAMP}.json"
-    current_result_html = Path("results") / f"{current_device_name}.html"
-    #current_result_html = Path("results") / f"{current_device_name}_{TIMESTAMP}.html"
+    current_result_html = Path("results") / f"{current_device_name}_{TIMESTAMP}.html"
 
     device_reports_list = []
     # 2.2 Process each file in the current group
@@ -121,7 +127,7 @@ for current_device_name, file_list in device_groups.items():
         device_reports_list.append(device_calculated_report)
 
     # 2.3 --- Aggregation and Reporting for the CURRENT configuration ---
-    logger.info(f"Creating final reports for {current_device_name}...")
+    logger.debug(f"Creating final reports for {current_device_name}...")
 
     r.calculate_full_report(device_reports_list, current_report_from_all, current_device_name)
     r.analyze_json_files_for_min_fail(device_reports_list, current_expected_result, current_min_fail, current_device_name)
@@ -147,7 +153,7 @@ for current_device_name, file_list in device_groups.items():
     logger.success(f"HTML Report for {current_device_name} saved to {current_result_html}")
 
     # --- Step 3: Final Steps (Archiving and Cleanup) ---
-    logger.info(f"Starting archiving and cleanup for {current_device_name}...")
+    logger.debug(f"Starting archiving and cleanup for {current_device_name}...")
 
     # 1. Collect all files related to this group
 
@@ -180,7 +186,7 @@ for current_device_name, file_list in device_groups.items():
         base_folder=Path.cwd()  # Use project root for relative paths
     )
 
-    logger.info("--- Cleanup ---")
+    logger.debug("--- Cleanup ---")
 
 
     # Clear only the files we just processed

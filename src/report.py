@@ -329,7 +329,7 @@ def calculate_full_report(device_reports, output_file, device_name):
     try:
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(output_data, f, indent=4)
-        logger.success(f"Full report with averages, min, and max values saved to {output_file}")
+        logger.debug(f"Full report with averages, min, and max values saved to {output_file}")
     except Exception as e:
         logger.error(f"Error writing output JSON to file {output_file}: {e}")
 
@@ -585,13 +585,13 @@ def generate_comparison_report(
     majority_needed = 0
 
     if is_tv_flag and device_reports:
-        logger.info("TV flag is ON. Loading individual reports for 'majority' logic...")
+        logger.debug("TV flag is ON. Loading individual reports for 'majority' logic...")
 
         total_device_count = len(device_reports)
 
         if total_device_count > 0:
             majority_needed = (total_device_count // 2) + 1
-            logger.info(f"Total devices: {total_device_count}, Majority needed: {majority_needed}")
+            logger.debug(f"Total devices: {total_device_count}, Majority needed: {majority_needed}")
 
             for data in device_reports:
                 if not data or "Results" not in data:
@@ -707,7 +707,7 @@ def generate_comparison_report(
     try:
         with open(output_json_file, "w", encoding="utf-8") as f:
             json.dump(full_report, f, indent=4, ensure_ascii=False)
-        logger.success(f"Comparison report successfully saved to {output_json_file}")
+        logger.debug(f"Comparison report successfully saved to {output_json_file}")
     except IOError as e:
         logger.error(f"Could not write report to {output_json_file}. Details: {e}")
     except TypeError as e:
@@ -805,4 +805,4 @@ def analyze_json_files_for_min_fail(device_reports, expected_result_path, output
         logger.error(f"Could not write output file: {e}")
         return
 
-    logger.success(f"Analysis complete. Results saved to {output_path}")
+    logger.debug(f"Analysis complete. Results saved to {output_path}")

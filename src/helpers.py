@@ -66,7 +66,7 @@ def create_html_report(
         current_device_name (str): Name of the current device.
 
     """
-    logger.info(f"Generating HTML report for {input_file.name}")
+    logger.debug(f"Generating HTML report for {input_file.name}")
 
     # --- 1. Load Data ---
     try:
@@ -184,7 +184,7 @@ def create_html_report(
         html_content = template.render(context)
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(html_content)
-        logger.success(f"Successfully created HTML report: {output_file}")
+        logger.debug(f"Successfully created HTML report: {output_file}")
     except Exception as e:
         logger.error(f"Error rendering or saving HTML report: {e}")
 
@@ -251,7 +251,7 @@ def archive_specific_files(zip_path, files_to_archive, base_folder):
     Archives a specific list of files into a zip file, preserving
     their relative path structure from the base_folder.
     """
-    logger.info(f"Archiving {len(files_to_archive)} specific files to {zip_path}...")
+    logger.debug(f"Archiving {len(files_to_archive)} specific files to {zip_path}...")
 
     try:
         files_added = 0
@@ -296,7 +296,7 @@ def clear_specific_files(files_to_delete):
     Deletes a specific list of files.
     """
     removed_count = 0
-    logger.info(f"Cleaning up {len(files_to_delete)} specific files...")
+    logger.debug(f"Cleaning up {len(files_to_delete)} specific files...")
 
     for file_path in files_to_delete:
         if file_path.exists() and file_path.is_file():
@@ -308,7 +308,7 @@ def clear_specific_files(files_to_delete):
         else:
             logger.warning(f"File {file_path} not found, skipping cleanup.")
 
-    logger.info(f"Total files removed during cleanup: {removed_count}")
+    logger.debug(f"Total files removed during cleanup: {removed_count}")
 
 # helpers.py
 

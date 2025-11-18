@@ -15,7 +15,7 @@ Install dependencies
 ````bash
   pip install -r requirements.txt
 ````
-Command for generating .exe file and upload version. Instead of @version put required version number (1.0.0, for exampe)  
+Command for generating .exe file and upload version. Instead of @version put required version number (1.0.0, for example)  
 ```bash
   python build_and_upload.py files build/dist/ReportGenerator report_generator @version --upload
 ```
