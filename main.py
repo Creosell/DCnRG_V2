@@ -12,7 +12,7 @@ import src.parse as parse
 import src.report as r
 
 # --- Step 0: Initialization and Settings ---
-CURRENT_VERSION_OF_PROGRAM = "1.0.0"
+CURRENT_VERSION_OF_PROGRAM = "1.1.0"
 
 # Path configuration
 CURRENT_TIME = datetime.datetime.now()
