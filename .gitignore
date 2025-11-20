@@ -13,3 +13,5 @@
 /ReportGenerator.exe
 /ReportGenerator.spec
 
+/release_manager.py
+/release_artifacts/
