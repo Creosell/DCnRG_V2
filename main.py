@@ -1,8 +1,8 @@
 import datetime
-import os
 import sys
 from collections import defaultdict
 from pathlib import Path
+from enum import IntEnum
 
 from loguru import logger
 
@@ -11,183 +11,171 @@ import src.helpers as h
 import src.parse as parse
 import src.report as r
 
-# --- Step 0: Initialization and Settings ---
-CURRENT_VERSION_OF_PROGRAM = "1.1.0"
+# --- Constants & Configuration ---
+APP_VERSION = "1.1.1"
 
-# Path configuration
-CURRENT_TIME = datetime.datetime.now()
-TIMESTAMP = CURRENT_TIME.strftime("%Y%m%d_%H%M")
 
-DATA_FOLDER = Path("data")
-TEST_REPORTS_FOLDER = Path("test_reports")
-ARCHIVE_REPORTS = Path("report_archive")
-LOGS_FOLDER = Path("logs")
-RESULTS_FOLDER = Path("results")
+class ExitCode(IntEnum):
+    SUCCESS = 0
+    GENERAL_ERROR = 1
+    NO_DATA_FOUND = 2
+    CONFIG_ERROR = 3
 
-CIE_BACKGROUND_SVG = Path("config") / "CIExy1931.svg"
-EXPECTED_RESULT = Path("config") / "expected_result.yaml"
 
-# Logger configuration
-logger.remove()
-logger.add(
-    sys.stderr,
-    level="INFO",
-    format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>"
-)
-logger.add(LOGS_FOLDER / f"report_generator.log", level="DEBUG", encoding="utf-8", rotation="1 MB", retention=2, compression="zip")
+# Paths
+DATA_DIR = Path("data")
+REPORT_DIR = Path("test_reports")
+ARCHIVE_DIR = Path("report_archive")
+LOG_DIR = Path("logs")
+RESULT_DIR = Path("results")
+CONFIG_DIR = Path("config")
 
-# Create working folders if they do not exist
-DATA_FOLDER.mkdir(parents=True, exist_ok=True)
-TEST_REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
-ARCHIVE_REPORTS.mkdir(parents=True, exist_ok=True)
-LOGS_FOLDER.mkdir(parents=True, exist_ok=True)
-RESULTS_FOLDER.mkdir(parents=True, exist_ok=True)
+CIE_BG_SVG = CONFIG_DIR / "CIExy1931.svg"
+DEFAULT_EXPECTED_YAML = CONFIG_DIR / "expected_result.yaml"
 
-logger.info(f"Report Generator {CURRENT_VERSION_OF_PROGRAM}")
 
-# --- Step 1: File Collection and Grouping by Device Configuration ---
-# Group files by DeviceConfiguration
-device_groups = defaultdict(list)
-files = os.listdir(DATA_FOLDER)
-if not files:
-    logger.warning(f"The folder {DATA_FOLDER} contains no files for processing.")
-    exit()
+def setup_logging():
+    """Configures logger settings."""
+    logger.remove()
+    logger.add(
+        sys.stderr,
+        level="INFO",
+        format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>"
+    )
+    logger.add(
+        LOG_DIR / "report_generator.log",
+        level="DEBUG",
+        encoding="utf-8",
+        rotation="1 MB",
+        retention=2,
+        compression="zip"
+    )
 
-logger.debug(f"Found {len(files)} files for processing. Starting grouping...")
 
-# Setting default flag for tested devices to false
-is_tv_flag = False
+def ensure_directories() -> bool:
+    """Creates necessary directories. Returns False on failure."""
+    try:
+        for d in [DATA_DIR, REPORT_DIR, ARCHIVE_DIR, LOG_DIR, RESULT_DIR]:
+            d.mkdir(parents=True, exist_ok=True)
+        return True
+    except Exception as e:
+        logger.critical(f"Failed to create directories: {e}")
+        return False
 
-for file_name in files:
-    if file_name.endswith(".json"):
-        file_path = DATA_FOLDER / file_name
+
+def main() -> int:
+    """Main execution flow."""
+    if not ensure_directories():
+        return ExitCode.CONFIG_ERROR
+
+    setup_logging()
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+    logger.info(f"Report Generator v{APP_VERSION} started.")
+
+    # 1. Find and group files
+    json_files = list(DATA_DIR.glob("*.json"))
+    if not json_files:
+        logger.warning(f"No .json files found in {DATA_DIR}.")
+        return ExitCode.NO_DATA_FOUND
+
+    device_groups = defaultdict(list)
+
+    for file_path in json_files:
         try:
-            #Get device info
-            device_config, is_tv_flag, sn = parse.get_device_info(file_path)
-
-            # Add to group: path, TV flag, serial number
-            device_groups[device_config].append((file_path, is_tv_flag, sn))
-
+            dev_config, is_tv, sn = parse.get_device_info(file_path)
+            if dev_config:
+                device_groups[dev_config].append((file_path, is_tv, sn))
+            else:
+                logger.error(f"Skipping {file_path.name}: Unable to parse device config.")
         except Exception as e:
-            logger.error(f"Error parsing file {file_name}: {e}")
+            logger.error(f"Error reading {file_path.name}: {e}")
 
-if not device_groups:
-    logger.error("Failed to form device groups. Check the files.")
-    exit()
+    if not device_groups:
+        logger.error("No valid device groups formed.")
+        return ExitCode.NO_DATA_FOUND
 
-# --- Step 2: Process Each Device Group ---
+    # 2. Process groups
+    processed_count = 0
 
-for current_device_name, file_list in device_groups.items():
-    logger.debug(f"--- Processing device configuration: {current_device_name} ({len(file_list)} files) ---")
+    try:
+        for dev_name, files in device_groups.items():
+            logger.debug(f"Processing group: {dev_name} ({len(files)} files)")
 
-    # 2.1 Dynamic path definition for the CURRENT device
+            # Paths setup
+            expected_yaml = CONFIG_DIR / "device_configs" / f"{dev_name}.yaml"
+            if not expected_yaml.exists():
+                logger.warning(f"Config for {dev_name} not found. Using default.")
+                expected_yaml = DEFAULT_EXPECTED_YAML
 
-    # Search for a specific requirements file config/device_configs/{name}.yaml
-    current_expected_result = Path("config") / "device_configs" / f"{current_device_name}.yaml"
-    if not current_expected_result.exists():
-        logger.warning(
-            f"Requirements configuration {current_expected_result} not found. Using general file: {EXPECTED_RESULT}")
-        current_expected_result = EXPECTED_RESULT  # Fallback option
+            # Output file paths
+            f_min_fail = REPORT_DIR / f"min_fail_{dev_name}.json"
+            f_full_report = REPORT_DIR / f"full_report_{dev_name}.json"
+            f_final_json = REPORT_DIR / f"final_report_{dev_name}_{timestamp}.json"
+            f_html_result = RESULT_DIR / f"{dev_name}_{timestamp}.html"
 
-    # Dynamic report file names
-    current_min_fail = Path("test_reports") / f"min_fail_{current_device_name}.json"
-    current_report_from_all = Path("test_reports") / f"full_report_{current_device_name}.json"
-    current_final_report = Path("test_reports") / f"final_report_{current_device_name}_{TIMESTAMP}.json"
-    current_result_html = Path("results") / f"{current_device_name}_{TIMESTAMP}.html"
+            device_reports = []
+            source_files_to_archive = []
+            group_is_tv = False
 
-    device_reports_list = []
-    # 2.2 Process each file in the current group
-    for file, is_tv_flag, sn in file_list:
+            # Process individual files
+            for f_path, is_tv, sn in files:
+                group_is_tv = is_tv
+                try:
+                    data = parse.parse_one_file(f_path)
+                    if not data: continue
 
-        #Reading the current file with device measurements data
-        try:
-            current_device_report = parse.parse_one_file(file)
-            if not current_device_report:
-                logger.warning(f"File {file.name} is empty or corrupted. Skipping.")
+                    calc_res = cal.run_calculations(data, is_tv)
+                    report_entry = r.json_report(
+                        sn=sn,
+                        t=data.get("MeasurementDateTime"),
+                        is_tv=is_tv,
+                        device_name=dev_name,
+                        **calc_res
+                    )
+                    device_reports.append(report_entry)
+                    source_files_to_archive.append(f_path)
+                except Exception as e:
+                    logger.error(f"Calculation failed for {sn}: {e}")
+
+            if not device_reports:
+                logger.warning(f"No reports generated for {dev_name}.")
                 continue
-        except Exception as e:
-            logger.error(f"Cant read {file.name}: {e}. Skipping.")
-            continue
 
-        time = current_device_report.get("MeasurementDateTime", None)
+            # Aggregate and generate reports
+            r.calculate_full_report(device_reports, f_full_report, dev_name)
+            r.analyze_json_files_for_min_fail(device_reports, expected_yaml, f_min_fail, dev_name)
+            r.generate_comparison_report(f_full_report, expected_yaml, f_final_json, group_is_tv, device_reports)
 
-        calculation_results = cal.run_calculations(
-            device_report=current_device_report,
-            is_tv=is_tv_flag
-        )
+            h.create_html_report(
+                input_file=f_final_json,
+                output_file=f_html_result,
+                device_reports=device_reports,
+                min_fail_file=f_min_fail,
+                cie_background_svg=CIE_BG_SVG,
+                current_device_name=dev_name
+            )
 
-        device_calculated_report = r.json_report(
-            sn=sn,
-            t=time,
-            is_tv=is_tv_flag,
-            device_name=current_device_name,
-            **calculation_results  # Unpack results dictionary into kwargs
-        )
+            logger.success(f"Report generated: {f_html_result}")
+            processed_count += 1
 
-        device_reports_list.append(device_calculated_report)
+            # Archive and Cleanup
+            generated_files = [f_min_fail, f_full_report, f_final_json, f_html_result]
+            all_files = source_files_to_archive + generated_files
+            zip_path = ARCHIVE_DIR / f"{dev_name}_{timestamp}.zip"
 
-    # 2.3 --- Aggregation and Reporting for the CURRENT configuration ---
-    logger.debug(f"Creating final reports for {current_device_name}...")
+            h.archive_specific_files(zip_path, all_files, Path.cwd())
+            h.clear_specific_files(source_files_to_archive + [f_min_fail, f_full_report, f_final_json])
 
-    r.calculate_full_report(device_reports_list, current_report_from_all, current_device_name)
-    r.analyze_json_files_for_min_fail(device_reports_list, current_expected_result, current_min_fail, current_device_name)
-    r.generate_comparison_report(
-        actual_result_file=current_report_from_all,
-        expected_result_file=current_expected_result,
-        output_json_file=current_final_report,
-        is_tv_flag=is_tv_flag,
-        device_reports=device_reports_list
-    )
+    except Exception as e:
+        logger.exception(f"Critical error in main loop: {e}")
+        return ExitCode.GENERAL_ERROR
 
-    # Call the new HTML report function
-    h.create_html_report(
-        input_file=current_final_report,
-        output_file=current_result_html,
-        device_reports = device_reports_list,
-        min_fail_file=current_min_fail,
-        cie_background_svg=CIE_BACKGROUND_SVG,
-        current_device_name = current_device_name
-    )
+    if processed_count > 0:
+        logger.success(f"Completed. Groups processed: {processed_count}")
+        return ExitCode.SUCCESS
 
-    # We no longer merge PDFs
-    logger.success(f"HTML Report for {current_device_name} saved to {current_result_html}")
-
-    # --- Step 3: Final Steps (Archiving and Cleanup) ---
-    logger.debug(f"Starting archiving and cleanup for {current_device_name}...")
-
-    # 1. Collect all files related to this group
-
-    # Get paths from the file_list (source data files)
-    source_files = [file_path for file_path, is_tv, sn in file_list]
-
-    # Get generated report files
-    report_files = [
-        current_min_fail,
-        current_report_from_all,
-        current_final_report
-    ]
-
-    # Get generated result file
-    result_files = [current_result_html]
-
-    # Combine all files into one list for processing
-    # We will archive and delete ALL of them
-    files_to_archive = source_files + result_files
-
-    # 2. Define zip path
-    zip_path = ARCHIVE_REPORTS / f"{current_device_name}_{TIMESTAMP}.zip"
-
-    # 3. Call new helper functions
-
-    # Archive all files relative to the project's root directory
-    h.archive_specific_files(
-        zip_path=zip_path,
-        files_to_archive=files_to_archive,
-        base_folder=Path.cwd()  # Use project root for relative paths
-    )
-
-    logger.debug("--- Cleanup ---")
+    return ExitCode.NO_DATA_FOUND
 
 
-    # Clear only the files we just processed
-    h.clear_specific_files(source_files+report_files)
+if __name__ == "__main__":
+    sys.exit(main())
