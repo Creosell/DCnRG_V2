@@ -5,7 +5,7 @@
 app_scripts = [
     'main.py',
     'src/calculate.py',
-    'src/graphics_hepler.py',
+    'src/graphics_helper.py',
     'src/helpers.py',
     'src/parse.py',
     'src/report.py'
@@ -13,32 +13,24 @@ app_scripts = [
 
 # --- 2. Анализ (Analysis) ---
 a = Analysis(
-    app_scripts,  # <-- ИЗМЕНЕНО: Явно передаем список
-    pathex=[],      # <-- ИЗМЕНЕНО: Оставляем пустым
+    app_scripts,
+    pathex=[],
     binaries=[],
-    datas=[('config', 'config')], # <-- ПРАВИЛЬНО: 'config' остается здесь
+    datas=[],
     hiddenimports=[],
     hookspath=[],
     runtime_hooks=[],
     excludes=[
         'tkinter', 'unittest', 'test', 'PyQt5', 'PySide6',
         'pydoc_data', 'distutils', 'setuptools',
-        'pytest', 'pytest_mock', 'PyInstaller',
-        'cx_Freeze'
+        'pytest', 'pytest_mock', 'pyinstaller', 'nc_py_api',
+        'requests', 'urllib3'
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=None,
     noarchive=False,
 )
-
-# --- БЛОК РУЧНОЙ ОЧИСТКИ (Для 'config') ---
-# Этот блок все еще нужен, чтобы хуки не "втянули" config в lib.
-a.binaries = [x for x in a.binaries if not x[0].startswith('config')]
-a.pure = [x for x in a.pure if not x[0].startswith('config')]
-a.zipfiles = [x for x in a.zipfiles if not x[0].startswith('config')]
-# --- КОНЕЦ БЛОКА ОЧИСТКИ ---
-
 
 # --- 3. PYZ (Python-библиотеки) ---
 pyz = PYZ(a.pure, a.zipped_data, cipher=None)
@@ -68,9 +60,9 @@ exe = EXE(
 # --- 5. COLLECT (Финальная папка) ---
 coll = COLLECT(
     exe,
-    a.binaries, # <-- Очищено от 'config'
-    a.zipfiles, # <-- Очищено от 'config'
-    a.datas,    # <-- 'config' существует ТОЛЬКО здесь
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     strip=False,
     upx=True,
     upx_exclude=[],

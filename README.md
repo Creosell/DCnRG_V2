@@ -81,7 +81,7 @@ Install `uv`:
 ### Command Syntax
 
 ```bash
-    uv run release_manager.py [mode] [path] [product_id] [version] [flags]
+    uv run --active release_manager.py [mode] [path] [product_id] [version] [flags]
 ```
 
 **Arguments:**
@@ -94,17 +94,17 @@ Install `uv`:
   * `version`: Version string (e.g., `1.0.0`).
 
 **Flags:**
-
+  * `--active`: Runs UV using current .venv of a project.
   * `--build`: Runs PyInstaller before packaging. It looks for a `.spec` file matching the folder name of your `path`.
   * `--upload`: Uploads immediately without confirmation prompt.
-  * `--include [path]`: Adds an additional directory to the release (preserved as a subfolder).
+  * `--include [path]`: Adds a directory to the release (preserved as a subfolder).
 
 ### Example: Build, Zip, and Upload
 
 This command builds the `.exe` from the spec file, zips the contents of `dist/ReportGenerator`, includes the `config` folder, and uploads it as version `1.0.0`.
 
 ```bash
-    uv run release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build --upload
+    uv run --active release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build --upload
 ```
 
 ### Example: Upload Files Only
@@ -112,8 +112,17 @@ This command builds the `.exe` from the spec file, zips the contents of `dist/Re
 If you only want to upload the raw files without zipping:
 
 ```bash
-    uv run release_manager.py files build\dist\ReportGenerator report_generator 1.0.0 --upload
+    uv run --active release_manager.py files build\dist\ReportGenerator report_generator 1.0.0 --upload
 ```
 
-```
-```
+## Optimization: UPX Compression
+
+To significantly reduce the size of the generated `.exe` file (and consequently the final `.zip` archive), it is recommended to use **UPX** (Ultimate Packer for eXecutables).
+
+**Setup Steps:**
+1. Download the latest version of UPX from the official [GitHub releases page](https://github.com/upx/upx/releases).
+2. Extract the downloaded archive.
+3. Copy the `upx.exe` file directly into your virtual environment's scripts folder:
+   * **Path:** `.venv\Scripts\` (Windows)
+
+PyInstaller automatically detects UPX in this folder and will use it to compress the binary during the `--build` process.

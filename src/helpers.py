@@ -8,7 +8,7 @@ import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from loguru import logger
 
-import src.graphics_hepler as gfx  # Import our new helper
+import src.graphics_helper as gfx  # Import our new helper
 import src.report as r
 import src.calculate as calc
 
