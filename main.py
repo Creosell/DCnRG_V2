@@ -113,7 +113,6 @@ def main() -> int:
             f_full_report = REPORT_DIR / f"full_report_{dev_name}.json"
             f_final_json = REPORT_DIR / f"final_report_{dev_name}_{timestamp}.json"
             f_html_result = RESULT_DIR / f"{dev_name}_{timestamp}.html"
-            f_html_result = RESULT_DIR / f"{dev_name}.html"
 
             device_reports = []
             source_files_to_archive = []
