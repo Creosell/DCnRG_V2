@@ -1,0 +1,27 @@
+# config/report_view.yaml
+# Set 'true' to show the column, 'true' to hide it.
+# The order of lines here determines the column order in the report.
+columns:
+  Brightness: true
+  BrightnessUniformity: true
+  Contrast: true
+  Temperature: true
+
+  # Gamut stats
+  CgByAreaRGB: true
+  CgByAreaNTSC: true
+
+  # Detailed stats - disabled by default
+  CgRGB: false
+  CgNTSC: false
+  DeltaE: false
+
+  # Coordinates
+  White_x: true
+  White_y: true
+  Red_x: true
+  Red_y: true
+  Green_x: true
+  Green_y: true
+  Blue_x: true
+  Blue_y: true

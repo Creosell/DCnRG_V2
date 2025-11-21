@@ -33,21 +33,21 @@ REPORT_PRECISION = {
 # Special requirements for TV's
 CONTRAST_TOLERANCE_FOR_TV = 0.065  # Tolerance 6.5% for some TV checks
 AVG_FAIL_SKIP_KEYS_FOR_TV = {  # Keys which we skip while checking for FAIL by avg
-    "Brightness_uniformity",
-    "Cg_rgb_area",
-    "Cg_ntsc_area",
-    "Cg_rgb",
-    "Cg_ntsc",
+    "BrightnessUniformity",
+    "CgByAreaRGB",
+    "CgByAreaNTSC",
+    "CgRGB",
+    "CgNTSC",
     "Temperature"
 }
 
 MAJORITY_TYP_CHECK_KEYS_FOR_TV = {
     "Brightness",
-    "Brightness_uniformity",
-    "Cg_rgb_area",
-    "Cg_ntsc_area",
-    "Cg_rgb",
-    "Cg_ntsc"
+    "BrightnessUniformity",
+    "CgByAreaRGB",
+    "CgByAreaNTSC",
+    "CgRGB",
+    "CgNTSC"
 }
 MAJORITY_TYP_TOLERANCE = 0.01
 
@@ -55,14 +55,8 @@ MAJORITY_TYP_TOLERANCE = 0.01
 COORDINATE_TEST_KEYS = {
     "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y", "White_x", "White_y",
 }
-# Mapping from YAML keys (e.g., 'Cg_rgb_area') to JSON keys (e.g., 'CgByAreaRGB')
+# Mapping from YAML keys to JSON keys
 YAML_TO_JSON_KEY_MAP = {
-    "Brightness_uniformity": "BrightnessUniformity",
-    "Cg_rgb_area": "CgByAreaRGB",
-    "Cg_ntsc_area": "CgByAreaNTSC",
-    "Cg_rgb": "CgRGB",
-    "Cg_ntsc": "CgNTSC",
-    "Delta_e": "DeltaE",
     # Special case: 'White_x' and 'White_y' are used for Center_x/y in JSON
     "White_x": "Center_x",
     "White_y": "Center_y",

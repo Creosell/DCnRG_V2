@@ -167,36 +167,6 @@
 </head>
 <body>
 <div class="report-wrapper">
-    {% set main_report_names = {
-        'Brightness': 'Brightness (cd/m²)',
-        'Brightness_uniformity': 'Brightness Uniformity (%)',
-        'Cg_rgb_area': 'sRGB Gamut Area (%)',
-        'Cg_ntsc_area': 'NTSC Gamut Area (%)',
-        'Cct_uniformity': 'Color Temp Uniformity (%)',
-        'Cg_rgb': 'sRGB Gamut Coverage (%)',
-        'Cg_ntsc': 'NTSC Gamut Coverage (%)',
-        'Contrast': 'Contrast Ratio',
-        'Temperature': 'Color Temperature (K)'
-     } %}
-
-    {% set coord_report_names = {
-        'Red_x': 'Red (x)', 'Red_y': 'Red (y)',
-        'Green_x': 'Green (x)', 'Green_y': 'Green (y)',
-        'Blue_x': 'Blue (x)', 'Blue_y': 'Blue (y)',
-        'White_x': 'White (x)', 'White_y': 'White (y)',
-        'Center_x': 'Center (x)', 'Center_y': 'Center (y)'
-    } %}
-
-    {% set coord_headers_set = coord_report_names.values() | list %}
-    {% set main_headers = [] %}
-    {% set coord_headers = [] %}
-    {% for header in report_headers %}
-        {% if header in coord_headers_set %}
-            {% set _ = coord_headers.append(header) %}
-        {% else %}
-            {% set _ = main_headers.append(header) %}
-        {% endif %}
-    {% endfor %}
     <h1>Display Analysis Report</h1>
     <div class="report-header-info">
         <span><strong>Device configuration:</strong> {{ current_device_name }}</span>
@@ -217,10 +187,9 @@
             </tr>
         </thead>
         <tbody>
-            {% for name, data in main_report.items() %}
-            {% if name in main_report_names %}
+            {% for name, data in main_report.data.items() %}
             <tr>
-                <td class="param-name">{{ main_report_names.get(name, name) }}</td>
+                <td class="param-name">{{ name }}</td>
                 <td>{{ data.actual_values.min | default('N/A') }}</td>
                 <td>{{ data.expected_values.min | default('N/A') }}</td>
                 <td>{{ data.actual_values.avg | default('N/A') }}</td>
@@ -234,7 +203,6 @@
                 {% endif %}
                 <td class="status {{ status_class }}">{{ data.status | default('N/A') }}</td>
             </tr>
-            {% endif %}
             {% endfor %}
         </tbody>
     </table>
@@ -248,14 +216,12 @@
             </tr>
         </thead>
         <tbody>
-            {% for name, data in main_report.items() %}
-            {% if name in main_report_names %}
+            {% for name, data in main_report.data.items() %}
                 {% if data.status == 'FAIL' %} <tr>
-                    <td class="param-name">{{ main_report_names.get(name, name) }}</td>
+                    <td class="param-name">{{ name }}</td>
                     <td>{{ data.reason | default('') }}</td>
                 </tr>
                 {% endif %}
-            {% endif %}
             {% endfor %}
         </tbody>
     </table>
@@ -276,10 +242,9 @@
             </tr>
         </thead>
         <tbody>
-            {% for name, data in main_report.items() %}
-            {% if name in coord_report_names %}
+            {% for name, data in main_report.coordinates.items() %}
             <tr>
-                <td class="param-name">{{ coord_report_names.get(name, name) }}</td>
+                <td class="param-name">{{ name }}</td>
                 <td>{{ data.actual_values.min | default('N/A') }}</td>
                 <td>{{ data.expected_values.min | default('N/A') }}</td>
                 <td>{{ data.actual_values.avg | default('N/A') }}</td>
@@ -295,7 +260,6 @@
 
                 <td>{{ data.reason | default('') }}</td>
             </tr>
-            {% endif %}
             {% endfor %}
         </tbody>
     </table>
@@ -314,15 +278,15 @@
 
                 {{ raw_svg_background | safe }}
 
-                <polygon id="srgb_triangle" class="triangle" points="{{ srgb_points }}" />
-                <polygon id="ntsc_triangle" class="triangle" points="{{ ntsc_points }}" />
-                <polygon id="device_triangle" class="triangle" points="{{ device_points }}" />
+                <polygon id="srgb_triangle" class="triangle" points="{{ summary_plot_points.srgb }}" />
+                <polygon id="ntsc_triangle" class="triangle" points="{{ summary_plot_points.ntsc }}" />
+                <polygon id="device_triangle" class="triangle" points="{{ summary_plot_points.device }}" />
 
                 <g id="debug_grid" style="display: none;">
-                    <circle class="debug-grid-point" cx="{{ debug_points.bottom_left[0] }}" cy="{{ debug_points.bottom_left[1] }}" r="5" />
-                    <circle class="debug-grid-point" cx="{{ debug_points.bottom_right[0] }}" cy="{{ debug_points.bottom_right[1] }}" r="5" />
-                    <circle class="debug-grid-point" cx="{{ debug_points.top_left[0] }}" cy="{{ debug_points.top_left[1] }}" r="5" />
-                    <circle class="debug-grid-point" cx="{{ debug_points.top_right[0] }}" cy="{{ debug_points.top_right[1] }}" r="5" />
+                    <circle class="debug-grid-point" cx="{{ summary_plot_points.debug.bottom_left[0] }}" cy="{{ summary_plot_points.debug.bottom_left[1] }}" r="5" />
+                    <circle class="debug-grid-point" cx="{{ summary_plot_points.debug.bottom_right[0] }}" cy="{{ summary_plot_points.debug.bottom_right[1] }}" r="5" />
+                    <circle class="debug-grid-point" cx="{{ summary_plot_points.debug.top_left[0] }}" cy="{{ summary_plot_points.debug.top_left[1] }}" r="5" />
+                    <circle class="debug-grid-point" cx="{{ summary_plot_points.debug.top_right[0] }}" cy="{{ summary_plot_points.debug.top_right[1] }}" r="5" />
                 </g>
             </svg>
         </div>
@@ -337,21 +301,25 @@
 
     <h2 class="individual-reports-header">Device reports - Main Data</h2>
     <table id="individual_reports_table_main" class="individual-reports-table">
-        <thead id="individual-table-head-main"> <tr>
+        <thead id="individual-table-head-main">
+            <tr>
                 <th class="sortable-header" style="width: 150px;" onclick="sortTable('main', 0)">Serial Number</th>
                 <th class="sortable-header" style="width: 120px;" onclick="sortTable('main', 1)">Meas. Date/Time</th>
-                {% for header in main_headers %}
+                {% set first_device = device_reports.data.values() | first %}
+                {% set master_keys_main = first_device.results.keys() | list %}
+                {% for header in master_keys_main %}
                 <th class="sortable-header" onclick="sortTable('main', {{ loop.index0 + 2 }})">{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
-        <tbody id="individual-table-body-main"> {% for serial_number, report_data in individual_reports.items() %}
+        <tbody id="individual-table-body-main">
+            {% for serial_number, report_data in device_reports.data.items() %}
             <tr>
                 <td class="param-name">{{ serial_number }}</td>
                 <td>{{ report_data.measurement_date }}</td>
-                {% for header in main_headers %}
+                {% for key in master_keys_main %}
                 <td>
-                    {{ report_data.results.get(header, "N/A") }}
+                    {{ report_data.results.get(key, "N/A") }}
                 </td>
                 {% endfor %}
             </tr>
@@ -361,21 +329,25 @@
 
     <h2 class="individual-reports-header">Device reports - Coordinates</h2>
     <table id="individual_reports_table_coords" class="individual-reports-table">
-        <thead id="individual-table-head-coords"> <tr>
+        <thead id="individual-table-head-coords">
+            <tr>
                 <th class="sortable-header" style="width: 150px;" onclick="sortTable('coords', 0)">Serial Number</th>
                 <th class="sortable-header" style="width: 120px;" onclick="sortTable('coords', 1)">Meas. Date/Time</th>
-                {% for header in coord_headers %}
+                {% set first_device = device_reports.coordinates.values() | first %}
+                {% set master_keys_coords = first_device.results.keys() | list %}
+                {% for header in master_keys_coords %}
                 <th class="sortable-header" onclick="sortTable('coords', {{ loop.index0 + 2 }})">{{ header }}</th>
                 {% endfor %}
             </tr>
         </thead>
-        <tbody id="individual-table-body-coords"> {% for serial_number, report_data in individual_reports.items() %}
+        <tbody id="individual-table-body-coords">
+            {% for serial_number, report_data in device_reports.coordinates.items() %}
             <tr>
                 <td class="param-name">{{ serial_number }}</td>
                 <td>{{ report_data.measurement_date }}</td>
-                {% for header in coord_headers %}
+                {% for key in master_keys_coords %}
                 <td>
-                    {{ report_data.results.get(header, "N/A") }}
+                    {{ report_data.results.get(key, "N/A") }}
                 </td>
                 {% endfor %}
             </tr>

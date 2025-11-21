@@ -31,7 +31,8 @@ RESULT_DIR = Path("results")
 CONFIG_DIR = Path("config")
 
 CIE_BG_SVG = CONFIG_DIR / "CIExy1931.svg"
-DEFAULT_EXPECTED_YAML = CONFIG_DIR / "expected_result.yaml"
+DEFAULT_EXPECTED_YAML = CONFIG_DIR / "configuration_example.yaml"
+REPORT_VIEW_CONFIG = CONFIG_DIR / "report_view.yaml"
 
 
 def setup_logging():
@@ -40,7 +41,7 @@ def setup_logging():
     logger.add(
         sys.stderr,
         level="INFO",
-        format="<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | <level>{message}</level>"
+        format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>"
     )
     logger.add(
         LOG_DIR / "report_generator.log",
@@ -53,7 +54,7 @@ def setup_logging():
 
 
 def ensure_directories() -> bool:
-    """Creates necessary directories. Returns False on failure."""
+    """Creates the necessary directories. Returns False on failure."""
     try:
         for d in [DATA_DIR, REPORT_DIR, ARCHIVE_DIR, LOG_DIR, RESULT_DIR]:
             d.mkdir(parents=True, exist_ok=True)
@@ -101,7 +102,7 @@ def main() -> int:
         for dev_name, files in device_groups.items():
             logger.debug(f"Processing group: {dev_name} ({len(files)} files)")
 
-            # Paths setup
+            # Path setup
             expected_yaml = CONFIG_DIR / "device_configs" / f"{dev_name}.yaml"
             if not expected_yaml.exists():
                 logger.warning(f"Config for {dev_name} not found. Using default.")
@@ -112,6 +113,7 @@ def main() -> int:
             f_full_report = REPORT_DIR / f"full_report_{dev_name}.json"
             f_final_json = REPORT_DIR / f"final_report_{dev_name}_{timestamp}.json"
             f_html_result = RESULT_DIR / f"{dev_name}_{timestamp}.html"
+            f_html_result = RESULT_DIR / f"{dev_name}.html"
 
             device_reports = []
             source_files_to_archive = []
@@ -152,7 +154,9 @@ def main() -> int:
                 device_reports=device_reports,
                 min_fail_file=f_min_fail,
                 cie_background_svg=CIE_BG_SVG,
-                current_device_name=dev_name
+                report_view_config=REPORT_VIEW_CONFIG,
+                current_device_name=dev_name,
+                app_version=APP_VERSION
             )
 
             logger.success(f"Report generated: {f_html_result}")
