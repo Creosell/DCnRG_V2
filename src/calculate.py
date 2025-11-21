@@ -305,7 +305,7 @@ def delta_e(device_report):
     # Calculate average Delta E
     if delta_e_values:
         avg_delta_e = sum(delta_e_values) / len(delta_e_values)
-        return avg_delta_e
+        return round(avg_delta_e,2)
     else:
         return "Error: No valid Delta E values calculated."
 

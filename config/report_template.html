@@ -292,10 +292,45 @@
         </div>
     </div>
 
-    <h2>Fail on Minimum Values Report</h2>
-    <div class="fail-report">
-        {{ min_fail_data_json }}
+<h2>Fail on Minimum Values Report</h2>
+
+    {% if min_fail_grouped %}
+    <table id="min_fail_table">
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Expected Min Limit</th>
+                <th>Serial Number</th>
+                <th>Actual Min Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for param_name, failures in min_fail_grouped.items() %}
+                {# Sort failures by SN for consistency #}
+                {% for fail in failures|sort(attribute='sn') %}
+                <tr>
+                    {# Show Parameter Name and Limit only once per group using rowspan #}
+                    {% if loop.first %}
+                        <td rowspan="{{ loop.length }}" style="vertical-align: middle; font-weight: 600; background-color: #fff;">
+                            {{ param_name }}
+                        </td>
+                        <td rowspan="{{ loop.length }}" style="vertical-align: middle; background-color: #fff;">
+                            {{ fail.expected_min }}
+                        </td>
+                    {% endif %}
+
+                    <td class="param-name">{{ fail.sn }}</td>
+                    <td class="status status-fail">{{ fail.min_value }}</td>
+                </tr>
+                {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="padding: 20px; text-align: center; color: #28a745; font-weight: 500; border: 1px solid #ddd; border-radius: 4px; background-color: #fff;">
+        No failures detected on minimum values.
     </div>
+    {% endif %}
 
     <div class="page-break"></div>
 

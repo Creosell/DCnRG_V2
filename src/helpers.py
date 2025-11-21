@@ -4,10 +4,10 @@ import yaml
 import zipfile
 from pathlib import Path
 import datetime
+from collections import defaultdict
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from loguru import logger
-from shapely.plotting import plot_points
 
 import src.graphics_helper as gfx  # Import our new helper
 import src.report as r
@@ -97,6 +97,21 @@ def create_html_report(
         "coordinates": main_report_coordinates_filtered
     }
 
+    # --- 1.2. Process Min Fail Data (Grouping) ---
+    min_fail_grouped = defaultdict(list)
+
+    if min_fail_data:
+        for item in min_fail_data:
+            for sn, info in item.items():
+                raw_key = info.get("key")
+                # Convert to User Friendly Name
+                ufn_name = UFN_MAPPING.get(raw_key, raw_key)
+
+                min_fail_grouped[ufn_name].append({
+                    "sn": sn,
+                    "min_value": info.get("min_value"),
+                    "expected_min": info.get("expected_min")
+                })
 
     # --- 1.5. SVG LOAD ---
     raw_svg_background = ""
@@ -184,6 +199,7 @@ def create_html_report(
 
     context = {
         "main_report": main_report_filtered,
+        "min_fail_grouped": min_fail_grouped,
         "min_fail_data_json": json.dumps(min_fail_data, indent=4),
         "raw_svg_background": raw_svg_background,
         "summary_plot_points": summary_plot_points,

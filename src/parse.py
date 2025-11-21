@@ -1,6 +1,5 @@
 import json
 import math
-
 import yaml
 from loguru import logger
 

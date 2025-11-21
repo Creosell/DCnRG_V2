@@ -113,6 +113,7 @@ def main() -> int:
             f_full_report = REPORT_DIR / f"full_report_{dev_name}.json"
             f_final_json = REPORT_DIR / f"final_report_{dev_name}_{timestamp}.json"
             f_html_result = RESULT_DIR / f"{dev_name}_{timestamp}.html"
+            f_html_result = RESULT_DIR / f"{dev_name}.html"
 
             device_reports = []
             source_files_to_archive = []
@@ -167,7 +168,7 @@ def main() -> int:
             zip_path = ARCHIVE_DIR / f"{dev_name}_{timestamp}.zip"
 
             h.archive_specific_files(zip_path, all_files, Path.cwd())
-            h.clear_specific_files(source_files_to_archive + [f_min_fail, f_full_report, f_final_json])
+            #h.clear_specific_files(source_files_to_archive + [f_min_fail, f_full_report, f_final_json])
 
     except Exception as e:
         logger.exception(f"Critical error in main loop: {e}")
