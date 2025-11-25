@@ -93,10 +93,12 @@
         #srgb_triangle { fill: #007bff; stroke: #007bff; }
         #ntsc_triangle { fill: #dc3545; stroke: #000000; }
         #device_triangle { fill: #28a745; stroke: #28a745; }
+        #specification_triangle { fill: #007bff; stroke: #7f1a1a; }
 
         #device_checkbox_label {color: #28a745; }
         #ntsc_checkbox_label {color: #000000; }
         #srgb_checkbox_label {color: #007bff; }
+        #specification_checkbox_label {color: #7f1a1a; }
 
         /* Debug Grid */
         .debug-grid-point { fill: #ff00ff; opacity: 0.7; }
@@ -113,6 +115,17 @@
 
         .individual-reports-table th, .individual-reports-table td {
             padding: 8px 14px;
+        }
+
+        /* Styling for table with failes by minimum values */
+        .min-fail-table {
+            font-size: 13px; /* Smaller font for many columns */
+            table-layout: auto; /* Allow column width adjustment */
+            width: 100%;
+        }
+
+        .min-fail-table td, .min-fail-table tr {
+            padding: 5px 5px;
         }
 
         /* === STYLES FOR SORTING === */
@@ -238,7 +251,6 @@
                 <th>Max (Actual)</th>
                 <th>Max (Expected)</th>
                 <th>Status</th>
-                <th>Note</th>
             </tr>
         </thead>
         <tbody>
@@ -257,18 +269,37 @@
                 {% elif data.status == 'FAIL' %}{% set status_class = 'status-fail' %}
                 {% endif %}
                 <td class="status {{ status_class }}">{{ data.status | default('N/A') }}</td>
-
-                <td>{{ data.reason | default('') }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    <h4>Fails description</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for name, data in main_report.coordinates.items() %}
+                {% if data.status == 'FAIL' %} <tr>
+                    <td class="param-name">{{ name }}</td>
+                    <td>{{ data.reason | default('') }}</td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+
     <h2>Color Gamut Plot</h2>
     <div class="plot-container">
         <div class="plot-controls">
             <label id="ntsc_checkbox_label"><input type="checkbox" onchange="toggleTriangle('ntsc_triangle')" checked> NTSC</label>
             <label id="srgb_checkbox_label"><input type="checkbox" onchange="toggleTriangle('srgb_triangle')" checked> sRGB</label>
             <label id="device_checkbox_label"><input type="checkbox" onchange="toggleTriangle('device_triangle')" checked> Device</label>
+            <label id="specification_checkbox_label"><input type="checkbox" onchange="toggleTriangle('specification_triangle')" > Specification</label>
         </div>
 
         <div id="plot-wrapper">
@@ -281,6 +312,7 @@
                 <polygon id="srgb_triangle" class="triangle" points="{{ summary_plot_points.srgb }}" />
                 <polygon id="ntsc_triangle" class="triangle" points="{{ summary_plot_points.ntsc }}" />
                 <polygon id="device_triangle" class="triangle" points="{{ summary_plot_points.device }}" />
+                <polygon id="specification_triangle" class="triangle" points="{{ summary_plot_points.specification }}" style="display: none;"/>
 
                 <g id="debug_grid" style="display: none;">
                     <circle class="debug-grid-point" cx="{{ summary_plot_points.debug.bottom_left[0] }}" cy="{{ summary_plot_points.debug.bottom_left[1] }}" r="5" />
@@ -295,7 +327,7 @@
 <h2>Fail on Minimum Values Report</h2>
 
     {% if min_fail_grouped %}
-    <table id="min_fail_table">
+    <table id="min_fail_table" class="min-fail-table">
         <thead>
             <tr>
                 <th>Parameter</th>

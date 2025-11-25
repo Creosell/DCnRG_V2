@@ -151,6 +151,9 @@ def test_create_html_report(mocker, tmp_path):
     input_file = tmp_path / "final_report.json"
     input_file.write_text(json.dumps({"Results": {"Brightness": {"avg": 100}}}))
 
+    expected_file = tmp_path / "expected_report.yaml"
+    expected_file.write_text(json.dumps({"main_tests": {"Brightness": 100}}))
+
     min_fail_file = tmp_path / "min_fail.json"
     min_fail_file.write_text("[]")
 
@@ -175,7 +178,8 @@ def test_create_html_report(mocker, tmp_path):
         report_view_config=view_config,
         device_reports=device_reports,
         current_device_name="TestDevice",
-        app_version="1.0.0"
+        app_version="1.0.0",
+        expected_yaml=expected_file,
     )
 
     # 4. Verify

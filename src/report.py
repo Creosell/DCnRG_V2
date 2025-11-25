@@ -57,6 +57,14 @@ COORDINATE_TEST_KEYS = {
 }
 # Mapping from YAML keys to JSON keys
 YAML_TO_JSON_KEY_MAP = {
+    # Mapping legacy names (snake_case) to internal names (CamelCase)
+    "Brightness_uniformity": "BrightnessUniformity",
+    "Cg_rgb_area": "CgByAreaRGB",
+    "Cg_ntsc_area": "CgByAreaNTSC",
+    "Cg_rgb": "CgRGB",
+    "Cg_ntsc": "CgNTSC",
+    "Delta_e": "DeltaE",
+
     # Special case: 'White_x' and 'White_y' are used for Center_x/y in JSON
     "White_x": "Center_x",
     "White_y": "Center_y",
@@ -459,21 +467,21 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
 
     actual_avg = actual_data_dict_for_test.get("avg")
     actual_min_val = actual_data_dict_for_test.get("min")
-    expected_min_thresh = expected_values_dict.get("min")
+    expected_min = expected_values_dict.get("min")
 
     # 2.1. N/A Checks (presence)
     general_checks = [
         (actual_avg is None, "Actual 'avg' value missing in JSON."),
         (actual_min_val is None, "Actual 'min' value missing in JSON."),
         (expected_typ is None, "Expected 'typ' value missing in YAML."),
-        (expected_min_thresh is None, "Expected 'min' threshold missing in YAML."),
+        (expected_min is None, "Expected 'min' threshold missing in YAML."),
     ]
     for condition, reason_msg in general_checks:
         if condition:
             return "N/A", reason_msg
 
     # 2.2. N/A Check (data type)
-    all_values = [actual_avg, actual_min_val, expected_typ, expected_min_thresh]
+    all_values = [actual_avg, actual_min_val, expected_typ, expected_min]
     if not all(isinstance(v, (int, float)) for v in all_values):
         return "N/A", "Non-numeric data encountered for general test comparison."
 
@@ -486,15 +494,15 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         expected_typ = expected_typ - tolerance_for_contract
     # Skipping checks for typical values according to a TV quality standard
     if is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_TV:
-        if actual_min_val < expected_min_thresh:
-            return "FAIL", f"Actual min ({actual_min_val}) < Expected min threshold ({expected_min_thresh})"
+        if actual_min_val < expected_min:
+            return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})"
         else:
-            return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min_thresh})"
+            return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min})"
 
     if actual_avg < expected_typ:
         return "FAIL", f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})"
-    if actual_min_val < expected_min_thresh:
-        return "FAIL", f"Actual min ({actual_min_val}) < Expected min threshold ({expected_min_thresh})"
+    if actual_min_val < expected_min:
+        return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})"
 
     # 2.4. Check for FAIL on max for Temperature
     if yaml_key == "Temperature":
@@ -693,8 +701,7 @@ def generate_comparison_report(
 
         # D. SINGLE REPORT UPDATE
         report_item.update({"status": status, "reason": reason})
-        full_report[test_name] = report_item
-
+        full_report[actual_data_key] = report_item
 
 
     # --- 5. SAVE REPORT ---

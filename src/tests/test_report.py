@@ -345,7 +345,7 @@ def test_generate_comparison_report_tv_avg_skip_fail_on_min(
         result = json.load(f)
 
     assert result[skipped_key_yaml]["status"] == "FAIL"
-    assert "Actual min (75.0) < Expected min threshold (80.0)" in result[skipped_key_yaml]["reason"]
+    assert "Actual min (75.0) < Expected min (80.0)" in result[skipped_key_yaml]["reason"]
 
 
 def test_analyze_json_files_for_min_fail(tmp_path, mock_yaml_data):

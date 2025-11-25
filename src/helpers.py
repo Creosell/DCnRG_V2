@@ -41,10 +41,11 @@ UFN_MAPPING = {
     "Center_y": "Center (y)",
 }
 
-COORD_HEADERS_UFN = {
-    "Red (x)", "Red (y)", "Green (x)", "Green (y)", "Blue (x)", "Blue (y)",
-    "White (x)", "White (y)", "Center (x)", "Center (y)"
+COORD_KEYS_INTERNAL = {
+    "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y",
+    "White_x", "White_y", "Center_x", "Center_y"
 }
+
 
 def create_html_report(
         input_file: Path,
@@ -54,7 +55,8 @@ def create_html_report(
         report_view_config: Path,
         device_reports: list,
         current_device_name: str,
-        app_version: str
+        app_version: str,
+        expected_yaml: Path,
 ):
     """
     Generates an interactive HTML report from a JSON test result file
@@ -69,6 +71,7 @@ def create_html_report(
         current_device_name (str): Name of the current device.
         app_version (str): Version of the app.
         report_view_config (Path): Path to the report view config.
+        expected_yaml (Path): Path to the expected YAML file.
 
     """
     logger.debug(f"Generating HTML report for {input_file.name}")
@@ -86,7 +89,21 @@ def create_html_report(
             min_fail_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
         logger.warning(f"Error reading min_fail file {min_fail_file}: {e}")
-        min_fail_data = {"error": f"Could not load {min_fail_file}"}
+        min_fail_data = []
+
+    try:
+        with open(expected_yaml, "r") as yaml_file:
+            expected_data = yaml.safe_load(yaml_file)
+            expected_values = expected_data["main_tests"]
+    except FileNotFoundError:
+        logger.error(f"Expected result file not found at {expected_yaml}")
+        return
+    except yaml.YAMLError as e:
+        logger.error(f"Could not parse YAML file: {e}")
+        return
+    except KeyError:
+        logger.error("'main_tests' key not found in the YAML file.")
+        return
 
     main_report_data_filtered, main_report_coordinates_filtered = process_main_report(
         main_report_data, UFN_MAPPING, report_view_config
@@ -125,38 +142,16 @@ def create_html_report(
     # --- 2. Prepare Plot Coordinates ---
     coord_mapper = gfx.SvgCoordinator()
     device_points = ""
+    specification_points = ""
 
-    try:
-        # Helper function to get avg value
-        def get_avg_coord(name):
-            return main_report_data.get(name, {}).get("actual_values", {}).get("avg")
+    device_coordinates = prepare_device_plot_coordinates(main_report_data)
+    specification_coordinates = prepare_specification_plot_coordinates(expected_values)
 
-        # Get individual coordinates
-        r_x = get_avg_coord("Red_x")
-        r_y = get_avg_coord("Red_y")
-        g_x = get_avg_coord("Green_x")
-        g_y = get_avg_coord("Green_y")
-        b_x = get_avg_coord("Blue_x")
-        b_y = get_avg_coord("Blue_y")
-
-        all_coords = [r_x, r_y, g_x, g_y, b_x, b_y]
-
-        # Check if all 6 coordinates were successfully found
-        if all(c is not None for c in all_coords):
-
-            # Assemble them in the NEW format: [[x,y], [x,y], [x,y]]
-            device_coords_list = [
-                [r_x, r_y],
-                [g_x, g_y],
-                [b_x, b_y]
-            ]
-
-            # Pass the new list structure to the updated function
-            device_points = coord_mapper.get_triangle_pixel_points(device_coords_list)
-        else:
-            logger.warning("Could not get all device coordinates for plot (some values were missing).")
-    except Exception as e:
-        logger.error(f"Error processing device coordinates for plot: {e}")
+    # If coordinates exists build plot points for them
+    if device_coordinates is not None:
+        device_points = coord_mapper.get_triangle_pixel_points(device_coordinates)
+    if specification_coordinates is not None:
+        specification_points = coord_mapper.get_triangle_pixel_points(specification_coordinates)
 
     # Calculate points for standard triangles
     srgb_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.SRGB))
@@ -167,12 +162,15 @@ def create_html_report(
         "device": device_points,
         "srgb": srgb_points,
         "ntsc": ntsc_points,
+        "specification": specification_points,
         "debug": debug_points,
     }
 
     # --- 3. Set up Jinja2 Environment ---
     # Assuming template is in 'config/' folder, relative to project root
-    template_dir = Path("config")
+    base_dir = Path(__file__).parent.parent
+    template_dir = base_dir / "config"
+
     env = Environment(
         loader=FileSystemLoader(template_dir),
         autoescape=select_autoescape(['html', 'xml'])
@@ -187,7 +185,8 @@ def create_html_report(
     # --- 4. Define Template Context ---
 
     # 1. Collect and process device reports for the new table
-    device_reports_data_filtered, device_reports_coordinates_filtered = process_device_reports(device_reports, UFN_MAPPING)
+    device_reports_data_filtered, device_reports_coordinates_filtered = process_device_reports(device_reports,
+                                                                                               UFN_MAPPING)
 
     device_reports_filtered = {
         "data": device_reports_data_filtered,
@@ -217,6 +216,71 @@ def create_html_report(
         logger.debug(f"Successfully created HTML report: {output_file}")
     except Exception as e:
         logger.error(f"Error rendering or saving HTML report: {e}")
+
+
+def prepare_device_plot_coordinates(main_report_data):
+    try:
+        # Helper function to get avg value
+        def get_avg_coord(name):
+            return main_report_data.get(name, {}).get("actual_values", {}).get("avg")
+
+        # Get individual coordinates
+        r_x = get_avg_coord("Red_x")
+        r_y = get_avg_coord("Red_y")
+        g_x = get_avg_coord("Green_x")
+        g_y = get_avg_coord("Green_y")
+        b_x = get_avg_coord("Blue_x")
+        b_y = get_avg_coord("Blue_y")
+
+        all_coordinates = [r_x, r_y, g_x, g_y, b_x, b_y]
+
+        # Check if all 6 coordinates were successfully found
+        if all(c is not None for c in all_coordinates):
+            # Assemble them in the NEW format: [[x,y], [x,y], [x,y]]
+            device_coordinates_list = [
+                [r_x, r_y],
+                [g_x, g_y],
+                [b_x, b_y]
+            ]
+            return device_coordinates_list
+        else:
+            logger.warning("Could not get all device coordinates for plot (some values were missing).")
+    except Exception as e:
+        logger.error(f"Error processing device coordinates for plot: {e}")
+
+
+def prepare_specification_plot_coordinates(expected_values):
+    try:
+        # Helper function to get avg value
+        def get_coord(name):
+            return expected_values.get(name, {}).get("typ", {})
+
+        # Get individual coordinates
+        r_x = get_coord("Red_x")
+        r_y = get_coord("Red_y")
+        g_x = get_coord("Green_x")
+        g_y = get_coord("Green_y")
+        b_x = get_coord("Blue_x")
+        b_y = get_coord("Blue_y")
+
+        all_coordinates = [r_x, r_y, g_x, g_y, b_x, b_y]
+
+        # Check if all 6 coordinates were successfully found
+        if all(c is not None for c in all_coordinates):
+
+            # Assemble them in the NEW format: [[x,y], [x,y], [x,y]]
+            specification_coordinates = [
+                [r_x, r_y],
+                [g_x, g_y],
+                [b_x, b_y]
+            ]
+
+            # Pass the new list structure to the updated function
+            return specification_coordinates
+        else:
+            logger.warning("Could not get all specification coordinates for plot (some values were missing).")
+    except Exception as e:
+        logger.error(f"Error processing specification coordinates for plot: {e}")
 
 
 def process_main_report(main_report_data: dict, ufn_mapping: dict, config_path: Path):
@@ -265,12 +329,13 @@ def process_main_report(main_report_data: dict, ufn_mapping: dict, config_path: 
         data_payload = main_report_data.get(key)
 
         # Check if it belongs to coordinates table using the UFN set
-        if ufn_name in COORD_HEADERS_UFN:
+        if key in COORD_KEYS_INTERNAL:
             coord_rows[ufn_name] = data_payload
         else:
             main_rows[ufn_name] = data_payload
 
     return main_rows, coord_rows
+
 
 def process_device_reports(device_reports: list, ufn_mapping: dict):
     """
@@ -388,6 +453,7 @@ def clear_specific_files(files_to_delete):
 
     logger.debug(f"Total files removed during cleanup: {removed_count}")
 
+
 # helpers.py
 
 def get_day_suffix(day):
@@ -401,6 +467,7 @@ def get_day_suffix(day):
     if day % 10 == 3:
         return 'rd'
     return 'th'
+
 
 def get_inspection_date_range(all_device_reports_data: dict) -> str:
     """

@@ -17,3 +17,8 @@
 /release_artifacts/
 /upx.exe
 /release.log
+/LatesRelease_ReportGenerator.exe
+/config/color_space.yaml
+/config/main.yaml
+/config/space.png
+/config/expected_result.yaml

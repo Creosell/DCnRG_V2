@@ -12,7 +12,7 @@ import src.parse as parse
 import src.report as r
 
 # --- Constants & Configuration ---
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.0.0"
 
 
 class ExitCode(IntEnum):
@@ -156,7 +156,8 @@ def main() -> int:
                 cie_background_svg=CIE_BG_SVG,
                 report_view_config=REPORT_VIEW_CONFIG,
                 current_device_name=dev_name,
-                app_version=APP_VERSION
+                app_version=APP_VERSION,
+                expected_yaml = expected_yaml,
             )
 
             logger.success(f"Report generated: {f_html_result}")

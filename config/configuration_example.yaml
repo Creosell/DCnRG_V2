@@ -13,7 +13,7 @@ main_tests:
     min: 260
     typ: 280
     max: None
-  BrightnessUniformity: # Brightness uniformity range
+  Brightness_uniformity: # Brightness uniformity range
     min: 65
     typ: 68
     max: None
@@ -21,19 +21,19 @@ main_tests:
     min: 3000
     typ: 4000
     max: None
-  CgByAreaRGB: # Color gamut percent in sRGB color space
+  Cg_rgb_area: # Color gamut percent in sRGB color space
     min: 67
     typ: 72
     max: None
-  CgByAreaNTSC: # Color gamut percent in NTSC color space
+  Cg_ntsc_area: # Color gamut percent in NTSC color space
     min: 67
     typ: 72
     max: None
-  CgRGB: # Color gamut percent in sRGB color space (more accurate calculation method)
+  Cg_rgb: # Color gamut percent in sRGB color space (more accurate calculation method)
     min: 67
     typ: 72
     max: None
-  CgNTSC: # Color gamut percent in NTSC color space (more accurate calculation method)
+  Cg_ntsc: # Color gamut percent in NTSC color space (more accurate calculation method)
     min: 67
     typ: 72
     max: None
@@ -41,7 +41,7 @@ main_tests:
     min: 8835
     typ: 9585
     max: 10335
-  DeltaE: # Requirements for color accuracy
+  Delta_e: # Requirements for color accuracy
     min: 4
     typ: 3
     max: 2
