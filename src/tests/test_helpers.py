@@ -220,3 +220,156 @@ def test_clear_specific_files(tmp_path):
 
     helpers.clear_specific_files([file1])
     assert not file1.exists()
+
+
+# --------------------------------------------------------------------------------
+# NEW TESTS for Return Values (bool validation)
+# --------------------------------------------------------------------------------
+
+def test_create_html_report_returns_true_on_success(mocker, tmp_path):
+    """Tests that create_html_report returns True on successful execution."""
+    # Setup mocks
+    mock_template = mocker.MagicMock()
+    mock_template.render.return_value = "<html>Report</html>"
+    mock_env = mocker.MagicMock(spec=Environment)
+    mock_env.get_template.return_value = mock_template
+    mocker.patch('src.helpers.Environment', return_value=mock_env)
+
+    # Setup files
+    input_file = tmp_path / "final_report.json"
+    input_file.write_text(json.dumps({"Results": {"Brightness": {"avg": 100}}}))
+
+    expected_file = tmp_path / "expected_report.yaml"
+    expected_file.write_text("main_tests:\n  Brightness: 100")
+
+    min_fail_file = tmp_path / "min_fail.json"
+    min_fail_file.write_text("[]")
+
+    svg_file = tmp_path / "bg.svg"
+    svg_file.write_text("<svg></svg>")
+
+    view_config = tmp_path / "view.yaml"
+    view_config.write_text("columns:\n  Brightness: true")
+
+    output_file = tmp_path / "output.html"
+
+    device_reports = [
+        {"SerialNumber": "SN1", "Results": {"Brightness": 100}, "MeasurementDateTime": "20250101_120000"}
+    ]
+
+    # Execute
+    result = helpers.create_html_report(
+        input_file=input_file,
+        output_file=output_file,
+        min_fail_file=min_fail_file,
+        cie_background_svg=svg_file,
+        report_view_config=view_config,
+        device_reports=device_reports,
+        current_device_name="TestDevice",
+        app_version="1.0.0",
+        expected_yaml=expected_file,
+    )
+
+    # Verify return value
+    assert result is True
+    assert output_file.exists()
+
+
+def test_create_html_report_returns_false_on_missing_input_file(mocker, tmp_path):
+    """Tests that create_html_report returns False when input file is missing."""
+    input_file = tmp_path / "nonexistent.json"  # Does not exist
+    output_file = tmp_path / "output.html"
+    min_fail_file = tmp_path / "min_fail.json"
+    min_fail_file.write_text("[]")
+    svg_file = tmp_path / "bg.svg"
+    svg_file.write_text("<svg></svg>")
+    view_config = tmp_path / "view.yaml"
+    view_config.write_text("columns: {}")
+    expected_file = tmp_path / "expected.yaml"
+    expected_file.write_text("main_tests: {}")
+
+    result = helpers.create_html_report(
+        input_file=input_file,
+        output_file=output_file,
+        min_fail_file=min_fail_file,
+        cie_background_svg=svg_file,
+        report_view_config=view_config,
+        device_reports=[],
+        current_device_name="TestDevice",
+        app_version="1.0.0",
+        expected_yaml=expected_file,
+    )
+
+    assert result is False
+    assert not output_file.exists()
+
+
+def test_create_html_report_returns_false_on_missing_expected_yaml(mocker, tmp_path):
+    """Tests that create_html_report returns False when expected YAML is missing."""
+    input_file = tmp_path / "final_report.json"
+    input_file.write_text(json.dumps({"Results": {}}))
+
+    output_file = tmp_path / "output.html"
+    min_fail_file = tmp_path / "min_fail.json"
+    min_fail_file.write_text("[]")
+    svg_file = tmp_path / "bg.svg"
+    svg_file.write_text("<svg></svg>")
+    view_config = tmp_path / "view.yaml"
+    view_config.write_text("columns: {}")
+    expected_file = tmp_path / "nonexistent.yaml"  # Does not exist
+
+    result = helpers.create_html_report(
+        input_file=input_file,
+        output_file=output_file,
+        min_fail_file=min_fail_file,
+        cie_background_svg=svg_file,
+        report_view_config=view_config,
+        device_reports=[],
+        current_device_name="TestDevice",
+        app_version="1.0.0",
+        expected_yaml=expected_file,
+    )
+
+    assert result is False
+    assert not output_file.exists()
+
+
+def test_create_html_report_returns_false_on_template_load_error(mocker, tmp_path):
+    """Tests that create_html_report returns False when template loading fails."""
+    # Setup files
+    input_file = tmp_path / "final_report.json"
+    input_file.write_text(json.dumps({"Results": {}}))
+
+    expected_file = tmp_path / "expected.yaml"
+    expected_file.write_text("main_tests: {}")
+
+    min_fail_file = tmp_path / "min_fail.json"
+    min_fail_file.write_text("[]")
+
+    svg_file = tmp_path / "bg.svg"
+    svg_file.write_text("<svg></svg>")
+
+    view_config = tmp_path / "view.yaml"
+    view_config.write_text("columns: {}")
+
+    output_file = tmp_path / "output.html"
+
+    # Mock Environment to raise exception on get_template
+    mock_env = mocker.MagicMock(spec=Environment)
+    mock_env.get_template.side_effect = Exception("Template not found")
+    mocker.patch('src.helpers.Environment', return_value=mock_env)
+
+    result = helpers.create_html_report(
+        input_file=input_file,
+        output_file=output_file,
+        min_fail_file=min_fail_file,
+        cie_background_svg=svg_file,
+        report_view_config=view_config,
+        device_reports=[],
+        current_device_name="TestDevice",
+        app_version="1.0.0",
+        expected_yaml=expected_file,
+    )
+
+    assert result is False
+    assert not output_file.exists()

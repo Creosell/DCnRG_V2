@@ -12,7 +12,7 @@ import src.parse as parse
 import src.report as r
 
 # --- Constants & Configuration ---
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 
 
 class ExitCode(IntEnum):
@@ -144,11 +144,19 @@ def main() -> int:
                 continue
 
             # Aggregate and generate reports
-            r.calculate_full_report(device_reports, f_full_report, dev_name)
-            r.analyze_json_files_for_min_fail(device_reports, expected_yaml, f_min_fail, dev_name)
-            r.generate_comparison_report(f_full_report, expected_yaml, f_final_json, group_is_tv, device_reports)
+            if not r.calculate_full_report(device_reports, f_full_report, dev_name):
+                logger.error(f"Failed to calculate full report for {dev_name}")
+                continue
 
-            h.create_html_report(
+            if not r.analyze_json_files_for_min_fail(device_reports, expected_yaml, f_min_fail, dev_name):
+                logger.error(f"Failed to analyze min/fail for {dev_name}")
+                continue
+
+            if not r.generate_comparison_report(f_full_report, expected_yaml, f_final_json, group_is_tv, device_reports):
+                logger.error(f"Failed to generate comparison report for {dev_name}")
+                continue
+
+            if not h.create_html_report(
                 input_file=f_final_json,
                 output_file=f_html_result,
                 device_reports=device_reports,
@@ -158,7 +166,9 @@ def main() -> int:
                 current_device_name=dev_name,
                 app_version=APP_VERSION,
                 expected_yaml = expected_yaml,
-            )
+            ):
+                logger.error(f"Failed to create HTML report for {dev_name}")
+                continue
 
             logger.success(f"Report generated: {f_html_result}")
             processed_count += 1
@@ -168,8 +178,11 @@ def main() -> int:
             all_files = source_files_to_archive + generated_files
             zip_path = ARCHIVE_DIR / f"{dev_name}_{timestamp}.zip"
 
-            h.archive_specific_files(zip_path, all_files, Path.cwd())
-            h.clear_specific_files(source_files_to_archive + [f_min_fail, f_full_report, f_final_json])
+            archive_result = h.archive_specific_files(zip_path, all_files, Path.cwd())
+            if archive_result:
+                h.clear_specific_files(source_files_to_archive + [f_min_fail, f_full_report, f_final_json])
+            else:
+                logger.warning(f"Archiving failed for {dev_name}, skipping cleanup to preserve files")
 
     except Exception as e:
         logger.exception(f"Critical error in main loop: {e}")

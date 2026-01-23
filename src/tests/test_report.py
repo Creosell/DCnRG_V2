@@ -412,3 +412,169 @@ def test_analyze_json_files_for_min_fail(tmp_path, mock_yaml_data):
     assert "SN3_FAIL_REDX" in results[1]
     assert results[1]["SN3_FAIL_REDX"]["key"] == "Red_x"
     assert results[1]["SN3_FAIL_REDX"]["min_value"] == 0.59
+
+
+# --------------------------------------------------------------------------------
+# NEW TESTS for Return Values (bool validation)
+# --------------------------------------------------------------------------------
+
+def test_calculate_full_report_returns_true_on_success(tmp_path):
+    """Tests that calculate_full_report returns True on successful execution."""
+    reports_list = [
+        create_mock_device_report_dict("SN1", 100.0),
+        create_mock_device_report_dict("SN2", 120.0),
+    ]
+    output_file = tmp_path / "full_report.json"
+
+    result = report.calculate_full_report(
+        device_reports=reports_list,
+        output_file=str(output_file),
+        device_name="Monitor"
+    )
+
+    assert result is True
+    assert output_file.exists()
+
+
+def test_calculate_full_report_returns_false_on_write_error(tmp_path):
+    """Tests that calculate_full_report returns False when file write fails."""
+    reports_list = [create_mock_device_report_dict("SN1", 100.0)]
+
+    # Use an invalid path that will cause write to fail
+    invalid_output = tmp_path / "nonexistent_dir" / "full_report.json"
+
+    result = report.calculate_full_report(
+        device_reports=reports_list,
+        output_file=str(invalid_output),
+        device_name="Monitor"
+    )
+
+    assert result is False
+
+
+def test_analyze_json_files_for_min_fail_returns_true_on_success(tmp_path):
+    """Tests that analyze_json_files_for_min_fail returns True on success."""
+    device_reports = [
+        {"SerialNumber": "SN1", "Results": {"Brightness": 80.0}}  # Below min of 100
+    ]
+
+    expected_yaml = tmp_path / "expected.yaml"
+    expected_yaml.write_text("main_tests:\n  Brightness:\n    min: 100.0")
+
+    output_path = tmp_path / "min_fail.json"
+
+    result = report.analyze_json_files_for_min_fail(
+        device_reports=device_reports,
+        expected_result_path=expected_yaml,
+        output_path=output_path,
+        device_name="TestDevice"
+    )
+
+    assert result is True
+    assert output_path.exists()
+
+
+def test_analyze_json_files_for_min_fail_returns_false_on_missing_yaml(tmp_path):
+    """Tests that analyze_json_files_for_min_fail returns False when YAML is missing."""
+    device_reports = [{"SerialNumber": "SN1", "Results": {"Brightness": 80.0}}]
+
+    nonexistent_yaml = tmp_path / "nonexistent.yaml"  # Does not exist
+    output_path = tmp_path / "min_fail.json"
+
+    result = report.analyze_json_files_for_min_fail(
+        device_reports=device_reports,
+        expected_result_path=nonexistent_yaml,
+        output_path=output_path,
+        device_name="TestDevice"
+    )
+
+    assert result is False
+    assert not output_path.exists()
+
+
+def test_analyze_json_files_for_min_fail_returns_false_on_write_error(tmp_path):
+    """Tests that analyze_json_files_for_min_fail returns False on write error."""
+    device_reports = [{"SerialNumber": "SN1", "Results": {"Brightness": 80.0}}]
+
+    expected_yaml = tmp_path / "expected.yaml"
+    expected_yaml.write_text("main_tests:\n  Brightness:\n    min: 100.0")
+
+    # Invalid output path
+    invalid_output = tmp_path / "nonexistent_dir" / "min_fail.json"
+
+    result = report.analyze_json_files_for_min_fail(
+        device_reports=device_reports,
+        expected_result_path=expected_yaml,
+        output_path=invalid_output,
+        device_name="TestDevice"
+    )
+
+    assert result is False
+
+
+def test_generate_comparison_report_returns_true_on_success(tmp_path):
+    """Tests that generate_comparison_report returns True on success."""
+    # Setup actual result file
+    actual_file = tmp_path / "actual.json"
+    actual_data = {
+        "Results": {
+            "Brightness": {"avg": 100.0, "min": 95.0, "max": 105.0}
+        }
+    }
+    actual_file.write_text(json.dumps(actual_data))
+
+    # Setup expected result file
+    expected_file = tmp_path / "expected.yaml"
+    expected_file.write_text("main_tests:\n  Brightness:\n    min: 90.0\n    typ: 100.0\n    max: 110.0")
+
+    output_file = tmp_path / "comparison.json"
+
+    result = report.generate_comparison_report(
+        actual_result_file=actual_file,
+        expected_result_file=expected_file,
+        output_json_file=output_file,
+        is_tv_flag=False,
+        device_reports=[]
+    )
+
+    assert result is True
+    assert output_file.exists()
+
+
+def test_generate_comparison_report_returns_false_on_missing_actual_file(tmp_path):
+    """Tests that generate_comparison_report returns False when actual file is missing."""
+    nonexistent_actual = tmp_path / "nonexistent.json"  # Does not exist
+
+    expected_file = tmp_path / "expected.yaml"
+    expected_file.write_text("main_tests:\n  Brightness:\n    min: 90.0\n    typ: 100.0")
+
+    output_file = tmp_path / "comparison.json"
+
+    result = report.generate_comparison_report(
+        actual_result_file=nonexistent_actual,
+        expected_result_file=expected_file,
+        output_json_file=output_file,
+        is_tv_flag=False,
+        device_reports=[]
+    )
+
+    assert result is False
+
+
+def test_generate_comparison_report_returns_false_on_missing_expected_file(tmp_path):
+    """Tests that generate_comparison_report returns False when expected file is missing."""
+    actual_file = tmp_path / "actual.json"
+    actual_file.write_text(json.dumps({"Results": {}}))
+
+    nonexistent_expected = tmp_path / "nonexistent.yaml"  # Does not exist
+    output_file = tmp_path / "comparison.json"
+
+    result = report.generate_comparison_report(
+        actual_result_file=actual_file,
+        expected_result_file=nonexistent_expected,
+        output_json_file=output_file,
+        is_tv_flag=False,
+        device_reports=[]
+    )
+
+    assert result is False

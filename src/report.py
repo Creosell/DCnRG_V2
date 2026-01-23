@@ -173,7 +173,7 @@ def is_effectively_all_null_stat_package(pkg):
     return True
 
 
-def calculate_full_report(device_reports, output_file, device_name):
+def calculate_full_report(device_reports, output_file, device_name) -> bool:
     """
     Aggregates data from multiple device-specific JSON reports (filtered by device_name),
     calculates element-wise statistics (min, avg, max) for all numeric and list values,
@@ -184,88 +184,117 @@ def calculate_full_report(device_reports, output_file, device_name):
         output_file (str/Path): The path to save the final aggregated JSON report.
         device_name (str): The name of the device used to filter the reports.
 
+    Returns:
+        bool: True if report was successfully calculated and saved, False otherwise.
     """
+    try:
+        aggregated_data = defaultdict(list)  # Stores lists of values for each key path
+        all_keys_paths = set()  # Stores all unique flattened key paths encountered
+        serial_numbers = []
 
-    aggregated_data = defaultdict(list)  # Stores lists of values for each key path
-    all_keys_paths = set()  # Stores all unique flattened key paths encountered
-    serial_numbers = []
+        for data in device_reports:
+            if "SerialNumber" in data and data["SerialNumber"] is not None:
+                serial_numbers.append(data["SerialNumber"])
+            else:
+                logger.warning(f"'SerialNumber' not found or is null in {data}.")
 
-    for data in device_reports:
-        if "SerialNumber" in data and data["SerialNumber"] is not None:
-            serial_numbers.append(data["SerialNumber"])
-        else:
-            logger.warning(f"'SerialNumber' not found or is null in {data}.")
+            if "Results" not in data or not isinstance(data["Results"], dict):
+                logger.warning(
+                    f"'Results' not found or not a dictionary in {data}. Skipping."
+                )
+                continue
 
-        if "Results" not in data or not isinstance(data["Results"], dict):
-            logger.warning(
-                f"'Results' not found or not a dictionary in {data}. Skipping."
-            )
-            continue
+            def process_items(current_dict, current_path_parts):
+                for key, value in current_dict.items():
+                    new_path_parts = current_path_parts + [key]
+                    flat_key = ".".join(new_path_parts)
+                    all_keys_paths.add(flat_key)
 
-        def process_items(current_dict, current_path_parts):
-            for key, value in current_dict.items():
-                new_path_parts = current_path_parts + [key]
-                flat_key = ".".join(new_path_parts)
-                all_keys_paths.add(flat_key)
-
-                if isinstance(value, dict):
-                    if not value:  # Empty dictionary
-                        aggregated_data[flat_key].append(
-                            {}
-                        )  # Mark the presence of this key with an empty dict
-                    process_items(value, new_path_parts)  # Recurse
-                elif value is None:
-                    aggregated_data[flat_key].append(None)
-                elif isinstance(value, (int, float)):
-                    if math.isnan(value) or math.isinf(value):
+                    if isinstance(value, dict):
+                        if not value:  # Empty dictionary
+                            aggregated_data[flat_key].append(
+                                {}
+                            )  # Mark the presence of this key with an empty dict
+                        process_items(value, new_path_parts)  # Recurse
+                    elif value is None:
                         aggregated_data[flat_key].append(None)
-                    else:
-                        aggregated_data[flat_key].append(value)
-                elif isinstance(value, list):
-                    sanitized_list = []
-                    for item_in_list in value:
-                        if isinstance(item_in_list, float) and (
-                                math.isnan(item_in_list) or math.isinf(item_in_list)
-                        ):
-                            sanitized_list.append(None)
-                        elif isinstance(
-                                item_in_list, (int, float, type(None))
-                        ):  # Allow numbers and None
-                            sanitized_list.append(item_in_list)
-                        # Else: non-numeric/non-None items in a list are skipped for this element's stats
-                    aggregated_data[flat_key].append(sanitized_list)
-                # Other data types (e.g., strings) are noted by all_keys_paths but not aggregated for stats
+                    elif isinstance(value, (int, float)):
+                        if math.isnan(value) or math.isinf(value):
+                            aggregated_data[flat_key].append(None)
+                        else:
+                            aggregated_data[flat_key].append(value)
+                    elif isinstance(value, list):
+                        sanitized_list = []
+                        for item_in_list in value:
+                            if isinstance(item_in_list, float) and (
+                                    math.isnan(item_in_list) or math.isinf(item_in_list)
+                            ):
+                                sanitized_list.append(None)
+                            elif isinstance(
+                                    item_in_list, (int, float, type(None))
+                            ):  # Allow numbers and None
+                                sanitized_list.append(item_in_list)
+                            # Else: non-numeric/non-None items in a list are skipped for this element's stats
+                        aggregated_data[flat_key].append(sanitized_list)
+                    # Other data types (e.g., strings) are noted by all_keys_paths but not aggregated for stats
 
-        process_items(data["Results"], [])
+            process_items(data["Results"], [])
 
-    final_results_data = {}
-    sorted_key_paths = sorted(list(all_keys_paths))
+        final_results_data = {}
+        sorted_key_paths = sorted(list(all_keys_paths))
 
-    for flat_key in sorted_key_paths:
-        values_list_for_key = aggregated_data.get(flat_key, [])
+        for flat_key in sorted_key_paths:
+            values_list_for_key = aggregated_data.get(flat_key, [])
 
-        stat_package = {"avg": None, "min": None, "max": None}  # Default
+            stat_package = {"avg": None, "min": None, "max": None}  # Default
 
-        if not values_list_for_key:
-            pass
-        elif all(
-                v is None or (isinstance(v, dict) and not v) for v in values_list_for_key
-        ):
-            pass
-        elif any(isinstance(v, list) for v in values_list_for_key):
-            # Handles list-based statistics (element-wise)
-            valid_lists_data = []
-            max_len = 0
-            has_any_list = False
-            for item in values_list_for_key:
-                if isinstance(item, list):  # Already sanitized during process_items
-                    valid_lists_data.append(item)
-                    max_len = max(max_len, len(item))
-                    has_any_list = True
-                elif item is None:  # A file had 'null' for this list-type key
-                    valid_lists_data.append(None)
+            if not values_list_for_key:
+                pass
+            elif all(
+                    v is None or (isinstance(v, dict) and not v) for v in values_list_for_key
+            ):
+                pass
+            elif any(isinstance(v, list) for v in values_list_for_key):
+                # Handles list-based statistics (element-wise)
+                valid_lists_data = []
+                max_len = 0
+                has_any_list = False
+                for item in values_list_for_key:
+                    if isinstance(item, list):  # Already sanitized during process_items
+                        valid_lists_data.append(item)
+                        max_len = max(max_len, len(item))
+                        has_any_list = True
+                    elif item is None:  # A file had 'null' for this list-type key
+                        valid_lists_data.append(None)
 
-            if not has_any_list:
+                if not has_any_list:
+                    numeric_values = [
+                        v
+                        for v in values_list_for_key
+                        if isinstance(v, (int, float)) and v is not None
+                    ]
+                    if numeric_values:
+                        stat_package["avg"] = sum(numeric_values) / len(numeric_values)
+                        stat_package["min"] = min(numeric_values)
+                        stat_package["max"] = max(numeric_values)
+                elif max_len == 0:  # All lists were empty
+                    stat_package = {"avg": [], "min": [], "max": []}
+                else:
+                    avg_list, min_list, max_list = ([None] * max_len for _ in range(3))
+                    for i in range(max_len):
+                        column_elements = [
+                            lst[i]
+                            for lst in valid_lists_data
+                            if isinstance(lst, list)
+                               and i < len(lst)
+                               and isinstance(lst[i], (int, float))
+                        ]
+                        if column_elements:
+                            avg_list[i] = sum(column_elements) / len(column_elements)
+                            min_list[i] = min(column_elements)
+                            max_list[i] = max(column_elements)
+                    stat_package = {"avg": avg_list, "min": min_list, "max": max_list}
+            else:  # Scalar processing (list of numbers, possibly with Nones, empty dicts {})
                 numeric_values = [
                     v
                     for v in values_list_for_key
@@ -275,65 +304,43 @@ def calculate_full_report(device_reports, output_file, device_name):
                     stat_package["avg"] = sum(numeric_values) / len(numeric_values)
                     stat_package["min"] = min(numeric_values)
                     stat_package["max"] = max(numeric_values)
-            elif max_len == 0:  # All lists were empty
-                stat_package = {"avg": [], "min": [], "max": []}
-            else:
-                avg_list, min_list, max_list = ([None] * max_len for _ in range(3))
-                for i in range(max_len):
-                    column_elements = [
-                        lst[i]
-                        for lst in valid_lists_data
-                        if isinstance(lst, list)
-                           and i < len(lst)
-                           and isinstance(lst[i], (int, float))
+
+            if not values_list_for_key and is_effectively_all_null_stat_package(
+                    stat_package
+            ):
+                continue
+
+            precision = REPORT_PRECISION.get(flat_key.split('.')[-1], 2)
+
+            for stat_key in ["avg", "min", "max"]:
+                value = stat_package[stat_key]
+
+                if isinstance(value, (int, float)):
+                    stat_package[stat_key] = safe_round(value, precision)
+                elif isinstance(value, list):
+                    stat_package[stat_key] = [
+                        safe_round(v, precision)
+                        for v in value
                     ]
-                    if column_elements:
-                        avg_list[i] = sum(column_elements) / len(column_elements)
-                        min_list[i] = min(column_elements)
-                        max_list[i] = max(column_elements)
-                stat_package = {"avg": avg_list, "min": min_list, "max": max_list}
-        else:  # Scalar processing (list of numbers, possibly with Nones, empty dicts {})
-            numeric_values = [
-                v
-                for v in values_list_for_key
-                if isinstance(v, (int, float)) and v is not None
-            ]
-            if numeric_values:
-                stat_package["avg"] = sum(numeric_values) / len(numeric_values)
-                stat_package["min"] = min(numeric_values)
-                stat_package["max"] = max(numeric_values)
 
-        if not values_list_for_key and is_effectively_all_null_stat_package(
-                stat_package
-        ):
-            continue
+            set_nested_value(final_results_data, flat_key, stat_package)
 
-        precision = REPORT_PRECISION.get(flat_key.split('.')[-1], 2)
-
-        for stat_key in ["avg", "min", "max"]:
-            value = stat_package[stat_key]
-
-            if isinstance(value, (int, float)):
-                stat_package[stat_key] = safe_round(value, precision)
-            elif isinstance(value, list):
-                stat_package[stat_key] = [
-                    safe_round(v, precision)
-                    for v in value
-                ]
-
-        set_nested_value(final_results_data, flat_key, stat_package)
-
-    output_data = {
-        "SerialNumber": sorted(list(set(s for s in serial_numbers if s is not None))),
-        "Results": final_results_data,
-    }
+            output_data = {
+                "SerialNumber": sorted(list(set(s for s in serial_numbers if s is not None))),
+                "Results": final_results_data,
+            }
+    except Exception as e:
+        logger.error(f"Error during report aggregation for {device_name}: {e}")
+        return False
 
     try:
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump(output_data, f, indent=4)
         logger.debug(f"Full report with averages, min, and max values saved to {output_file}")
+        return True
     except Exception as e:
         logger.error(f"Error writing output JSON to file {output_file}: {e}")
+        return False
 
 
 def load_json_file(filepath):
@@ -540,7 +547,7 @@ def generate_comparison_report(
         output_json_file,
         is_tv_flag,
         device_reports
-):
+) -> bool:
     """
     Compares data from a JSON results file with expected values from a YAML file,
     includes all relevant data in the report, and saves it to a JSON file.
@@ -551,6 +558,9 @@ def generate_comparison_report(
         output_json_file (Path): Path to the output JSON file containing the report.
         is_tv_flag (bool): Whether the report from TV or not.
         device_reports (list): List of individual JSON reports.
+
+    Returns:
+        bool: True if comparison report was successfully generated, False otherwise.
     """
     actual_result_data = load_json_file(actual_result_file)
     expected_result_data = load_yaml_file(expected_result_file)
@@ -562,7 +572,7 @@ def generate_comparison_report(
             "details": f"JSON file: '{actual_result_file}', YAML file: '{expected_result_file}'",
         }
         write_error_report(output_json_file, error_report, "file loading errors")
-        return
+        return False
 
     # --- 2. ROOT KEY CHECK ---
     actual_result_root = actual_result_data.get("Results", {})
@@ -579,7 +589,7 @@ def generate_comparison_report(
             "error": f"'main_tests' key missing or invalid in YAML: {expected_result_file}."
         }
         write_error_report(output_json_file, error_report, "YAML parsing failure")
-        return
+        return False
 
     # --- 2. MAJORITY CHECK ---
     devices_values_map = defaultdict(list)
@@ -709,8 +719,10 @@ def generate_comparison_report(
         with open(output_json_file, "w", encoding="utf-8") as f:
             json.dump(full_report, f, indent=4, ensure_ascii=False)
         logger.debug(f"Comparison report successfully saved to {output_json_file}")
+        return True
     except IOError as e:
         logger.error(f"Could not write report to {output_json_file}. Details: {e}")
+        return False
     except TypeError as e:
         logger.error(f"Data in report is not JSON serializable. Details: {e}")
         # Logic to write a serialization error report (kept as is)
@@ -726,9 +738,10 @@ def generate_comparison_report(
                 )
         except IOError:
             pass
+        return False
 
 
-def analyze_json_files_for_min_fail(device_reports, expected_result_path, output_path, device_name):
+def analyze_json_files_for_min_fail(device_reports, expected_result_path, output_path, device_name) -> bool:
     """
     Analyzes JSON files in a folder, compares their minimum values against expected values,
     and saves the failing data to an output JSON file.
@@ -737,6 +750,9 @@ def analyze_json_files_for_min_fail(device_reports, expected_result_path, output
             expected_result_path (Path): Path to JSON file with expected values
             output_path (Path): Path to output JSON file
             device_name (str): Name of a device
+
+        Returns:
+            bool: True if analysis was successfully completed, False otherwise.
     """
 
     try:
@@ -745,13 +761,13 @@ def analyze_json_files_for_min_fail(device_reports, expected_result_path, output
             expected_values = expected_data["main_tests"]
     except FileNotFoundError:
         logger.error(f"Expected result file not found at {expected_result_path}")
-        return
+        return False
     except yaml.YAMLError as e:
         logger.error(f"Could not parse YAML file: {e}")
-        return
+        return False
     except KeyError:
         logger.error("'main_tests' key not found in the YAML file.")
-        return
+        return False
 
     output_data = []
 
@@ -804,6 +820,7 @@ def analyze_json_files_for_min_fail(device_reports, expected_result_path, output
             json.dump(output_data, outfile, indent=4)
     except IOError as e:
         logger.error(f"Could not write output file: {e}")
-        return
+        return False
 
     logger.debug(f"Analysis complete. Results saved to {output_path}")
+    return True

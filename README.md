@@ -64,6 +64,25 @@ A comprehensive tool for analyzing display device test results (TVs, Monitors). 
 4.  Find the generated **HTML report** in the `results/` folder.
 5.  Processed files and reports will be archived in `report_archive/`.
 
+### Exit Codes
+
+The application returns different exit codes to indicate success or failure:
+
+- **0 (SUCCESS)**: At least one device report was successfully generated
+- **1 (GENERAL_ERROR)**: Unexpected error occurred during processing
+- **2 (NO_DATA_FOUND)**: No JSON files found in `data/` folder, or all report generation attempts failed
+- **3 (CONFIG_ERROR)**: Failed to create required directories
+
+**Example usage in scripts:**
+```bash
+python main.py
+if [ $? -eq 0 ]; then
+    echo "Reports generated successfully"
+else
+    echo "Report generation failed with code $?"
+fi
+```
+
 -----
 
 ## Release & Deployment

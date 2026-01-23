@@ -1,5 +1,6 @@
 # helpers.py
 import json
+import sys
 import yaml
 import zipfile
 from pathlib import Path
@@ -57,7 +58,7 @@ def create_html_report(
         current_device_name: str,
         app_version: str,
         expected_yaml: Path,
-):
+) -> bool:
     """
     Generates an interactive HTML report from a JSON test result file
     using a Jinja2 template.
@@ -73,6 +74,8 @@ def create_html_report(
         report_view_config (Path): Path to the report view config.
         expected_yaml (Path): Path to the expected YAML file.
 
+    Returns:
+        bool: True if report was successfully generated, False otherwise.
     """
     logger.debug(f"Generating HTML report for {input_file.name}")
 
@@ -82,7 +85,7 @@ def create_html_report(
             main_report_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
         logger.error(f"Error reading/parsing main report file {input_file}: {e}")
-        return
+        return False
 
     try:
         with open(min_fail_file, "r") as f:
@@ -97,13 +100,13 @@ def create_html_report(
             expected_values = expected_data["main_tests"]
     except FileNotFoundError:
         logger.error(f"Expected result file not found at {expected_yaml}")
-        return
+        return False
     except yaml.YAMLError as e:
         logger.error(f"Could not parse YAML file: {e}")
-        return
+        return False
     except KeyError:
         logger.error("'main_tests' key not found in the YAML file.")
-        return
+        return False
 
     main_report_data_filtered, main_report_coordinates_filtered = process_main_report(
         main_report_data, UFN_MAPPING, report_view_config
@@ -167,8 +170,15 @@ def create_html_report(
     }
 
     # --- 3. Set up Jinja2 Environment ---
-    # Assuming template is in 'config/' folder, relative to project root
-    base_dir = Path(__file__).parent.parent
+    # Determine base directory: if frozen (compiled), use executable's parent folder
+    # Otherwise use project root (for development)
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable
+        base_dir = Path(sys.executable).parent
+    else:
+        # Running as script
+        base_dir = Path(__file__).parent.parent
+
     template_dir = base_dir / "config"
 
     env = Environment(
@@ -180,7 +190,7 @@ def create_html_report(
         template = env.get_template(HTML_TEMPLATE_NAME)
     except Exception as e:
         logger.error(f"Error loading template '{HTML_TEMPLATE_NAME}' from '{template_dir}': {e}")
-        return
+        return False
 
     # --- 4. Define Template Context ---
 
@@ -214,8 +224,10 @@ def create_html_report(
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(html_content)
         logger.debug(f"Successfully created HTML report: {output_file}")
+        return True
     except Exception as e:
         logger.error(f"Error rendering or saving HTML report: {e}")
+        return False
 
 
 def prepare_device_plot_coordinates(main_report_data):
