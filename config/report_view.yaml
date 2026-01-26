@@ -1,5 +1,5 @@
 # config/report_view.yaml
-# Set 'true' to show the column, 'true' to hide it.
+# Set 'true' to show the column, 'false' to hide it.
 # The order of lines here determines the column order in the report.
 columns:
   Brightness: true

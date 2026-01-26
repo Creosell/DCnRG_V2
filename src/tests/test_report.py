@@ -164,7 +164,8 @@ def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
         json.dump(full_report_data, f)
 
     # 2. Create YAML with expectations
-    mock_yaml_data["main_tests"]["Temperature"].update({"typ": 6500.0, "min": 5500.0})
+    # Temperature: only min/max should be checked, typ should be ignored
+    mock_yaml_data["main_tests"]["Temperature"]["min"] = 5500.0
     yaml_file = tmp_path / "expected.yaml"
     with open(yaml_file, "w") as f:
         # Use yaml.safe_dump, not json.dump
@@ -259,13 +260,16 @@ def test_generate_comparison_report_tv_contrast_tolerance_scenarios(
     assert expected_reason_part in result["Contrast"]["reason"]
 
 
-@pytest.mark.parametrize("skipped_key_yaml", list(report.AVG_FAIL_SKIP_KEYS_FOR_TV))
+@pytest.mark.parametrize("skipped_key_yaml", [
+    key for key in report.AVG_FAIL_SKIP_KEYS_FOR_TV if key != "Temperature"
+])
 def test_generate_comparison_report_tv_avg_skip_pass_on_min(
         tmp_path, mock_yaml_data, skipped_key_yaml
 ):
     """
-    Checks that for all skipped keys, TV gets PASS
+    Checks that for all skipped keys (except Temperature), TV gets PASS
     if min is ok, even if avg is below expected.
+    Temperature has separate test coverage due to its special logic.
     """
     # 1. Setup data
     # avg is below typ, but min is above threshold
@@ -304,13 +308,16 @@ def test_generate_comparison_report_tv_avg_skip_pass_on_min(
     assert "(TV) Actual min (85.0) >= Expected min (80.0)" in result[skipped_key_yaml]["reason"]
 
 
-@pytest.mark.parametrize("skipped_key_yaml", list(report.AVG_FAIL_SKIP_KEYS_FOR_TV))
+@pytest.mark.parametrize("skipped_key_yaml", [
+    key for key in report.AVG_FAIL_SKIP_KEYS_FOR_TV if key != "Temperature"
+])
 def test_generate_comparison_report_tv_avg_skip_fail_on_min(
         tmp_path, mock_yaml_data, skipped_key_yaml
 ):
     """
-    Checks that for all skipped keys, TV gets FAIL
+    Checks that for all skipped keys (except Temperature), TV gets FAIL
     if min is below threshold, despite skipping the avg check.
+    Temperature has separate test coverage due to its special logic.
     """
     # 1. Setup data
     # avg is below typ, AND min is also below threshold
@@ -346,6 +353,143 @@ def test_generate_comparison_report_tv_avg_skip_fail_on_min(
 
     assert result[skipped_key_yaml]["status"] == "FAIL"
     assert "Actual min (75.0) < Expected min (80.0)" in result[skipped_key_yaml]["reason"]
+
+
+def test_generate_comparison_report_tv_temperature_max_check(tmp_path, mock_yaml_data):
+    """
+    Tests that Temperature is checked ONLY by min/max for all devices (TV and non-TV).
+    Temperature avg is NOT checked, typ is ignored.
+    """
+    # Case 1: Temperature max exceeds expected - should FAIL
+    full_report_data_fail = {
+        "Results": {
+            "Temperature": {"avg": 6500.0, "min": 6400.0, "max": 6700.0}  # max exceeds 6600
+        }
+    }
+    # Only min/max are used for Temperature, typ should be ignored
+    mock_yaml_data["main_tests"]["Temperature"] = {"min": 6200.0, "max": 6600.0}
+
+    json_file_fail = tmp_path / "full_report_fail.json"
+    with open(json_file_fail, "w") as f:
+        json.dump(full_report_data_fail, f)
+
+    yaml_file = tmp_path / "expected.yaml"
+    with open(yaml_file, "w") as f:
+        yaml.safe_dump(mock_yaml_data, f)
+
+    output_file_fail = tmp_path / "comparison_fail.json"
+    report.generate_comparison_report(
+        str(json_file_fail),
+        str(yaml_file),
+        str(output_file_fail),
+        is_tv_flag=True,
+        device_reports=[]
+    )
+
+    with open(output_file_fail, "r") as f:
+        result_fail = json.load(f)
+
+    assert result_fail["Temperature"]["status"] == "FAIL"
+    assert "Actual max (6700.0) > Expected max (6600.0)" in result_fail["Temperature"]["reason"]
+
+    # Case 2: Temperature max is within bounds, min is OK - should PASS
+    full_report_data_pass = {
+        "Results": {
+            "Temperature": {"avg": 6500.0, "min": 6400.0, "max": 6550.0}  # max within bounds
+        }
+    }
+
+    json_file_pass = tmp_path / "full_report_pass.json"
+    with open(json_file_pass, "w") as f:
+        json.dump(full_report_data_pass, f)
+
+    output_file_pass = tmp_path / "comparison_pass.json"
+    report.generate_comparison_report(
+        str(json_file_pass),
+        str(yaml_file),
+        str(output_file_pass),
+        is_tv_flag=True,
+        device_reports=[]
+    )
+
+    with open(output_file_pass, "r") as f:
+        result_pass = json.load(f)
+
+    assert result_pass["Temperature"]["status"] == "PASS"
+    assert "Temperature checks passed" in result_pass["Temperature"]["reason"]
+    assert "min (6400.0) >= 6200.0" in result_pass["Temperature"]["reason"]
+
+    # Case 3: Temperature min fails - should FAIL (even if avg is good)
+    full_report_data_min_fail = {
+        "Results": {
+            "Temperature": {"avg": 6500.0, "min": 6100.0, "max": 6550.0}  # min below 6200
+        }
+    }
+
+    json_file_min_fail = tmp_path / "full_report_min_fail.json"
+    with open(json_file_min_fail, "w") as f:
+        json.dump(full_report_data_min_fail, f)
+
+    output_file_min_fail = tmp_path / "comparison_min_fail.json"
+    report.generate_comparison_report(
+        str(json_file_min_fail),
+        str(yaml_file),
+        str(output_file_min_fail),
+        is_tv_flag=True,
+        device_reports=[]
+    )
+
+    with open(output_file_min_fail, "r") as f:
+        result_min_fail = json.load(f)
+
+    assert result_min_fail["Temperature"]["status"] == "FAIL"
+    assert "Actual min (6100.0) < Expected min (6200.0)" in result_min_fail["Temperature"]["reason"]
+
+
+def test_generate_comparison_report_temperature_ignores_typ(tmp_path):
+    """
+    Tests that Temperature completely ignores 'typ' value in YAML.
+    Only min/max bounds are checked, avg is not evaluated against typ.
+    """
+    # Setup: avg is BELOW typ, but within min/max bounds
+    full_report_data = {
+        "Results": {
+            "Temperature": {"avg": 6300.0, "min": 6250.0, "max": 6350.0}
+        }
+    }
+    json_file = tmp_path / "full_report.json"
+    with open(json_file, "w") as f:
+        json.dump(full_report_data, f)
+
+    # YAML with typ value that is higher than avg (should be ignored)
+    yaml_data = {
+        "main_tests": {
+            "Temperature": {
+                "min": 6200.0,
+                "typ": 6500.0,  # avg (6300) < typ, but this should NOT cause FAIL
+                "max": 6400.0
+            }
+        }
+    }
+    yaml_file = tmp_path / "expected.yaml"
+    with open(yaml_file, "w") as f:
+        yaml.safe_dump(yaml_data, f)
+
+    output_file = tmp_path / "comparison.json"
+    report.generate_comparison_report(
+        str(json_file),
+        str(yaml_file),
+        str(output_file),
+        is_tv_flag=False,
+        device_reports=[]
+    )
+
+    with open(output_file, "r") as f:
+        result = json.load(f)
+
+    # Should PASS because min/max are within bounds, typ is ignored
+    assert result["Temperature"]["status"] == "PASS"
+    assert "Temperature checks passed" in result["Temperature"]["reason"]
 
 
 def test_analyze_json_files_for_min_fail(tmp_path, mock_yaml_data):

@@ -22,3 +22,4 @@
 /config/main.yaml
 /config/space.png
 /config/expected_result.yaml
+/.claude/settings.local.json

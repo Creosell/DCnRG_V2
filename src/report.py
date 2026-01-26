@@ -476,7 +476,42 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     actual_min_val = actual_data_dict_for_test.get("min")
     expected_min = expected_values_dict.get("min")
 
-    # 2.1. N/A Checks (presence)
+    # 2.1. Special logic for Temperature (applies to both TV and non-TV devices)
+    # Temperature is checked ONLY by min/max bounds, avg and typ are not checked
+    # This check MUST be before general N/A checks because Temperature doesn't require typ
+    if yaml_key == "Temperature":
+        # N/A checks specific to Temperature
+        if actual_min_val is None:
+            return "N/A", "Actual 'min' value missing in JSON for Temperature"
+        if expected_min is None:
+            return "N/A", "Expected 'min' threshold missing in YAML for Temperature"
+        if not isinstance(actual_min_val, (int, float)):
+            return "N/A", "Non-numeric 'min' value in JSON for Temperature"
+        if not isinstance(expected_min, (int, float)):
+            return "N/A", "Non-numeric 'min' value in YAML for Temperature"
+
+        actual_max_val = actual_data_dict_for_test.get("max")
+        expected_max_val = expected_values_dict.get("max")
+
+        # Validation of max values before comparison
+        is_valid_max_check = (
+                actual_max_val is not None
+                and expected_max_val is not None
+                and isinstance(actual_max_val, (int, float))
+                and isinstance(expected_max_val, (int, float))
+        )
+
+        if is_valid_max_check and actual_max_val > expected_max_val:
+            return "FAIL", f"Actual max ({actual_max_val}) > Expected max ({expected_max_val}) for Temperature"
+
+        # Check min for Temperature
+        if actual_min_val < expected_min:
+            return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min}) for Temperature"
+
+        # If both min and max checks passed, return PASS
+        return "PASS", f"Temperature checks passed: min ({actual_min_val}) >= {expected_min}, max ({actual_max_val if is_valid_max_check else 'N/A'}) <= {expected_max_val if is_valid_max_check else 'N/A'}"
+
+    # 2.2. N/A Checks (presence) for general tests
     general_checks = [
         (actual_avg is None, "Actual 'avg' value missing in JSON."),
         (actual_min_val is None, "Actual 'min' value missing in JSON."),
@@ -487,12 +522,12 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         if condition:
             return "N/A", reason_msg
 
-    # 2.2. N/A Check (data type)
+    # 2.3. N/A Check (data type) for general tests
     all_values = [actual_avg, actual_min_val, expected_typ, expected_min]
     if not all(isinstance(v, (int, float)) for v in all_values):
         return "N/A", "Non-numeric data encountered for general test comparison."
 
-    # 2.3. FAILS by min and avg values
+    # 2.4. FAILS by min and avg values
 
     # Special rules for TV
     # Applying tolerance for contrast value
@@ -510,28 +545,6 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         return "FAIL", f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})"
     if actual_min_val < expected_min:
         return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})"
-
-    # 2.4. Check for FAIL on max for Temperature
-    if yaml_key == "Temperature":
-        actual_max_val = actual_data_dict_for_test.get("max")
-        expected_max_thresh = expected_values_dict.get("max")
-
-        # Validation of max values before comparison
-        is_valid_max_check = (
-                actual_max_val is not None
-                and expected_max_thresh is not None
-                and isinstance(actual_max_val, (int, float))
-                and isinstance(expected_max_thresh, (int, float))
-        )
-
-        if is_valid_max_check and actual_max_val > expected_max_thresh:
-            return "FAIL", f"Actual max ({actual_max_val}) > Expected max ({expected_max_thresh}) for Temperature"
-
-        # If no FAIL, and avg meets typ, then PASS
-        if actual_avg >= expected_typ:
-            return "PASS", f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})"
-
-        return "ERROR", "Temperature test: logical error or max check was invalid."
 
     # 2.5. General PASS condition
     if actual_avg >= expected_typ:
