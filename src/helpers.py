@@ -47,6 +47,53 @@ COORD_KEYS_INTERNAL = {
     "White_x", "White_y", "Center_x", "Center_y"
 }
 
+# Reverse mapping: JSON keys → YAML keys
+JSON_TO_YAML_KEY_MAP = {
+    "BrightnessUniformity": "Brightness_uniformity",
+    "CgByAreaRGB": "Cg_rgb_area",
+    "CgByAreaNTSC": "Cg_ntsc_area",
+    "CgRGB": "Cg_rgb",
+    "CgNTSC": "Cg_ntsc",
+    "DeltaE": "Delta_e",
+    "Center_x": "White_x",
+    "Center_y": "White_y",
+}
+
+# Metrics with dynamic visibility based on expected values presence
+DYNAMIC_VISIBILITY_KEYS = {"CgByAreaRGB", "CgByAreaNTSC", "CgRGB", "CgNTSC"}
+
+
+def _should_display_metric(key: str, expected_values: dict) -> bool:
+    """
+    Determines if a metric should be displayed based on expected values.
+
+    Args:
+        key: Internal JSON key (e.g., "CgByAreaRGB")
+        expected_values: Expected values from YAML config
+
+    Returns:
+        bool: True if metric should be displayed, False otherwise.
+
+    Logic:
+        - Metrics NOT in DYNAMIC_VISIBILITY_KEYS: always display
+        - Metrics in DYNAMIC_VISIBILITY_KEYS: display only if at least one
+          expected value (min/typ/max) is not None and not string 'None'
+    """
+    if key not in DYNAMIC_VISIBILITY_KEYS:
+        return True
+
+    yaml_key = JSON_TO_YAML_KEY_MAP.get(key)
+    if not yaml_key:
+        return True
+
+    expected = expected_values.get(yaml_key, {})
+
+    def _is_valid_value(v):
+        """Checks if value is not None and not string 'None'"""
+        return v is not None and v != 'None'
+
+    return any(_is_valid_value(expected.get(k)) for k in ["min", "typ", "max"])
+
 
 def create_html_report(
         input_file: Path,
@@ -109,7 +156,7 @@ def create_html_report(
         return False
 
     main_report_data_filtered, main_report_coordinates_filtered = process_main_report(
-        main_report_data, UFN_MAPPING, report_view_config
+        main_report_data, UFN_MAPPING, report_view_config, expected_values
     )
 
     main_report_filtered = {
@@ -295,13 +342,20 @@ def prepare_specification_plot_coordinates(expected_values):
         logger.error(f"Error processing specification coordinates for plot: {e}")
 
 
-def process_main_report(main_report_data: dict, ufn_mapping: dict, config_path: Path):
+def process_main_report(main_report_data: dict, ufn_mapping: dict, config_path: Path, expected_values: dict):
     """
     Processes the main aggregated report data.
     - Filters keys based on config (YAML).
+    - Filters metrics with dynamic visibility based on expected values presence.
     - Sorts keys based on config order.
     - Maps internal keys to UFN names.
     - Splits into Main and Coordinate rows.
+
+    Args:
+        main_report_data: Aggregated report data
+        ufn_mapping: Mapping from internal keys to user-friendly names
+        config_path: Path to report_view.yaml
+        expected_values: Expected values from device configuration YAML
 
     Returns:
         tuple: (main_summary_rows, coord_summary_rows)
@@ -330,6 +384,9 @@ def process_main_report(main_report_data: dict, ufn_mapping: dict, config_path: 
             summary_keys = list(main_report_data.keys())
     else:
         summary_keys = list(main_report_data.keys())
+
+    # 1.5. Filter metrics by expected values presence (dynamic visibility)
+    summary_keys = [k for k in summary_keys if _should_display_metric(k, expected_values)]
 
     # 2. Build ROWS as DICTIONARIES (not lists)
     # Используем словари {}, чтобы в шаблоне работал метод .items()

@@ -111,8 +111,11 @@ def test_process_main_report(tmp_path):
     with open(config_path, "w") as f:
         yaml.dump(config_data, f)
 
+    # 2.5. Mock expected values (empty for this test, no CG metrics involved)
+    expected_values = {}
+
     # 3. Execute
-    main_rows, coord_rows = helpers.process_main_report(raw_data, ufn_mapping, config_path)
+    main_rows, coord_rows = helpers.process_main_report(raw_data, ufn_mapping, config_path, expected_values)
 
     # 4. Verify Output Types
     assert isinstance(main_rows, dict)
@@ -373,3 +376,92 @@ def test_create_html_report_returns_false_on_template_load_error(mocker, tmp_pat
 
     assert result is False
     assert not output_file.exists()
+
+
+def test_process_main_report_dynamic_cg_filter(tmp_path):
+    """
+    Tests dynamic Color Gamut filtering based on expected values presence.
+    """
+    # Mock data with all 4 CG metrics
+    raw_data = {
+        "Brightness": {"actual_values": {"avg": 100}},
+        "CgByAreaRGB": {"actual_values": {"avg": 72}},
+        "CgByAreaNTSC": {"actual_values": {"avg": 68}},
+        "CgRGB": {"actual_values": {"avg": 71}},
+        "CgNTSC": {"actual_values": {"avg": 69}},
+    }
+
+    ufn_mapping = {
+        "Brightness": "Brightness (cd/m²)",
+        "CgByAreaRGB": "sRGB Gamut Area (%)",
+        "CgByAreaNTSC": "NTSC Gamut Area (%)",
+        "CgRGB": "sRGB Gamut Coverage (%)",
+        "CgNTSC": "NTSC Gamut Coverage (%)",
+    }
+
+    # Config enables all metrics
+    config_path = tmp_path / "view_config.yaml"
+    config_data = {
+        "columns": {
+            "Brightness": True,
+            "CgByAreaRGB": True,
+            "CgByAreaNTSC": True,
+            "CgRGB": True,
+            "CgNTSC": True,
+        }
+    }
+    with open(config_path, "w") as f:
+        yaml.dump(config_data, f)
+
+    # Expected values: only Cg_rgb_area and Cg_rgb have values
+    # Using string 'None' to simulate YAML parsing behavior
+    expected_values = {
+        "Cg_rgb_area": {"min": 67, "typ": 72, "max": 'None'},
+        "Cg_ntsc_area": {"min": 'None', "typ": 'None', "max": 'None'},  # All 'None' - should be hidden
+        "Cg_rgb": {"min": 'None', "typ": 72, "max": 'None'},  # Has typ - should be visible
+        "Cg_ntsc": {"min": 'None', "typ": 'None', "max": 'None'},  # All 'None' - should be hidden
+    }
+
+    # Execute
+    main_rows, coord_rows = helpers.process_main_report(raw_data, ufn_mapping, config_path, expected_values)
+
+    # Verify filtering
+    assert "Brightness (cd/m²)" in main_rows  # Always visible
+    assert "sRGB Gamut Area (%)" in main_rows  # Has expected values
+    assert "sRGB Gamut Coverage (%)" in main_rows  # Has typ expected value
+    assert "NTSC Gamut Area (%)" not in main_rows  # All expected values are None
+    assert "NTSC Gamut Coverage (%)" not in main_rows  # All expected values are None
+
+
+def test_should_display_metric():
+    """
+    Tests _should_display_metric helper function.
+    """
+    # Non-CG metric - always display
+    assert helpers._should_display_metric("Brightness", {}) is True
+    assert helpers._should_display_metric("Contrast", {"Contrast": {"min": None, "typ": None, "max": None}}) is True
+
+    # CG metric with at least one expected value
+    expected_with_min = {"Cg_rgb_area": {"min": 67, "typ": None, "max": None}}
+    assert helpers._should_display_metric("CgByAreaRGB", expected_with_min) is True
+
+    expected_with_typ = {"Cg_ntsc": {"min": None, "typ": 72, "max": None}}
+    assert helpers._should_display_metric("CgNTSC", expected_with_typ) is True
+
+    expected_with_max = {"Cg_rgb": {"min": None, "typ": None, "max": 100}}
+    assert helpers._should_display_metric("CgRGB", expected_with_max) is True
+
+    # CG metric with all None expected values - hide
+    expected_all_none = {"Cg_ntsc_area": {"min": None, "typ": None, "max": None}}
+    assert helpers._should_display_metric("CgByAreaNTSC", expected_all_none) is False
+
+    # CG metric with string 'None' values (YAML parsing edge case) - hide
+    expected_string_none = {"Cg_ntsc_area": {"min": 'None', "typ": 'None', "max": 'None'}}
+    assert helpers._should_display_metric("CgByAreaNTSC", expected_string_none) is False
+
+    # CG metric with mixed None types and valid value - display
+    expected_mixed = {"Cg_rgb": {"min": 'None', "typ": 72, "max": None}}
+    assert helpers._should_display_metric("CgRGB", expected_mixed) is True
+
+    # CG metric not in expected_values dict - hide
+    assert helpers._should_display_metric("CgByAreaRGB", {}) is False
