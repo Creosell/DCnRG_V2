@@ -63,6 +63,55 @@ JSON_TO_YAML_KEY_MAP = {
 DYNAMIC_VISIBILITY_KEYS = {"CgByAreaRGB", "CgByAreaNTSC", "CgRGB", "CgNTSC"}
 
 
+def _get_cell_status(key: str, value: float, expected_values: dict, is_coordinate: bool = False):
+    """
+    Determines cell status based on expected value comparison.
+
+    Args:
+        key: Internal JSON key (e.g., "Brightness", "Red_x")
+        value: Actual measured value
+        expected_values: Expected values from YAML config
+        is_coordinate: If True, checks only min/max (for coordinates)
+
+    Returns:
+        str or None: "fail" (red), "warning" (yellow), or None (white)
+    """
+    if value is None:
+        return None
+
+    # Map internal key to YAML key
+    yaml_key = JSON_TO_YAML_KEY_MAP.get(key, key)
+    expected = expected_values.get(yaml_key, {})
+
+    min_val = expected.get("min")
+    max_val = expected.get("max")
+    typ_val = expected.get("typ")
+
+    # Parse string 'None' as None
+    def parse_val(v):
+        return None if v == 'None' or v is None else v
+
+    min_val = parse_val(min_val)
+    max_val = parse_val(max_val)
+    typ_val = parse_val(typ_val)
+
+    # Check min/max bounds (critical - red)
+    if min_val is not None and value < min_val:
+        return "fail"
+    if max_val is not None and value > max_val:
+        return "fail"
+
+    # For coordinates, only check min/max
+    if is_coordinate:
+        return None
+
+    # For non-coordinates, check typ (warning - yellow)
+    if typ_val is not None and value < typ_val:
+        return "warning"
+
+    return None
+
+
 def _should_display_metric(key: str, expected_values: dict) -> bool:
     """
     Determines if a metric should be displayed based on expected values.
@@ -242,8 +291,9 @@ def create_html_report(
     # --- 4. Define Template Context ---
 
     # 1. Collect and process device reports for the new table
-    device_reports_data_filtered, device_reports_coordinates_filtered = process_device_reports(device_reports,
-                                                                                               UFN_MAPPING)
+    device_reports_data_filtered, device_reports_coordinates_filtered = process_device_reports(
+        device_reports, UFN_MAPPING, expected_values
+    )
 
     device_reports_filtered = {
         "data": device_reports_data_filtered,
@@ -406,10 +456,18 @@ def process_main_report(main_report_data: dict, ufn_mapping: dict, config_path: 
     return main_rows, coord_rows
 
 
-def process_device_reports(device_reports: list, ufn_mapping: dict):
+def process_device_reports(device_reports: list, ufn_mapping: dict, expected_values: dict):
     """
     Loads raw device reports, flattens coordinates, applies UFN mapping,
-    and separates main data from coordinates.
+    separates main data from coordinates, and marks cells that are below expected values.
+
+    Args:
+        device_reports: List of device report dictionaries
+        ufn_mapping: Mapping from internal keys to user-friendly names
+        expected_values: Expected values from device configuration YAML
+
+    Returns:
+        tuple: (main_reports, coord_reports) with cell status flags
     """
     main_reports = {}
     coord_reports = {}
@@ -428,6 +486,8 @@ def process_device_reports(device_reports: list, ufn_mapping: dict):
 
         processed_main = {}
         processed_coords = {}
+        cell_status_main = {}  # "fail", "warning", or None
+        cell_status_coords = {}
 
         # Process Results
         for key, value in data["Results"].items():
@@ -447,13 +507,21 @@ def process_device_reports(device_reports: list, ufn_mapping: dict):
                 for c_key, c_val in value.items():
                     name, val = format_val(c_key, c_val, 3)
                     processed_coords[name] = val
+                    # Check coordinate bounds (min/max only)
+                    status = _get_cell_status(c_key, c_val, expected_values, is_coordinate=True)
+                    if status:
+                        cell_status_coords[name] = status
             else:
                 name, val = format_val(key, value, 0)
                 processed_main[name] = val
+                # Check main metric bounds (min/typ/max)
+                status = _get_cell_status(key, value, expected_values, is_coordinate=False)
+                if status:
+                    cell_status_main[name] = status
 
         # Save results once per device
-        main_reports[sn] = {"results": processed_main, **meta}
-        coord_reports[sn] = {"results": processed_coords, **meta}
+        main_reports[sn] = {"results": processed_main, "cell_status": cell_status_main, **meta}
+        coord_reports[sn] = {"results": processed_coords, "cell_status": cell_status_coords, **meta}
 
     return main_reports, coord_reports
 

@@ -51,8 +51,11 @@ def test_process_device_reports(mocker):
         "Red_x": 3
     })
 
+    # 2.5. Mock expected values (empty for this basic test)
+    expected_values = {}
+
     # 3. Execute
-    main_data, coord_data = helpers.process_device_reports(device_reports_list, ufn_mapping)
+    main_data, coord_data = helpers.process_device_reports(device_reports_list, ufn_mapping, expected_values)
 
     # 4. Verify Structure
     sn = "Device123"
@@ -155,7 +158,7 @@ def test_create_html_report(mocker, tmp_path):
     input_file.write_text(json.dumps({"Results": {"Brightness": {"avg": 100}}}))
 
     expected_file = tmp_path / "expected_report.yaml"
-    expected_file.write_text(json.dumps({"main_tests": {"Brightness": 100}}))
+    expected_file.write_text("main_tests:\n  Brightness:\n    min: 80\n    typ: 100\n    max: 120")
 
     min_fail_file = tmp_path / "min_fail.json"
     min_fail_file.write_text("[]")
@@ -243,7 +246,7 @@ def test_create_html_report_returns_true_on_success(mocker, tmp_path):
     input_file.write_text(json.dumps({"Results": {"Brightness": {"avg": 100}}}))
 
     expected_file = tmp_path / "expected_report.yaml"
-    expected_file.write_text("main_tests:\n  Brightness: 100")
+    expected_file.write_text("main_tests:\n  Brightness:\n    min: 80\n    typ: 100\n    max: 120")
 
     min_fail_file = tmp_path / "min_fail.json"
     min_fail_file.write_text("[]")
@@ -465,3 +468,101 @@ def test_should_display_metric():
 
     # CG metric not in expected_values dict - hide
     assert helpers._should_display_metric("CgByAreaRGB", {}) is False
+
+
+def test_get_cell_status():
+    """
+    Tests _get_cell_status helper function for cell highlighting logic.
+    """
+    expected_values = {
+        "Brightness": {"min": 100, "typ": 120, "max": 140},
+        "Red_x": {"min": 0.60, "typ": 0.64, "max": 0.68},
+    }
+
+    # Normal value - no status
+    assert helpers._get_cell_status("Brightness", 120, expected_values, False) is None
+
+    # Below typ but above min - warning (yellow)
+    assert helpers._get_cell_status("Brightness", 110, expected_values, False) == "warning"
+
+    # Below min - fail (red)
+    assert helpers._get_cell_status("Brightness", 95, expected_values, False) == "fail"
+
+    # Above max - fail (red)
+    assert helpers._get_cell_status("Brightness", 150, expected_values, False) == "fail"
+
+    # Coordinate below typ - no warning (coordinates only check min/max)
+    assert helpers._get_cell_status("Red_x", 0.62, expected_values, True) is None
+
+    # Coordinate below min - fail (red)
+    assert helpers._get_cell_status("Red_x", 0.59, expected_values, True) == "fail"
+
+    # Coordinate above max - fail (red)
+    assert helpers._get_cell_status("Red_x", 0.69, expected_values, True) == "fail"
+
+    # String 'None' values should be treated as None
+    expected_with_string_none = {
+        "Brightness": {"min": 'None', "typ": 120, "max": 'None'}
+    }
+    assert helpers._get_cell_status("Brightness", 110, expected_with_string_none, False) == "warning"
+    assert helpers._get_cell_status("Brightness", 50, expected_with_string_none, False) == "warning"  # Below typ, no min check
+
+    # None value - no status
+    assert helpers._get_cell_status("Brightness", None, expected_values, False) is None
+
+
+def test_process_device_reports_with_cell_status(mocker):
+    """
+    Tests process_device_reports with cell status highlighting.
+    """
+    mock_report_data = {
+        "SerialNumber": "Device456",
+        "MeasurementDateTime": "20250101_120000",
+        "IsTV": False,
+        "Results": {
+            "Brightness": 110,  # Below typ (120), above min (100) - warning
+            "Contrast": 90,     # Below min (100) - fail
+            "Temperature": 9500,  # Normal
+            "Coordinates": {
+                "Red_x": 0.59,  # Below min (0.60) - fail
+                "Red_y": 0.335  # Normal
+            }
+        }
+    }
+
+    ufn_mapping = {
+        "Brightness": "Brightness (cd/m²)",
+        "Contrast": "Contrast Ratio",
+        "Temperature": "Color Temperature (K)",
+        "Red_x": "Red (x)",
+        "Red_y": "Red (y)"
+    }
+
+    expected_values = {
+        "Brightness": {"min": 100, "typ": 120, "max": 'None'},
+        "Contrast": {"min": 100, "typ": 150, "max": 'None'},
+        "Temperature": {"min": 9000, "typ": 9500, "max": 10000},
+        "Red_x": {"min": 0.60, "typ": 0.64, "max": 0.68},
+        "Red_y": {"min": 0.30, "typ": 0.34, "max": 0.38}
+    }
+
+    mocker.patch.object(report, 'REPORT_PRECISION', {
+        "Brightness": 0,
+        "Contrast": 0,
+        "Temperature": 0,
+        "Red_x": 3,
+        "Red_y": 3
+    })
+
+    main_data, coord_data = helpers.process_device_reports([mock_report_data], ufn_mapping, expected_values)
+
+    sn = "Device456"
+
+    # Check cell status for main data
+    assert main_data[sn]["cell_status"]["Brightness (cd/m²)"] == "warning"
+    assert main_data[sn]["cell_status"]["Contrast Ratio"] == "fail"
+    assert "Color Temperature (K)" not in main_data[sn]["cell_status"]  # Normal, no status
+
+    # Check cell status for coordinates
+    assert coord_data[sn]["cell_status"]["Red (x)"] == "fail"
+    assert "Red (y)" not in coord_data[sn]["cell_status"]  # Normal, no status
