@@ -26,6 +26,13 @@ pip install -r requirements.txt
 # Run the application
 python main.py
 
+# Run with command line options
+python main.py --verbose              # Enable DEBUG logging
+python main.py --noclean              # Skip archiving and cleanup
+python main.py --device "DeviceName"  # Process only specific device
+python main.py --no-timestamp         # Generate files without timestamp
+python main.py --version              # Show version and exit
+
 # Run tests
 pytest src/tests/
 
@@ -35,6 +42,13 @@ pytest src/tests/test_calculate.py
 # Run tests with verbose output
 pytest -v src/tests/
 ```
+
+**Command Line Arguments**:
+- `--verbose, -v`: Enable DEBUG level logging (default: INFO)
+- `--noclean, -nc`: Skip archiving and file cleanup steps
+- `--device NAME, -d NAME`: Process only the specified device configuration
+- `--no-timestamp`: Generate output files without timestamp for easier regeneration
+- `--version`: Display application version and exit
 
 ### Building Executable
 ```bash
@@ -99,7 +113,11 @@ report_archive/*.zip (Archive)
 - `create_html_report() -> bool`: Renders Jinja2 template (`config/report_template.html`) with report data, returns `True` on success
 - `archive_specific_files() -> str | None`: Creates zip archives of processed files, returns archive path or `None` on error
 - `clear_specific_files()`: Cleans up intermediate files after archiving
+- `_get_cell_status()`: Evaluates cell status for color-coded highlighting (critical/warning/normal)
+- `process_device_reports()`: Processes device reports with cell status flags for visual indication
+- `should_display_metric()`: Determines metric visibility based on expected values in YAML config
 - `UFN_MAPPING`: Maps technical metric names to user-friendly display names
+- `DYNAMIC_VISIBILITY_KEYS`: Metrics requiring expected values to be displayed (e.g., color gamut)
 - **Handles both development and compiled (PyInstaller) modes for config path resolution using `sys.frozen` detection**
 
 **graphics_helper.py** - SVG Coordinate System
@@ -194,21 +212,21 @@ else:
 
 - **`config/expected_result.yaml`**: Measurement specification standards (min/typ/max values for all metrics)
 - **`config/configuration_example.yaml`**: Default expected result template when device-specific config not found
-- **`config/device_configs/*.yaml`**: Per-device expected values (named by `DeviceConfiguration` field from JSON)
+- **`config/device_configs/*.yaml`**: Per-device expected values (named by `DeviceConfiguration` field from JSON). Allows customized thresholds for different device models.
 - **`config/report_view.yaml`**: Boolean flags controlling which columns appear in HTML reports
 - **`config/color_space.yaml`**: Color space definitions (sRGB, NTSC, DCI-P3 primaries as CIE xy coordinates)
-- **`config/report_template.html`**: Jinja2 template for HTML report rendering
+- **`config/report_template.html`**: Jinja2 template for HTML report rendering. Includes CSS for color-coded cell highlighting and legends.
 - **`config/CIExy1931.svg`**: CIE 1931 chromaticity diagram SVG background for visualizations
 
 ## Testing
 
 Tests use pytest with pytest-mock. Fixtures in `conftest.py` provide mock TV and monitor measurement data.
 
-**Test coverage** (65 tests total):
+**Test coverage** (71 tests total):
 - `test_calculate.py` (14 tests): Math validation, brightness, contrast, color gamut, delta E, temperature
 - `test_report.py` (34 tests): JSON report generation, min/fail analysis, comparison reports, **return value validation**
 - `test_parse.py` (10 tests): JSON parsing, device info extraction, coordinate extraction
-- `test_helpers.py` (7 tests): HTML generation, archiving, cleanup operations, **return value validation**
+- `test_helpers.py` (13 tests): HTML generation, archiving, cleanup operations, **return value validation**, cell status logic, dynamic metric visibility
 
 ### Return Value Tests (Added 2025-01-23)
 New tests validate that report generation functions correctly return `True` on success and `False` on errors:
@@ -218,6 +236,10 @@ New tests validate that report generation functions correctly return `True` on s
 - `test_create_html_report_returns_false_on_missing_input_file`
 - `test_create_html_report_returns_false_on_missing_expected_yaml`
 - `test_create_html_report_returns_false_on_template_load_error`
+- `test_get_cell_status`: Validates color-coded status logic (critical/warning/normal)
+- `test_process_device_reports_with_cell_status`: Ensures cell_status flags are correctly computed
+- `test_should_display_metric`: Validates dynamic metric visibility based on YAML expected values
+- `test_process_main_report_dynamic_cg_filter`: Tests Color Gamut metric filtering
 
 **report.py tests:**
 - `test_calculate_full_report_returns_true_on_success`
@@ -232,6 +254,20 @@ New tests validate that report generation functions correctly return `True` on s
 These tests ensure that exit codes are correctly propagated based on actual success/failure of operations.
 
 ## Important Implementation Details
+
+**Color-Coded Cell Highlighting** (Added v1.1.2): Device reports tables use visual status indicators:
+- **Red (critical)**: Values outside min/max bounds (fail condition)
+- **Yellow (warning)**: Values below typical target but within min/max range
+- **White (normal)**: Values meeting or exceeding typical target
+- Coordinate tables only use red/white (no typ check)
+- Status logic in `helpers._get_cell_status()`, applied via CSS classes in template
+- Color legend displayed below each Device reports table
+
+**Dynamic Metric Visibility** (Added v1.1.2): Some metrics only appear if expected values exist in YAML config:
+- Color gamut metrics (sRGB_by_area, NTSC_by_area, DCIP3_by_area) require corresponding expected values
+- Controlled via `DYNAMIC_VISIBILITY_KEYS` in `helpers.py`
+- Prevents empty columns when certain color spaces aren't specified in device config
+- Checked by `should_display_metric()` function
 
 **Coordinate Tests**: Metrics like `Red_x`, `Red_y`, `Green_x`, `Green_y`, `Blue_x`, `Blue_y`, `White_x`, `White_y` are validated against min/max bounds (not typ values). These are listed in `report.py::COORDINATE_TEST_KEYS`.
 
