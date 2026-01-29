@@ -1,3 +1,4 @@
+import argparse
 import datetime
 import sys
 from collections import defaultdict
@@ -35,12 +36,63 @@ DEFAULT_EXPECTED_YAML = CONFIG_DIR / "configuration_example.yaml"
 REPORT_VIEW_CONFIG = CONFIG_DIR / "report_view.yaml"
 
 
-def setup_logging():
-    """Configures logger settings."""
+def parse_args():
+    """
+    Parses command line arguments.
+
+    Returns:
+        argparse.Namespace: Parsed arguments
+    """
+    parser = argparse.ArgumentParser(
+        description="Display Device Report Generator",
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='Enable debug logging (default: INFO level)'
+    )
+
+    parser.add_argument(
+        '--noclean', '-nc',
+        action='store_true',
+        help='Skip archiving and cleanup operations'
+    )
+
+    parser.add_argument(
+        '--version',
+        action='version',
+        version=f'%(prog)s {APP_VERSION}'
+    )
+
+    parser.add_argument(
+        '--device',
+        metavar='NAME',
+        help='Process only the specified device configuration'
+    )
+
+    parser.add_argument(
+        '--no-timestamp',
+        action='store_true',
+        help='Generate files without timestamp for quick regeneration'
+    )
+
+    return parser.parse_args()
+
+
+def setup_logging(verbose: bool = False):
+    """
+    Configures logger settings.
+
+    Args:
+        verbose: If True, sets console logging to DEBUG level
+    """
     logger.remove()
+    level = "DEBUG" if verbose else "INFO"
     logger.add(
         sys.stderr,
-        level="INFO",
+        level=level,
         format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>"
     )
     logger.add(
@@ -66,12 +118,23 @@ def ensure_directories() -> bool:
 
 def main() -> int:
     """Main execution flow."""
+    args = parse_args()
+
     if not ensure_directories():
         return ExitCode.CONFIG_ERROR
 
-    setup_logging()
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
+    setup_logging(verbose=args.verbose)
+    timestamp = "" if args.no_timestamp else datetime.datetime.now().strftime("%Y%m%d_%H%M")
     logger.info(f"Report Generator v{APP_VERSION} started.")
+
+    if args.verbose:
+        logger.debug("Debug logging enabled")
+    if args.noclean:
+        logger.info("Archiving and cleanup disabled (--noclean)")
+    if args.no_timestamp:
+        logger.info("Timestamp disabled for output files (--no-timestamp)")
+    if args.device:
+        logger.info(f"Filtering for device: {args.device}")
 
     # 1. Find and group files
     json_files = list(DATA_DIR.glob("*.json"))
@@ -100,6 +163,11 @@ def main() -> int:
 
     try:
         for dev_name, files in device_groups.items():
+            # Filter by device if specified
+            if args.device and dev_name != args.device:
+                logger.debug(f"Skipping {dev_name} (--device filter)")
+                continue
+
             logger.debug(f"Processing group: {dev_name} ({len(files)} files)")
 
             # Path setup
@@ -108,12 +176,16 @@ def main() -> int:
                 logger.warning(f"Config for {dev_name} not found. Using default.")
                 expected_yaml = DEFAULT_EXPECTED_YAML
 
-            # Output file paths
+            # Output file paths (with or without timestamp)
             f_min_fail = REPORT_DIR / f"min_fail_{dev_name}.json"
             f_full_report = REPORT_DIR / f"full_report_{dev_name}.json"
-            f_final_json = REPORT_DIR / f"final_report_{dev_name}_{timestamp}.json"
-            f_html_result = RESULT_DIR / f"{dev_name}_{timestamp}.html"
-            #f_html_result = RESULT_DIR / f"{dev_name}.html"
+
+            if timestamp:
+                f_final_json = REPORT_DIR / f"final_report_{dev_name}_{timestamp}.json"
+                f_html_result = RESULT_DIR / f"{dev_name}_{timestamp}.html"
+            else:
+                f_final_json = REPORT_DIR / f"final_report_{dev_name}.json"
+                f_html_result = RESULT_DIR / f"{dev_name}.html"
 
             device_reports = []
             source_files_to_archive = []
@@ -173,16 +245,21 @@ def main() -> int:
             logger.success(f"Report generated: {f_html_result}")
             processed_count += 1
 
-            # Archive and Cleanup
-            generated_files = [f_min_fail, f_full_report, f_final_json, f_html_result]
-            all_files = source_files_to_archive + generated_files
-            zip_path = ARCHIVE_DIR / f"{dev_name}_{timestamp}.zip"
+            # Archive and Cleanup (skip if --noclean)
+            if not args.noclean:
+                generated_files = [f_min_fail, f_full_report, f_final_json, f_html_result]
+                all_files = source_files_to_archive + generated_files
 
-            archive_result = h.archive_specific_files(zip_path, all_files, Path.cwd())
-            if archive_result:
-                h.clear_specific_files(source_files_to_archive + [f_min_fail, f_full_report, f_final_json])
-            else:
-                logger.warning(f"Archiving failed for {dev_name}, skipping cleanup to preserve files")
+                if timestamp:
+                    zip_path = ARCHIVE_DIR / f"{dev_name}_{timestamp}.zip"
+                else:
+                    zip_path = ARCHIVE_DIR / f"{dev_name}.zip"
+
+                archive_result = h.archive_specific_files(zip_path, all_files, Path.cwd())
+                if archive_result:
+                    h.clear_specific_files(source_files_to_archive + [f_min_fail, f_full_report, f_final_json])
+                else:
+                    logger.warning(f"Archiving failed for {dev_name}, skipping cleanup to preserve files")
 
     except Exception as e:
         logger.exception(f"Critical error in main loop: {e}")
