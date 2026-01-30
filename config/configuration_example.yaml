@@ -42,9 +42,9 @@ main_tests:
     typ: 9585
     max: 10335
   Delta_e: # Requirements for color accuracy
-    min: 4
-    typ: 3
-    max: 2
+    min: 3
+    typ: 5
+    max: 7
   Red_x: # Requirements for color coordinates of Red
     min: 0.608
     typ: 0.638

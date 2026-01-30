@@ -55,6 +55,10 @@ MAJORITY_TYP_TOLERANCE = 0.01
 COORDINATE_TEST_KEYS = {
     "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y", "White_x", "White_y",
 }
+
+# Metrics where lower values are better (inverted logic)
+LOWER_IS_BETTER_KEYS = {"Delta_e"}
+
 # Mapping from YAML keys to JSON keys
 YAML_TO_JSON_KEY_MAP = {
     # Mapping legacy names (snake_case) to internal names (CamelCase)
@@ -511,7 +515,38 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         # If both min and max checks passed, return PASS
         return "PASS", f"Temperature checks passed: min ({actual_min_val}) >= {expected_min}, max ({actual_max_val if is_valid_max_check else 'N/A'}) <= {expected_max_val if is_valid_max_check else 'N/A'}"
 
-    # 2.2. N/A Checks (presence) for general tests
+    # 2.2. Special logic for metrics where lower is better (e.g., Delta_e)
+    if yaml_key in LOWER_IS_BETTER_KEYS:
+        # N/A checks for inverted metrics
+        if actual_avg is None:
+            return "N/A", "Actual 'avg' value missing in JSON."
+        if expected_typ is None:
+            return "N/A", "Expected 'typ' value missing in YAML."
+        if not isinstance(actual_avg, (int, float)):
+            return "N/A", "Non-numeric 'avg' value in JSON."
+        if not isinstance(expected_typ, (int, float)):
+            return "N/A", "Non-numeric 'typ' value in YAML."
+
+        actual_max_val = actual_data_dict_for_test.get("max")
+        expected_max_val = expected_values_dict.get("max")
+
+        # Check max as upper bound (critical)
+        if expected_max_val is not None and isinstance(expected_max_val, (int, float)):
+            if actual_max_val is None:
+                return "N/A", f"Actual 'max' value missing in JSON for {yaml_key}"
+            if not isinstance(actual_max_val, (int, float)):
+                return "N/A", f"Non-numeric 'max' value in JSON for {yaml_key}"
+            if actual_max_val > expected_max_val:
+                return "FAIL", f"Actual max ({actual_max_val}) > Expected max ({expected_max_val}) for {yaml_key}"
+
+        # Check typ as upper bound for avg
+        if actual_avg > expected_typ:
+            return "FAIL", f"Actual avg ({actual_avg}) > Expected typ ({expected_typ}) for {yaml_key} (lower is better)"
+
+        # PASS if avg <= typ
+        return "PASS", f"Actual avg ({actual_avg}) <= Expected typ ({expected_typ}) for {yaml_key} (lower is better)"
+
+    # 2.3. N/A Checks (presence) for general tests
     general_checks = [
         (actual_avg is None, "Actual 'avg' value missing in JSON."),
         (actual_min_val is None, "Actual 'min' value missing in JSON."),
@@ -522,12 +557,12 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         if condition:
             return "N/A", reason_msg
 
-    # 2.3. N/A Check (data type) for general tests
+    # 2.4. N/A Check (data type) for general tests
     all_values = [actual_avg, actual_min_val, expected_typ, expected_min]
     if not all(isinstance(v, (int, float)) for v in all_values):
         return "N/A", "Non-numeric data encountered for general test comparison."
 
-    # 2.4. FAILS by min and avg values
+    # 2.6. FAILS by min and avg values
 
     # Special rules for TV
     # Applying tolerance for contrast value
@@ -546,11 +581,11 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     if actual_min_val < expected_min:
         return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})"
 
-    # 2.5. General PASS condition
+    # 2.7. General PASS condition
     if actual_avg >= expected_typ:
         return "PASS", f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})"
 
-    # 2.6. General ERROR
+    # 2.8. General ERROR
     return "ERROR", "Logical error or unhandled case in non-coordinate test evaluation. Data might not fit defined PASS/FAIL rules."
 
 

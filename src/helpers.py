@@ -62,6 +62,9 @@ JSON_TO_YAML_KEY_MAP = {
 # Metrics with dynamic visibility based on expected values presence
 DYNAMIC_VISIBILITY_KEYS = {"CgByAreaRGB", "CgByAreaNTSC", "CgRGB", "CgNTSC"}
 
+# Metrics where lower values are better (inverted logic)
+LOWER_IS_BETTER_KEYS = {"DeltaE"}
+
 
 def _get_cell_status(key: str, value: float, expected_values: dict, is_coordinate: bool = False):
     """
@@ -95,19 +98,35 @@ def _get_cell_status(key: str, value: float, expected_values: dict, is_coordinat
     max_val = parse_val(max_val)
     typ_val = parse_val(typ_val)
 
-    # Check min/max bounds (critical - red)
-    if min_val is not None and value < min_val:
-        return "fail"
-    if max_val is not None and value > max_val:
-        return "fail"
+    # Inverted logic for metrics where lower is better (e.g., DeltaE)
+    is_inverted = key in LOWER_IS_BETTER_KEYS
 
-    # For coordinates, only check min/max
-    if is_coordinate:
-        return None
+    if is_inverted:
+        # For DeltaE: higher value = worse, only check max and typ as upper bounds
+        if max_val is not None and value > max_val:
+            return "fail"
 
-    # For non-coordinates, check typ (warning - yellow)
-    if typ_val is not None and value < typ_val:
-        return "warning"
+        # For coordinates, only check min/max
+        if is_coordinate:
+            return None
+
+        # Check typ as upper bound (warning if exceeds typical)
+        if typ_val is not None and value > typ_val:
+            return "warning"
+    else:
+        # Standard logic: higher is better
+        if min_val is not None and value < min_val:
+            return "fail"
+        if max_val is not None and value > max_val:
+            return "fail"
+
+        # For coordinates, only check min/max
+        if is_coordinate:
+            return None
+
+        # For non-coordinates, check typ (warning - yellow)
+        if typ_val is not None and value < typ_val:
+            return "warning"
 
     return None
 

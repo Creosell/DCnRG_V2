@@ -12,8 +12,8 @@ columns:
   CgByAreaNTSC: true
 
   # Detailed stats - disabled by default
-  CgRGB: false
-  CgNTSC: false
+  CgRGB: true
+  CgNTSC: true
   DeltaE: false
 
   # Coordinates

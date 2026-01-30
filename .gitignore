@@ -23,3 +23,14 @@
 /config/space.png
 /config/expected_result.yaml
 /.claude/settings.local.json
+/config/device_configs/SDF-43UQ7000MBA_CH21.yaml
+/config/device_configs/SDF-50UQ7000MBA_CH21.yaml
+/config/device_configs/SDF-55UQ7000MBA_CH21.yaml
+/config/device_configs/SDX-43F3000DBA_CH21.yaml
+/config/device_configs/SDX-43F3000DSA_CH21.yaml
+/config/device_configs/SDX-43F3000MBA_CH21.yaml
+/config/device_configs/SDX-43U5500DBA_CH21.yaml
+/config/device_configs/SDX-50UQ6000DBA_CH21.yaml
+/config/device_configs/SDX-50UQ6000MBA_CH21.yaml
+/config/device_configs/SDX-55UQ6000DGA_CH21.yaml
+/config/device_configs/SDX-55UQ6000MGA_CH21.yaml
