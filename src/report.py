@@ -51,6 +51,20 @@ MAJORITY_TYP_CHECK_KEYS_FOR_TV = {
 }
 MAJORITY_TYP_TOLERANCE = 0.01
 
+CORPORATE_DEVICES_TYP_TOLERANCE = 0.05
+CORPORATE_DEVICES_CG_TOLERANCE = 0.02
+CORPORATE_DEVICES_TYP_TOLERANCE_LIST = {
+    "Brightness",
+    "BrightnessUniformity",
+    "Contrast"
+}
+CORPORATE_DEVICES_CG_TOLERANCE_LIST = {
+    "CgByAreaRGB",
+    "CgByAreaNTSC",
+    "CgRGB",
+    "CgNTSC"
+}
+
 # Keys that are considered coordinate tests (using min/max bounds)
 COORDINATE_TEST_KEYS = {
     "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y", "White_x", "White_y",
@@ -575,6 +589,15 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
             return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})"
         else:
             return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min})"
+
+    # Special rules for corporate devices
+    # Applying tolerance for values in confirmed list of variables
+    if yaml_key in CORPORATE_DEVICES_TYP_TOLERANCE_LIST and not is_tv_flag:
+        value_with_tolerance = expected_typ * CORPORATE_DEVICES_TYP_TOLERANCE
+        expected_typ = expected_typ - value_with_tolerance
+    if yaml_key in CORPORATE_DEVICES_CG_TOLERANCE_LIST and not is_tv_flag:
+        value_with_tolerance = expected_typ * CORPORATE_DEVICES_CG_TOLERANCE
+        expected_typ = expected_typ - value_with_tolerance
 
     if actual_avg < expected_typ:
         return "FAIL", f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})"
