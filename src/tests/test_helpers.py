@@ -566,3 +566,70 @@ def test_process_device_reports_with_cell_status(mocker):
     # Check cell status for coordinates
     assert coord_data[sn]["cell_status"]["Red (x)"] == "fail"
     assert "Red (y)" not in coord_data[sn]["cell_status"]  # Normal, no status
+
+
+def test_collect_tolerance_legend():
+    """
+    Tests collect_tolerance_legend function to ensure it correctly groups metrics by tolerance percent.
+    """
+    ufn_mapping = {
+        "Brightness": "Brightness (cd/m²)",
+        "Contrast": "Contrast Ratio",
+        "CgByAreaRGB": "sRGB Gamut Area (%)",
+        "Temperature": "Color Temperature (K)"
+    }
+
+    main_report_data = {
+        "Brightness": {
+            "status": "PASS",
+            "tolerance_applied": {"percent": 5, "original_typ": 100, "adjusted_typ": 95}
+        },
+        "Contrast": {
+            "status": "PASS",
+            "tolerance_applied": {"percent": 5, "original_typ": 1000, "adjusted_typ": 950}
+        },
+        "CgByAreaRGB": {
+            "status": "PASS",
+            "tolerance_applied": {"percent": 2, "original_typ": 100, "adjusted_typ": 98}
+        },
+        "Temperature": {
+            "status": "PASS",
+            "tolerance_applied": None  # No tolerance for Temperature
+        }
+    }
+
+    legend = helpers.collect_tolerance_legend(main_report_data, ufn_mapping)
+
+    # Check grouping by percent
+    assert 5 in legend
+    assert 2 in legend
+    assert len(legend) == 2
+
+    # Check metric names in groups (sorted descending by percent)
+    assert "Brightness (cd/m²)" in legend[5]
+    assert "Contrast Ratio" in legend[5]
+    assert len(legend[5]) == 2
+
+    assert "sRGB Gamut Area (%)" in legend[2]
+    assert len(legend[2]) == 1
+
+    # Temperature should not appear (no tolerance)
+    assert "Color Temperature (K)" not in str(legend)
+
+
+def test_collect_tolerance_legend_empty():
+    """
+    Tests collect_tolerance_legend with no tolerance applied.
+    """
+    ufn_mapping = {"Brightness": "Brightness (cd/m²)"}
+
+    main_report_data = {
+        "Brightness": {
+            "status": "PASS",
+            "tolerance_applied": None
+        }
+    }
+
+    legend = helpers.collect_tolerance_legend(main_report_data, ufn_mapping)
+
+    assert len(legend) == 0

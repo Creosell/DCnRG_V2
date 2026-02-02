@@ -192,7 +192,11 @@ def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
         result = json.load(f)
 
     assert result["Brightness"]["status"] == "PASS"
-    assert "Actual avg (110.0) >= Expected typ (100.0)" in result["Brightness"]["reason"]
+    # For monitors, -5% tolerance is applied to Brightness typ (100 -> 95)
+    assert "Actual avg (110.0) >= Expected typ (95.0)" in result["Brightness"]["reason"]
+    assert result["Brightness"]["tolerance_applied"]["percent"] == 5
+    assert result["Brightness"]["tolerance_applied"]["original_typ"] == 100.0
+    assert result["Brightness"]["tolerance_applied"]["adjusted_typ"] == 95.0
 
     assert result["Temperature"]["status"] == "FAIL"
     assert "Actual max (7000) > Expected max (6800.0)" in result["Temperature"]["reason"]

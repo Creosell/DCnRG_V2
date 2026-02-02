@@ -163,6 +163,31 @@ def _should_display_metric(key: str, expected_values: dict) -> bool:
     return any(_is_valid_value(expected.get(k)) for k in ["min", "typ", "max"])
 
 
+def collect_tolerance_legend(main_report_data: dict, ufn_mapping: dict) -> dict:
+    """
+    Collects tolerance information from the report and groups metrics by tolerance percent.
+
+    Args:
+        main_report_data: Comparison report data with tolerance_applied fields
+        ufn_mapping: Mapping from internal keys to user-friendly names
+
+    Returns:
+        dict: {percent: [list of metric names]} e.g., {5: ["Brightness", "Contrast"], 2: ["sRGB Gamut"]}
+    """
+    tolerance_groups = defaultdict(list)
+
+    for key, data in main_report_data.items():
+        tolerance_info = data.get("tolerance_applied")
+        if tolerance_info and isinstance(tolerance_info, dict):
+            percent = tolerance_info.get("percent")
+            if percent is not None:
+                metric_name = ufn_mapping.get(key, key)
+                tolerance_groups[percent].append(metric_name)
+
+    # Sort by percent descending for consistent display
+    return dict(sorted(tolerance_groups.items(), key=lambda x: x[0], reverse=True))
+
+
 def create_html_report(
         input_file: Path,
         output_file: Path,
@@ -222,6 +247,9 @@ def create_html_report(
     except KeyError:
         logger.error("'main_tests' key not found in the YAML file.")
         return False
+
+    # Collect tolerance legend before filtering
+    tolerance_legend = collect_tolerance_legend(main_report_data, UFN_MAPPING)
 
     main_report_data_filtered, main_report_coordinates_filtered = process_main_report(
         main_report_data, UFN_MAPPING, report_view_config, expected_values
@@ -331,7 +359,8 @@ def create_html_report(
         'device_reports': device_reports_filtered,
         'current_device_name': current_device_name,
         'inspection_date': inspection_date,
-        'app_version': app_version
+        'app_version': app_version,
+        'tolerance_legend': tolerance_legend
     }
 
     # --- 5. Render and Save HTML ---

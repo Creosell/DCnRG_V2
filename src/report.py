@@ -55,13 +55,13 @@ CORPORATE_DEVICES_TYP_TOLERANCE = 0.05
 CORPORATE_DEVICES_CG_TOLERANCE = 0.02
 CORPORATE_DEVICES_TYP_TOLERANCE_LIST = {
     "Brightness",
-    "BrightnessUniformity",
+    "Brightness_uniformity",
     "Contrast"
 }
 CORPORATE_DEVICES_CG_TOLERANCE_LIST = {
-    "CgByAreaRGB",
-    "CgByAreaNTSC",
-    "CgRGB",
+    "Cg_rgb_area",
+    "Cg_ntsc_area",
+    "Cg_ntsc",
     "CgNTSC"
 }
 
@@ -405,7 +405,8 @@ def write_error_report(output_file, error_report_data, error_context):
 def check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max):
     """
     Checks coordinate data for presence (None), type (numeric), and boundary adherence (min/max).
-    Returns (status, reason).
+    Returns (status, reason, tolerance_info).
+    Note: tolerance_info is always None for coordinates (no tolerance applied).
     """
 
     # --- N/A CHECKS ---
@@ -419,25 +420,25 @@ def check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max):
     }
     for condition, reason in missing_map.items():
         if condition:
-            return "N/A", reason
+            return "N/A", reason, None
 
     # 2. Check for data type (must be numeric)
     all_values = [actual_min, actual_max, expected_min, expected_max]
     if not all(isinstance(v, (int, float)) for v in all_values):
-        return "N/A", "Non-numeric data encountered for coordinate comparison."
+        return "N/A", "Non-numeric data encountered for coordinate comparison.", None
 
     # --- FAIL CHECKS ---
 
     # 3. Check lower bound
     if actual_min < expected_min:
-        return "FAIL", f"Actual min ({actual_min}) < Expected min ({expected_min})"
+        return "FAIL", f"Actual min ({actual_min}) < Expected min ({expected_min})", None
 
     # 4. Check upper bound
     if actual_max > expected_max:
-        return "FAIL", f"Actual max ({actual_max}) > Expected max ({expected_max})"
+        return "FAIL", f"Actual max ({actual_max}) > Expected max ({expected_max})", None
 
     # --- PASS ---
-    return "PASS", "All coordinate checks passed."
+    return "PASS", "All coordinate checks passed.", None
 
 
 # Helper function for general test checks
@@ -445,7 +446,7 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
                               majority_check_data):
     """
     Checks general tests (avg/typ/min-threshold) for rule compliance.
-    Returns (status, reason).
+    Returns (status, reason, tolerance_info).
 
     Args:
         yaml_key (str): Key of the YAML file.
@@ -453,24 +454,28 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         expected_values_dict (dict): Expected test data.
         is_tv_flag (bool): Whether the device under test is TV or not.
         majority_check_data (dict): Data for the new "majority" logic.
+
+    Returns:
+        tuple: (status, reason, tolerance_info) where tolerance_info is None or dict with "percent" key
     """
     expected_typ = expected_values_dict.get("typ")
+    tolerance_info = None  # Default: no tolerance applied
 
-    # --- 1. “MAJORITY” LOGIC ---
+    # --- 1. "MAJORITY" LOGIC ---
     # This logic redefines the standard avg/typ checks for specific keys on TV.
     majority_data = majority_check_data or {}
     if majority_data.get("active"):
 
         if expected_typ is None:
-            return "N/A", "Expected 'typ' value missing in YAML (required for TV majority check)."
+            return "N/A", "Expected 'typ' value missing in YAML (required for TV majority check).", None
         if not isinstance(expected_typ, (int, float)):
-            return "N/A", f"Non-numeric 'typ' value ({expected_typ}) in YAML (required for TV majority check)."
+            return "N/A", f"Non-numeric 'typ' value ({expected_typ}) in YAML (required for TV majority check).", None
 
         devices_values_list = majority_data.get("devices_values", [])
         majority_needed = majority_data.get("majority_needed", 0)
 
         if not devices_values_list:
-            return "FAIL", f"(TV Majority) No individual device data found for {yaml_key}."
+            return "FAIL", f"(TV Majority) No individual device data found for {yaml_key}.", None
 
         # Calculate expected typical with a threshold
         typ_with_threshold = expected_typ * (1.0 - MAJORITY_TYP_TOLERANCE)
@@ -481,12 +486,12 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
             return "PASS", (
                 f"(TV Majority) PASS. {devices_passed_count}/{len(devices_values_list)} devices "
                 f">= typ wih threshold 1% ({typ_with_threshold:.2f}). Major quantity is {majority_needed} devices"
-            )
+            ), None
         else:
             return "FAIL", (
                 f"(TV Majority) FAIL. {devices_passed_count}/{len(devices_values_list)} devices "
                 f"with values >= expected typical with threshold 1% ({typ_with_threshold:.2f}). Major quantity is {majority_needed} devices"
-            )
+            ), None
 
     # --- 2. STANDARD LOGIC (if MAJORITY LOGIC isn't active) ---
 
@@ -500,13 +505,13 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     if yaml_key == "Temperature":
         # N/A checks specific to Temperature
         if actual_min_val is None:
-            return "N/A", "Actual 'min' value missing in JSON for Temperature"
+            return "N/A", "Actual 'min' value missing in JSON for Temperature", None
         if expected_min is None:
-            return "N/A", "Expected 'min' threshold missing in YAML for Temperature"
+            return "N/A", "Expected 'min' threshold missing in YAML for Temperature", None
         if not isinstance(actual_min_val, (int, float)):
-            return "N/A", "Non-numeric 'min' value in JSON for Temperature"
+            return "N/A", "Non-numeric 'min' value in JSON for Temperature", None
         if not isinstance(expected_min, (int, float)):
-            return "N/A", "Non-numeric 'min' value in YAML for Temperature"
+            return "N/A", "Non-numeric 'min' value in YAML for Temperature", None
 
         actual_max_val = actual_data_dict_for_test.get("max")
         expected_max_val = expected_values_dict.get("max")
@@ -520,26 +525,26 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         )
 
         if is_valid_max_check and actual_max_val > expected_max_val:
-            return "FAIL", f"Actual max ({actual_max_val}) > Expected max ({expected_max_val}) for Temperature"
+            return "FAIL", f"Actual max ({actual_max_val}) > Expected max ({expected_max_val}) for Temperature", None
 
         # Check min for Temperature
         if actual_min_val < expected_min:
-            return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min}) for Temperature"
+            return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min}) for Temperature", None
 
         # If both min and max checks passed, return PASS
-        return "PASS", f"Temperature checks passed: min ({actual_min_val}) >= {expected_min}, max ({actual_max_val if is_valid_max_check else 'N/A'}) <= {expected_max_val if is_valid_max_check else 'N/A'}"
+        return "PASS", f"Temperature checks passed: min ({actual_min_val}) >= {expected_min}, max ({actual_max_val if is_valid_max_check else 'N/A'}) <= {expected_max_val if is_valid_max_check else 'N/A'}", None
 
     # 2.2. Special logic for metrics where lower is better (e.g., Delta_e)
     if yaml_key in LOWER_IS_BETTER_KEYS:
         # N/A checks for inverted metrics
         if actual_avg is None:
-            return "N/A", "Actual 'avg' value missing in JSON."
+            return "N/A", "Actual 'avg' value missing in JSON.", None
         if expected_typ is None:
-            return "N/A", "Expected 'typ' value missing in YAML."
+            return "N/A", "Expected 'typ' value missing in YAML.", None
         if not isinstance(actual_avg, (int, float)):
-            return "N/A", "Non-numeric 'avg' value in JSON."
+            return "N/A", "Non-numeric 'avg' value in JSON.", None
         if not isinstance(expected_typ, (int, float)):
-            return "N/A", "Non-numeric 'typ' value in YAML."
+            return "N/A", "Non-numeric 'typ' value in YAML.", None
 
         actual_max_val = actual_data_dict_for_test.get("max")
         expected_max_val = expected_values_dict.get("max")
@@ -547,18 +552,18 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         # Check max as upper bound (critical)
         if expected_max_val is not None and isinstance(expected_max_val, (int, float)):
             if actual_max_val is None:
-                return "N/A", f"Actual 'max' value missing in JSON for {yaml_key}"
+                return "N/A", f"Actual 'max' value missing in JSON for {yaml_key}", None
             if not isinstance(actual_max_val, (int, float)):
-                return "N/A", f"Non-numeric 'max' value in JSON for {yaml_key}"
+                return "N/A", f"Non-numeric 'max' value in JSON for {yaml_key}", None
             if actual_max_val > expected_max_val:
-                return "FAIL", f"Actual max ({actual_max_val}) > Expected max ({expected_max_val}) for {yaml_key}"
+                return "FAIL", f"Actual max ({actual_max_val}) > Expected max ({expected_max_val}) for {yaml_key}", None
 
         # Check typ as upper bound for avg
         if actual_avg > expected_typ:
-            return "FAIL", f"Actual avg ({actual_avg}) > Expected typ ({expected_typ}) for {yaml_key} (lower is better)"
+            return "FAIL", f"Actual avg ({actual_avg}) > Expected typ ({expected_typ}) for {yaml_key} (lower is better)", None
 
         # PASS if avg <= typ
-        return "PASS", f"Actual avg ({actual_avg}) <= Expected typ ({expected_typ}) for {yaml_key} (lower is better)"
+        return "PASS", f"Actual avg ({actual_avg}) <= Expected typ ({expected_typ}) for {yaml_key} (lower is better)", None
 
     # 2.3. N/A Checks (presence) for general tests
     general_checks = [
@@ -569,12 +574,12 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     ]
     for condition, reason_msg in general_checks:
         if condition:
-            return "N/A", reason_msg
+            return "N/A", reason_msg, None
 
     # 2.4. N/A Check (data type) for general tests
     all_values = [actual_avg, actual_min_val, expected_typ, expected_min]
     if not all(isinstance(v, (int, float)) for v in all_values):
-        return "N/A", "Non-numeric data encountered for general test comparison."
+        return "N/A", "Non-numeric data encountered for general test comparison.", None
 
     # 2.6. FAILS by min and avg values
 
@@ -586,30 +591,42 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     # Skipping checks for typical values according to a TV quality standard
     if is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_TV:
         if actual_min_val < expected_min:
-            return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})"
+            return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})", None
         else:
-            return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min})"
+            return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min})", None
 
     # Special rules for corporate devices
     # Applying tolerance for values in confirmed list of variables
     if yaml_key in CORPORATE_DEVICES_TYP_TOLERANCE_LIST and not is_tv_flag:
+        original_typ = expected_typ
         value_with_tolerance = expected_typ * CORPORATE_DEVICES_TYP_TOLERANCE
         expected_typ = expected_typ - value_with_tolerance
+        tolerance_info = {
+            "percent": int(CORPORATE_DEVICES_TYP_TOLERANCE * 100),
+            "original_typ": original_typ,
+            "adjusted_typ": expected_typ
+        }
     if yaml_key in CORPORATE_DEVICES_CG_TOLERANCE_LIST and not is_tv_flag:
+        original_typ = expected_typ
         value_with_tolerance = expected_typ * CORPORATE_DEVICES_CG_TOLERANCE
         expected_typ = expected_typ - value_with_tolerance
+        tolerance_info = {
+            "percent": int(CORPORATE_DEVICES_CG_TOLERANCE * 100),
+            "original_typ": original_typ,
+            "adjusted_typ": expected_typ
+        }
 
     if actual_avg < expected_typ:
-        return "FAIL", f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})"
+        return "FAIL", f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})", tolerance_info
     if actual_min_val < expected_min:
-        return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})"
+        return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})", tolerance_info
 
     # 2.7. General PASS condition
     if actual_avg >= expected_typ:
-        return "PASS", f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})"
+        return "PASS", f"Actual avg ({actual_avg}) >= Expected typ ({expected_typ})", tolerance_info
 
     # 2.8. General ERROR
-    return "ERROR", "Logical error or unhandled case in non-coordinate test evaluation. Data might not fit defined PASS/FAIL rules."
+    return "ERROR", "Logical error or unhandled case in non-coordinate test evaluation. Data might not fit defined PASS/FAIL rules.", None
 
 
 def generate_comparison_report(
@@ -751,6 +768,7 @@ def generate_comparison_report(
         if is_tv_majority_report and is_coordinate_test:
             status = "SKIPPED"
             reason = "Skipped for TV"
+            tolerance_info = None
         elif is_coordinate_test:
             actual_min = actual_test_details.get("min")
             actual_max = actual_test_details.get("max")
@@ -758,7 +776,7 @@ def generate_comparison_report(
             expected_max = expected_test_data.get("max")
 
             # Helper function: check_coordinate_bounds(...)
-            status, reason = check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max)
+            status, reason, tolerance_info = check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max)
         else:
             use_majority_logic = (
                     is_tv_majority_report
@@ -772,7 +790,7 @@ def generate_comparison_report(
             }
 
             # Helper function: check_general_test_status(...)
-            status, reason = check_general_test_status(
+            status, reason, tolerance_info = check_general_test_status(
                 test_name,
                 actual_test_details,
                 expected_test_data,
@@ -781,7 +799,11 @@ def generate_comparison_report(
             )
 
         # D. SINGLE REPORT UPDATE
-        report_item.update({"status": status, "reason": reason})
+        report_item.update({
+            "status": status,
+            "reason": reason,
+            "tolerance_applied": tolerance_info
+        })
         full_report[actual_data_key] = report_item
 
 

@@ -81,6 +81,17 @@
             vertical-align: middle;
         }
 
+        /* Tolerance Legend */
+        .tolerance-legend {
+            margin: 10px 0 20px 0;
+            padding: 8px 12px;
+            background-color: #fff9e6;
+            border-left: 3px solid #ffc107;
+            font-size: 12px;
+            color: #856404;
+            line-height: 1.6;
+        }
+
         /* Plot Section */
         .plot-container { text-align: center; margin-bottom: 20px; }
         .plot-controls { margin-bottom: 15px; }
@@ -232,7 +243,13 @@
                 <td>{{ data.actual_values.min | default('N/A') }}</td>
                 <td>{{ data.expected_values.min | default('N/A') }}</td>
                 <td>{{ data.actual_values.avg | default('N/A') }}</td>
-                <td>{{ data.expected_values.typ | default('N/A') }}</td>
+                <td>
+                    {% if data.tolerance_applied and data.tolerance_applied.adjusted_typ is defined %}
+                        {{ data.tolerance_applied.adjusted_typ }}*
+                    {% else %}
+                        {{ data.expected_values.typ | default('N/A') }}
+                    {% endif %}
+                </td>
                 <td>{{ data.actual_values.max | default('N/A') }}</td>
                 <td>{{ data.expected_values.max | default('N/A') }}</td>
 
@@ -245,6 +262,14 @@
             {% endfor %}
         </tbody>
     </table>
+
+    {% if tolerance_legend %}
+    <div class="tolerance-legend">
+        {% for percent, metrics in tolerance_legend.items() %}
+        <div>* Applied tolerance -{{ percent }}% for: {{ metrics | join(', ') }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <h4>Fails description</h4>
     <table>
