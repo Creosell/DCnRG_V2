@@ -147,8 +147,8 @@
 
         /* New Table for Individual Reports Styling */
         .individual-reports-table {
-            font-size: 13px; /* Smaller font for many columns */
-            table-layout: auto; /* Allow column width adjustment */
+            font-size: 13px;
+            table-layout: auto;
             width: 100%;
         }
 
@@ -466,6 +466,51 @@
         </span>
     </div>
 
+    <h2 class="individual-reports-header">Device reports - Gamut Data</h2>
+    <table id="individual_reports_table_gamut" class="individual-reports-table">
+        <thead id="individual-table-head-gamut">
+            <tr>
+                <th class="sortable-header" style="width: 150px;" onclick="sortTable('gamut', 0)">Serial Number</th>
+                <th class="sortable-header" style="width: 120px;" onclick="sortTable('gamut', 1)">Meas. Date/Time</th>
+                {% set first_device_gamut = device_reports.gamut.values() | first %}
+                {% set master_keys_gamut = first_device_gamut.results.keys() | list %}
+                {% for header in master_keys_gamut %}
+                <th class="sortable-header" onclick="sortTable('gamut', {{ loop.index0 + 2 }})">{{ header }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody id="individual-table-body-gamut">
+            {% for serial_number, report_data in device_reports.gamut.items() %}
+            <tr>
+                <td class="param-name">{{ serial_number }}</td>
+                <td>{{ report_data.measurement_date }}</td>
+                {% for key in master_keys_gamut %}
+                {% set cell_status = report_data.cell_status.get(key) %}
+                <td {% if cell_status == 'fail' %}class="cell-fail"{% elif cell_status == 'warning' %}class="cell-warning"{% endif %}>
+                    {{ report_data.results.get(key, "N/A") }}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="cell-status-legend">
+        <strong>Cell colors:</strong>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #ffdddd;"></span>
+            Critical (below min or above max)
+        </span>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #fff3cd;"></span>
+            Warning (below typical)
+        </span>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #fff;"></span>
+            Normal
+        </span>
+    </div>
+
     <h2 class="individual-reports-header">Device reports - Coordinates</h2>
     <table id="individual_reports_table_coords" class="individual-reports-table">
         <thead id="individual-table-head-coords">
@@ -572,6 +617,7 @@
             // Store current sort direction (now an object for multiple tables)
             let sortDirections = {
                 'main': {},
+                'gamut': {},
                 'coords': {}
             };
 
@@ -631,8 +677,9 @@
                 rows.forEach(row => tbody.appendChild(row));
             }
 
-            // Default sort by Serial Number (Column 0) on page load FOR BOTH tables
+            // Default sort by Serial Number (Column 0) on page load
             sortTable('main', 0);
+            sortTable('gamut', 0);
             sortTable('coords', 0);
 
         }); // End DOMContentLoaded

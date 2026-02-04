@@ -19,8 +19,8 @@ from src import report  # Import for precision constants
 def test_process_device_reports(mocker):
     """
     Tests 'process_device_reports'.
-    Now returns a tuple: (main_reports, coord_reports).
-    Checks flattening, formatting, UFN mapping, and separation of coordinates.
+    Returns a tuple: (main_reports, gamut_reports, coord_reports).
+    Checks flattening, formatting, UFN mapping, and separation into three groups.
     """
 
     # 1. Input data
@@ -31,6 +31,8 @@ def test_process_device_reports(mocker):
         "Results": {
             "Brightness": 159.7,
             "Contrast": 1000,
+            "CgByAreaRGB": 95.5,
+            "CgRGB": 88.2,
             "Coordinates": {
                 "Red_x": 0.648123,
                 "Red_y": 0.336
@@ -42,12 +44,16 @@ def test_process_device_reports(mocker):
     # 2. Define UFN mapping
     ufn_mapping = {
         "Brightness": "Peak Brightness",
+        "CgByAreaRGB": "sRGB Area (%)",
+        "CgRGB": "sRGB Coverage (%)",
         "Red_x": "Red (x)"
     }
 
     # Mock precision constants
     mocker.patch.object(report, 'REPORT_PRECISION', {
         "Brightness": 0,
+        "CgByAreaRGB": 1,
+        "CgRGB": 1,
         "Red_x": 3
     })
 
@@ -55,29 +61,37 @@ def test_process_device_reports(mocker):
     expected_values = {}
 
     # 3. Execute
-    main_data, coord_data = helpers.process_device_reports(device_reports_list, ufn_mapping, expected_values)
+    main_data, gamut_data, coord_data = helpers.process_device_reports(device_reports_list, ufn_mapping, expected_values)
 
     # 4. Verify Structure
     sn = "Device123"
     assert sn in main_data
+    assert sn in gamut_data
     assert sn in coord_data
 
     # 5. Verify Main Data content
-    # Brightness should be here, rounded to 0 decimals
     assert "Peak Brightness" in main_data[sn]["results"]
     assert main_data[sn]["results"]["Peak Brightness"] == "160"
-    # Coordinates should NOT be here
+    assert "sRGB Area (%)" not in main_data[sn]["results"]
     assert "Red (x)" not in main_data[sn]["results"]
 
-    # 6. Verify Coordinate Data content
-    # Coordinates should be here, rounded to 3 decimals
+    # 6. Verify Gamut Data content
+    assert "sRGB Area (%)" in gamut_data[sn]["results"]
+    assert gamut_data[sn]["results"]["sRGB Area (%)"] == "95.5"
+    assert "sRGB Coverage (%)" in gamut_data[sn]["results"]
+    assert gamut_data[sn]["results"]["sRGB Coverage (%)"] == "88.2"
+    assert "Peak Brightness" not in gamut_data[sn]["results"]
+    assert "Red (x)" not in gamut_data[sn]["results"]
+
+    # 7. Verify Coordinate Data content
     assert "Red (x)" in coord_data[sn]["results"]
     assert coord_data[sn]["results"]["Red (x)"] == "0.648"
-    # Main data should NOT be here
     assert "Peak Brightness" not in coord_data[sn]["results"]
+    assert "sRGB Area (%)" not in coord_data[sn]["results"]
 
-    # 7. Verify Metadata
+    # 8. Verify Metadata
     assert main_data[sn]["measurement_date"] == "20250101120000"  # Underscore removed
+    assert gamut_data[sn]["is_tv"] is False
     assert coord_data[sn]["is_tv"] is False
 
 
@@ -513,19 +527,21 @@ def test_get_cell_status():
 
 def test_process_device_reports_with_cell_status(mocker):
     """
-    Tests process_device_reports with cell status highlighting.
+    Tests process_device_reports with cell status highlighting across all three groups.
     """
     mock_report_data = {
         "SerialNumber": "Device456",
         "MeasurementDateTime": "20250101_120000",
         "IsTV": False,
         "Results": {
-            "Brightness": 110,  # Below typ (120), above min (100) - warning
-            "Contrast": 90,     # Below min (100) - fail
-            "Temperature": 9500,  # Normal
+            "Brightness": 110,      # Below typ (120), above min (100) - warning
+            "Contrast": 90,         # Below min (100) - fail
+            "Temperature": 9500,    # Normal
+            "CgByAreaRGB": 65,      # Below typ (70), above min (60) - warning
+            "CgRGB": 55,            # Below min (60) - fail
             "Coordinates": {
-                "Red_x": 0.59,  # Below min (0.60) - fail
-                "Red_y": 0.335  # Normal
+                "Red_x": 0.59,      # Below min (0.60) - fail
+                "Red_y": 0.335      # Normal
             }
         }
     }
@@ -534,6 +550,8 @@ def test_process_device_reports_with_cell_status(mocker):
         "Brightness": "Brightness (cd/m²)",
         "Contrast": "Contrast Ratio",
         "Temperature": "Color Temperature (K)",
+        "CgByAreaRGB": "sRGB Area (%)",
+        "CgRGB": "sRGB Coverage (%)",
         "Red_x": "Red (x)",
         "Red_y": "Red (y)"
     }
@@ -542,6 +560,8 @@ def test_process_device_reports_with_cell_status(mocker):
         "Brightness": {"min": 100, "typ": 120, "max": 'None'},
         "Contrast": {"min": 100, "typ": 150, "max": 'None'},
         "Temperature": {"min": 9000, "typ": 9500, "max": 10000},
+        "Cg_rgb_area": {"min": 60, "typ": 70, "max": None},
+        "Cg_rgb": {"min": 60, "typ": 75, "max": None},
         "Red_x": {"min": 0.60, "typ": 0.64, "max": 0.68},
         "Red_y": {"min": 0.30, "typ": 0.34, "max": 0.38}
     }
@@ -550,11 +570,13 @@ def test_process_device_reports_with_cell_status(mocker):
         "Brightness": 0,
         "Contrast": 0,
         "Temperature": 0,
+        "CgByAreaRGB": 1,
+        "CgRGB": 1,
         "Red_x": 3,
         "Red_y": 3
     })
 
-    main_data, coord_data = helpers.process_device_reports([mock_report_data], ufn_mapping, expected_values)
+    main_data, gamut_data, coord_data = helpers.process_device_reports([mock_report_data], ufn_mapping, expected_values)
 
     sn = "Device456"
 
@@ -562,6 +584,10 @@ def test_process_device_reports_with_cell_status(mocker):
     assert main_data[sn]["cell_status"]["Brightness (cd/m²)"] == "warning"
     assert main_data[sn]["cell_status"]["Contrast Ratio"] == "fail"
     assert "Color Temperature (K)" not in main_data[sn]["cell_status"]  # Normal, no status
+
+    # Check cell status for gamut data
+    assert gamut_data[sn]["cell_status"]["sRGB Area (%)"] == "warning"
+    assert gamut_data[sn]["cell_status"]["sRGB Coverage (%)"] == "fail"
 
     # Check cell status for coordinates
     assert coord_data[sn]["cell_status"]["Red (x)"] == "fail"

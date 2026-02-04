@@ -49,6 +49,11 @@ COORD_KEYS_INTERNAL = {
     "White_x", "White_y", "Center_x", "Center_y"
 }
 
+GAMUT_KEYS_INTERNAL = {
+    "CgByAreaRGB", "CgByAreaNTSC", "CgByAreaDCI-P3",
+    "CgRGB", "CgNTSC", "CgDCI-P3"
+}
+
 # Reverse mapping: JSON keys → YAML keys
 JSON_TO_YAML_KEY_MAP = {
     "BrightnessUniformity": "Brightness_uniformity",
@@ -350,12 +355,13 @@ def create_html_report(
     # --- 4. Define Template Context ---
 
     # 1. Collect and process device reports for the new table
-    device_reports_data_filtered, device_reports_coordinates_filtered = process_device_reports(
+    device_reports_data_filtered, device_reports_gamut_filtered, device_reports_coordinates_filtered = process_device_reports(
         device_reports, UFN_MAPPING, expected_values
     )
 
     device_reports_filtered = {
         "data": device_reports_data_filtered,
+        "gamut": device_reports_gamut_filtered,
         "coordinates": device_reports_coordinates_filtered
     }
 
@@ -528,9 +534,10 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
         expected_values: Expected values from device configuration YAML
 
     Returns:
-        tuple: (main_reports, coord_reports) with cell status flags
+        tuple: (main_reports, gamut_reports, coord_reports) with cell status flags
     """
     main_reports = {}
+    gamut_reports = {}
     coord_reports = {}
 
     for data in device_reports:
@@ -539,15 +546,17 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
             continue
 
         sn = data["SerialNumber"]
-        # Common metadata for both tables
+        # Common metadata for all tables
         meta = {
             "measurement_date": data.get("MeasurementDateTime", "N/A").replace('_', ''),
             "is_tv": data.get("IsTV", False)
         }
 
         processed_main = {}
+        processed_gamut = {}
         processed_coords = {}
-        cell_status_main = {}  # "fail", "warning", or None
+        cell_status_main = {}
+        cell_status_gamut = {}
         cell_status_coords = {}
 
         # Process Results
@@ -568,23 +577,28 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
                 for c_key, c_val in value.items():
                     name, val = format_val(c_key, c_val, 3)
                     processed_coords[name] = val
-                    # Check coordinate bounds (min/max only)
                     status = _get_cell_status(c_key, c_val, expected_values, is_coordinate=True)
                     if status:
                         cell_status_coords[name] = status
+            elif key in GAMUT_KEYS_INTERNAL:
+                name, val = format_val(key, value, 0)
+                processed_gamut[name] = val
+                status = _get_cell_status(key, value, expected_values, is_coordinate=False)
+                if status:
+                    cell_status_gamut[name] = status
             else:
                 name, val = format_val(key, value, 0)
                 processed_main[name] = val
-                # Check main metric bounds (min/typ/max)
                 status = _get_cell_status(key, value, expected_values, is_coordinate=False)
                 if status:
                     cell_status_main[name] = status
 
         # Save results once per device
         main_reports[sn] = {"results": processed_main, "cell_status": cell_status_main, **meta}
+        gamut_reports[sn] = {"results": processed_gamut, "cell_status": cell_status_gamut, **meta}
         coord_reports[sn] = {"results": processed_coords, "cell_status": cell_status_coords, **meta}
 
-    return main_reports, coord_reports
+    return main_reports, gamut_reports, coord_reports
 
 
 def archive_specific_files(zip_path, files_to_archive, base_folder):
