@@ -318,6 +318,12 @@ def create_html_report(
         "debug": debug_points,
     }
 
+    plot_triangles_checked = {
+        "srgb": _should_display_metric("CgByAreaRGB", expected_values),
+        "ntsc": _should_display_metric("CgByAreaNTSC", expected_values),
+        "dcip3": _should_display_metric("CgByAreaDCI-P3", expected_values),
+    }
+
     # --- 3. Set up Jinja2 Environment ---
     # Determine base directory: if frozen (compiled), use executable's parent folder
     # Otherwise use project root (for development)
@@ -362,6 +368,7 @@ def create_html_report(
         "min_fail_data_json": json.dumps(min_fail_data, indent=4),
         "raw_svg_background": raw_svg_background,
         "summary_plot_points": summary_plot_points,
+        "plot_triangles_checked": plot_triangles_checked,
         'device_reports': device_reports_filtered,
         'current_device_name': current_device_name,
         'inspection_date': inspection_date,

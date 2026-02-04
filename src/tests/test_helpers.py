@@ -661,6 +661,72 @@ def test_process_main_report_dynamic_dcip3_filter(tmp_path):
     assert "DCI-P3 Gamut Coverage (%)" not in main_rows
 
 
+def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
+    """
+    Tests that plot_triangles_checked is correctly derived from expected_values
+    and passed to the template context.
+    """
+    mock_template = mocker.MagicMock()
+    mock_template.render.return_value = "<html></html>"
+    mock_env = mocker.MagicMock(spec=Environment)
+    mock_env.get_template.return_value = mock_template
+    mocker.patch('src.helpers.Environment', return_value=mock_env)
+
+    # Common files
+    input_file = tmp_path / "report.json"
+    input_file.write_text(json.dumps({"Results": {}}))
+    min_fail_file = tmp_path / "min_fail.json"
+    min_fail_file.write_text("[]")
+    svg_file = tmp_path / "bg.svg"
+    svg_file.write_text("<svg></svg>")
+    view_config = tmp_path / "view.yaml"
+    view_config.write_text("columns: {}")
+    output_file = tmp_path / "output.html"
+    device_reports = [
+        {"SerialNumber": "SN1", "Results": {}, "MeasurementDateTime": "20250101_120000"}
+    ]
+
+    # Scenario 1: sRGB + DCI-P3 have expected values, NTSC — all None
+    expected_file = tmp_path / "expected.yaml"
+    expected_file.write_text(
+        "main_tests:\n"
+        "  Cg_rgb_area:\n    min: 67\n    typ: 72\n    max: None\n"
+        "  Cg_ntsc_area:\n    min: None\n    typ: None\n    max: None\n"
+        "  Cg_dcip3_area:\n    min: 60\n    typ: 70\n    max: None\n"
+    )
+
+    helpers.create_html_report(
+        input_file=input_file, output_file=output_file, min_fail_file=min_fail_file,
+        cie_background_svg=svg_file, report_view_config=view_config,
+        device_reports=device_reports, current_device_name="TestDevice",
+        app_version="1.0.0", expected_yaml=expected_file,
+    )
+
+    context = mock_template.render.call_args[0][0]
+    assert context["plot_triangles_checked"]["srgb"] is True
+    assert context["plot_triangles_checked"]["ntsc"] is False
+    assert context["plot_triangles_checked"]["dcip3"] is True
+
+    # Scenario 2: no CG keys in expected — все три False
+    mock_template.render.reset_mock()
+    expected_file.write_text(
+        "main_tests:\n"
+        "  Brightness:\n    min: 100\n    typ: 120\n    max: None\n"
+    )
+
+    helpers.create_html_report(
+        input_file=input_file, output_file=output_file, min_fail_file=min_fail_file,
+        cie_background_svg=svg_file, report_view_config=view_config,
+        device_reports=device_reports, current_device_name="TestDevice",
+        app_version="1.0.0", expected_yaml=expected_file,
+    )
+
+    context = mock_template.render.call_args[0][0]
+    assert context["plot_triangles_checked"]["srgb"] is False
+    assert context["plot_triangles_checked"]["ntsc"] is False
+    assert context["plot_triangles_checked"]["dcip3"] is False
+
+
 def test_collect_tolerance_legend():
     """
     Tests collect_tolerance_legend function to ensure it correctly groups metrics by tolerance percent.

@@ -349,9 +349,9 @@
     <h2>Color Gamut Plot</h2>
     <div class="plot-container">
         <div class="plot-controls">
-            <label id="ntsc_checkbox_label"><input type="checkbox" onchange="toggleTriangle('ntsc_triangle')" checked> NTSC</label>
-            <label id="srgb_checkbox_label"><input type="checkbox" onchange="toggleTriangle('srgb_triangle')" checked> sRGB</label>
-            <label id="dcip3_checkbox_label"><input type="checkbox" onchange="toggleTriangle('dcip3_triangle')" checked> DCI-P3</label>
+            <label id="ntsc_checkbox_label"><input type="checkbox" onchange="toggleTriangle('ntsc_triangle')" {% if plot_triangles_checked.ntsc %}checked{% endif %}> NTSC</label>
+            <label id="srgb_checkbox_label"><input type="checkbox" onchange="toggleTriangle('srgb_triangle')" {% if plot_triangles_checked.srgb %}checked{% endif %}> sRGB</label>
+            <label id="dcip3_checkbox_label"><input type="checkbox" onchange="toggleTriangle('dcip3_triangle')" {% if plot_triangles_checked.dcip3 %}checked{% endif %}> DCI-P3</label>
             <label id="device_checkbox_label"><input type="checkbox" onchange="toggleTriangle('device_triangle')" checked> Device</label>
             <label id="specification_checkbox_label"><input type="checkbox" onchange="toggleTriangle('specification_triangle')" > Specification</label>
         </div>
@@ -363,9 +363,9 @@
 
                 {{ raw_svg_background | safe }}
 
-                <polygon id="srgb_triangle" class="triangle" points="{{ summary_plot_points.srgb }}" />
-                <polygon id="ntsc_triangle" class="triangle" points="{{ summary_plot_points.ntsc }}" />
-                <polygon id="dcip3_triangle" class="triangle" points="{{ summary_plot_points.dcip3 }}" />
+                <polygon id="srgb_triangle" class="triangle" points="{{ summary_plot_points.srgb }}" {% if not plot_triangles_checked.srgb %}style="display: none;"{% endif %} />
+                <polygon id="ntsc_triangle" class="triangle" points="{{ summary_plot_points.ntsc }}" {% if not plot_triangles_checked.ntsc %}style="display: none;"{% endif %} />
+                <polygon id="dcip3_triangle" class="triangle" points="{{ summary_plot_points.dcip3 }}" {% if not plot_triangles_checked.dcip3 %}style="display: none;"{% endif %} />
                 <polygon id="device_triangle" class="triangle" points="{{ summary_plot_points.device }}" />
                 <polygon id="specification_triangle" class="triangle" points="{{ summary_plot_points.specification }}" style="display: none;"/>
 
