@@ -138,7 +138,33 @@ def test_cg_by_area_logic(mocker, mock_display_data):
     # Check the dictionary result using the Enum
     assert result_map[ColorSpace.SRGB] == pytest.approx(101.86, 0.01)
     assert result_map[ColorSpace.NTSC] == pytest.approx(72.24, 0.01)
-    assert result_map[ColorSpace.DCI_P3] is not None # Check that it was calculated
+    assert result_map[ColorSpace.DCI_P3] == pytest.approx(75.09, 0.01)
+
+
+def test_cg_overlap_dcip3_value(mocker, mock_display_data):
+    """Tests that cg() returns correct DCI-P3 overlap percentage."""
+    mock_coords = [0.636, 0.329, 0.311, 0.615, 0.156, 0.049]
+    mocker.patch('src.parse.coordinates_of_triangle', return_value=mock_coords)
+
+    result_map = calculate.cg(mock_display_data)
+
+    assert result_map[ColorSpace.DCI_P3] == pytest.approx(74.42, 0.01)
+
+
+def test_cg_returns_none_on_dci_p3_overlap_error(mocker, mock_display_data):
+    """Tests that cg() returns None when only dci_p3 overlap calculation fails."""
+    mock_coords = [0.636, 0.329, 0.311, 0.615, 0.156, 0.049]
+    mocker.patch('src.parse.coordinates_of_triangle', return_value=mock_coords)
+
+    # Call order in cg(): ntsc, rgb, dci_p3
+    mocker.patch('src.calculate.calculate_overlap_percentage', side_effect=[
+        50.0,
+        60.0,
+        "Error: the input data does not form valid triangles.",
+    ])
+
+    result = calculate.cg(mock_display_data)
+    assert result is None
 
 
 def test_delta_e_success(mock_display_data):
@@ -168,10 +194,17 @@ def test_run_calculations_fulltest(mock_display_data):
     # Check that all keys are present
     expected_keys = [
         "brightness", "brightness_uniformity", "contrast",
-        "cg_by_area_rgb", "cg_by_area_ntsc", "cg_rgb", "cg_ntsc",
+        "cg_by_area_rgb", "cg_by_area_ntsc", "cg_by_area_dcip3",
+        "cg_rgb", "cg_ntsc", "cg_dcip3",
         "temperature", "delta_e", "coordinates"
     ]
     assert all(key in results for key in expected_keys)
+
+    # DCI-P3 values are numeric and positive
+    assert isinstance(results["cg_by_area_dcip3"], float)
+    assert isinstance(results["cg_dcip3"], float)
+    assert results["cg_by_area_dcip3"] > 0
+    assert results["cg_dcip3"] > 0
 
     # Check a few values
     assert results["brightness"] == pytest.approx(159.7)

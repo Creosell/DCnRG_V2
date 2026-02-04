@@ -359,6 +359,55 @@ def test_generate_comparison_report_tv_avg_skip_fail_on_min(
     assert "Actual min (75.0) < Expected min (80.0)" in result[skipped_key_yaml]["reason"]
 
 
+@pytest.mark.parametrize(
+    "cg_yaml_key,actual_avg,expected_status",
+    [
+        # PASS: avg exactly at tolerance boundary (typ=100, -2% → 98)
+        ("Cg_dcip3_area", 98.0, "PASS"),
+        ("Cg_dcip3", 98.0, "PASS"),
+        # FAIL: avg just below tolerance boundary
+        ("Cg_dcip3_area", 97.9, "FAIL"),
+        ("Cg_dcip3", 97.9, "FAIL"),
+    ],
+)
+def test_generate_comparison_report_corporate_dcip3_tolerance(
+        tmp_path, mock_yaml_data, cg_yaml_key, actual_avg, expected_status
+):
+    """
+    Tests that non-TV devices get 2% CG tolerance for DCI-P3 metrics.
+    typ=100 → adjusted_typ=98. Boundary PASS at 98.0, boundary FAIL at 97.9.
+    """
+    key_in_json = report.YAML_TO_JSON_KEY_MAP.get(cg_yaml_key, cg_yaml_key)
+
+    full_report_data = {"Results": {key_in_json: {"avg": actual_avg, "min": 80.0}}}
+    mock_yaml_data["main_tests"][cg_yaml_key] = {"min": 70.0, "typ": 100.0}
+
+    json_file = tmp_path / "full_report.json"
+    with open(json_file, "w") as f:
+        json.dump(full_report_data, f)
+
+    yaml_file = tmp_path / "expected.yaml"
+    with open(yaml_file, "w") as f:
+        yaml.safe_dump(mock_yaml_data, f)
+
+    output_file = tmp_path / "comparison.json"
+    report.generate_comparison_report(
+        str(json_file),
+        str(yaml_file),
+        str(output_file),
+        is_tv_flag=False,
+        device_reports=[]
+    )
+
+    with open(output_file, "r") as f:
+        result = json.load(f)
+
+    assert result[key_in_json]["status"] == expected_status
+    assert result[key_in_json]["tolerance_applied"]["percent"] == 2
+    assert result[key_in_json]["tolerance_applied"]["original_typ"] == 100.0
+    assert result[key_in_json]["tolerance_applied"]["adjusted_typ"] == 98.0
+
+
 def test_generate_comparison_report_tv_temperature_max_check(tmp_path, mock_yaml_data):
     """
     Tests that Temperature is checked ONLY by min/max for all devices (TV and non-TV).

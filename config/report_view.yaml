@@ -10,10 +10,10 @@ columns:
   # Gamut stats
   CgByAreaRGB: true
   CgByAreaNTSC: true
-
-  # Detailed stats - disabled by default
+  CgByAreaDCI-P3: true
   CgRGB: true
   CgNTSC: true
+  CgDCI-P3: true
   DeltaE: false
 
   # Coordinates

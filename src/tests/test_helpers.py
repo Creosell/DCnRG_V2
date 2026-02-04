@@ -568,6 +568,99 @@ def test_process_device_reports_with_cell_status(mocker):
     assert "Red (y)" not in coord_data[sn]["cell_status"]  # Normal, no status
 
 
+def test_should_display_metric_dcip3():
+    """
+    Tests _should_display_metric for DCI-P3 specific keys.
+    """
+    # Valid expected values — display
+    assert helpers._should_display_metric("CgByAreaDCI-P3", {"Cg_dcip3_area": {"min": 60, "typ": 70, "max": None}}) is True
+    assert helpers._should_display_metric("CgDCI-P3", {"Cg_dcip3": {"min": None, "typ": 72, "max": None}}) is True
+
+    # All None — hide
+    assert helpers._should_display_metric("CgByAreaDCI-P3", {"Cg_dcip3_area": {"min": None, "typ": None, "max": None}}) is False
+    assert helpers._should_display_metric("CgDCI-P3", {"Cg_dcip3": {"min": "None", "typ": "None", "max": "None"}}) is False
+
+    # Key missing from expected_values entirely — hide
+    assert helpers._should_display_metric("CgByAreaDCI-P3", {}) is False
+    assert helpers._should_display_metric("CgDCI-P3", {}) is False
+
+
+def test_get_cell_status_dcip3():
+    """
+    Tests _get_cell_status for DCI-P3 metrics mapped via JSON_TO_YAML_KEY_MAP.
+    """
+    expected_values = {
+        "Cg_dcip3_area": {"min": 60, "typ": 70, "max": None},
+        "Cg_dcip3": {"min": 55, "typ": 65, "max": None},
+    }
+
+    # CgByAreaDCI-P3: above typ — normal
+    assert helpers._get_cell_status("CgByAreaDCI-P3", 75, expected_values) is None
+    # CgByAreaDCI-P3: below typ, above min — warning
+    assert helpers._get_cell_status("CgByAreaDCI-P3", 65, expected_values) == "warning"
+    # CgByAreaDCI-P3: below min — fail
+    assert helpers._get_cell_status("CgByAreaDCI-P3", 55, expected_values) == "fail"
+
+    # CgDCI-P3: above typ — normal
+    assert helpers._get_cell_status("CgDCI-P3", 70, expected_values) is None
+    # CgDCI-P3: below typ, above min — warning
+    assert helpers._get_cell_status("CgDCI-P3", 60, expected_values) == "warning"
+    # CgDCI-P3: below min — fail
+    assert helpers._get_cell_status("CgDCI-P3", 50, expected_values) == "fail"
+
+
+def test_process_main_report_dynamic_dcip3_filter(tmp_path):
+    """
+    Tests dynamic DCI-P3 column filtering: columns appear only when expected values are present.
+    """
+    raw_data = {
+        "Brightness": {"actual_values": {"avg": 100}},
+        "CgByAreaRGB": {"actual_values": {"avg": 72}},
+        "CgByAreaDCI-P3": {"actual_values": {"avg": 75}},
+        "CgDCI-P3": {"actual_values": {"avg": 68}},
+    }
+
+    ufn_mapping = {
+        "Brightness": "Brightness (cd/m²)",
+        "CgByAreaRGB": "sRGB Gamut Area (%)",
+        "CgByAreaDCI-P3": "DCI-P3 Gamut Area (%)",
+        "CgDCI-P3": "DCI-P3 Gamut Coverage (%)",
+    }
+
+    config_path = tmp_path / "view_config.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump({"columns": {
+            "Brightness": True,
+            "CgByAreaRGB": True,
+            "CgByAreaDCI-P3": True,
+            "CgDCI-P3": True,
+        }}, f)
+
+    # Scenario 1: DCI-P3 expected values present — columns visible
+    expected_with_dcip3 = {
+        "Cg_rgb_area": {"min": 67, "typ": 72, "max": None},
+        "Cg_dcip3_area": {"min": 60, "typ": 70, "max": None},
+        "Cg_dcip3": {"min": 55, "typ": 65, "max": None},
+    }
+    main_rows, _ = helpers.process_main_report(raw_data, ufn_mapping, config_path, expected_with_dcip3)
+
+    assert "sRGB Gamut Area (%)" in main_rows
+    assert "DCI-P3 Gamut Area (%)" in main_rows
+    assert "DCI-P3 Gamut Coverage (%)" in main_rows
+
+    # Scenario 2: DCI-P3 expected values all None — columns hidden
+    expected_without_dcip3 = {
+        "Cg_rgb_area": {"min": 67, "typ": 72, "max": None},
+        "Cg_dcip3_area": {"min": None, "typ": None, "max": None},
+        "Cg_dcip3": {"min": None, "typ": None, "max": None},
+    }
+    main_rows, _ = helpers.process_main_report(raw_data, ufn_mapping, config_path, expected_without_dcip3)
+
+    assert "sRGB Gamut Area (%)" in main_rows
+    assert "DCI-P3 Gamut Area (%)" not in main_rows
+    assert "DCI-P3 Gamut Coverage (%)" not in main_rows
+
+
 def test_collect_tolerance_legend():
     """
     Tests collect_tolerance_legend function to ensure it correctly groups metrics by tolerance percent.

@@ -25,8 +25,10 @@ UFN_MAPPING = {
     "BrightnessUniformity": "Brightness Uniformity (%)",
     "CgByAreaRGB": "sRGB Gamut Area (%)",
     "CgByAreaNTSC": "NTSC Gamut Area (%)",
+    "CgByAreaDCI-P3": "DCI-P3 Gamut Area (%)",
     "CgRGB": "sRGB Gamut Coverage (%)",
     "CgNTSC": "NTSC Gamut Coverage (%)",
+    "CgDCI-P3": "DCI-P3 Gamut Coverage (%)",
     "DeltaE": "ΔE",
 
     # Coordinates (flattened)
@@ -52,15 +54,17 @@ JSON_TO_YAML_KEY_MAP = {
     "BrightnessUniformity": "Brightness_uniformity",
     "CgByAreaRGB": "Cg_rgb_area",
     "CgByAreaNTSC": "Cg_ntsc_area",
+    "CgByAreaDCI-P3": "Cg_dcip3_area",
     "CgRGB": "Cg_rgb",
     "CgNTSC": "Cg_ntsc",
+    "CgDCI-P3": "Cg_dcip3",
     "DeltaE": "Delta_e",
     "Center_x": "White_x",
     "Center_y": "White_y",
 }
 
 # Metrics with dynamic visibility based on expected values presence
-DYNAMIC_VISIBILITY_KEYS = {"CgByAreaRGB", "CgByAreaNTSC", "CgRGB", "CgNTSC"}
+DYNAMIC_VISIBILITY_KEYS = {"CgByAreaRGB", "CgByAreaNTSC", "CgByAreaDCI-P3", "CgRGB", "CgNTSC", "CgDCI-P3" }
 
 # Metrics where lower values are better (inverted logic)
 LOWER_IS_BETTER_KEYS = {"DeltaE"}
@@ -302,12 +306,14 @@ def create_html_report(
     # Calculate points for standard triangles
     srgb_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.SRGB))
     ntsc_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.NTSC))
+    dcip3_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.DCI_P3))
     debug_points = json.loads(coord_mapper.get_debug_grid_points())
 
     summary_plot_points = {
         "device": device_points,
         "srgb": srgb_points,
         "ntsc": ntsc_points,
+        "dcip3": dcip3_points,
         "specification": specification_points,
         "debug": debug_points,
     }

@@ -171,7 +171,7 @@ def cg(device_report):
     dci_p3_overlap = calculate_overlap_percentage(*dci_p3, x1, y1, x2, y2, x3, y3)
 
     # Error handling if area is 0
-    if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str):
+    if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str) or isinstance(dci_p3_overlap, str):
         # If there is an error (e.g., area is 0), return None, None
         return None
 
@@ -338,13 +338,17 @@ def run_calculations(device_report, is_tv):
         # Ensure we safely access tuple elements
         results["cg_by_area_rgb"] = cg_by_area_val.get(ColorSpace.SRGB) if cg_by_area_val else None
         results["cg_by_area_ntsc"] = cg_by_area_val.get(ColorSpace.NTSC) if cg_by_area_val else None
+        results["cg_by_area_dcip3"] = cg_by_area_val.get(ColorSpace.DCI_P3) if cg_by_area_val else None
         results["cg_rgb"] = cg_val.get(ColorSpace.SRGB) if cg_val else None
         results["cg_ntsc"] = cg_val.get(ColorSpace.NTSC) if cg_val else None
+        results["cg_dcip3"] = cg_val.get(ColorSpace.DCI_P3) if cg_val else None
+
     except Exception as e:
         logger.error(f"Failed 'Color Gamut' calculation: {e}")
         results.update({
-            "cg_by_area_rgb": None, "cg_by_area_ntsc": None,
-            "cg_rgb": None, "cg_ntsc": None
+            "cg_by_area_rgb": None, "cg_by_area_ntsc": None, "cg_by_area_dcip3": None,
+            "cg_rgb": None, "cg_ntsc": None, "cg_dcip3": None,
+
         })
 
     try:

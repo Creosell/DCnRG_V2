@@ -14,8 +14,10 @@ REPORT_PRECISION = {
     "BrightnessUniformity": 1,
     "CgByAreaRGB": 1,
     "CgByAreaNTSC": 1,
-    "cgRGB": 1,
-    "cgNTSC": 1,
+    "CgByAreaDCI-P3": 1,
+    "CgRGB": 1,
+    "CgNTSC": 1,
+    "CgDCI-P3": 1,
     "DeltaE": 1,
 
     "Red_x": 3,
@@ -36,8 +38,10 @@ AVG_FAIL_SKIP_KEYS_FOR_TV = {  # Keys which we skip while checking for FAIL by a
     "BrightnessUniformity",
     "CgByAreaRGB",
     "CgByAreaNTSC",
+    "CgByAreaDCI-P3",
     "CgRGB",
     "CgNTSC",
+    "CgDCI-P3",
     "Temperature"
 }
 
@@ -46,8 +50,10 @@ MAJORITY_TYP_CHECK_KEYS_FOR_TV = {
     "BrightnessUniformity",
     "CgByAreaRGB",
     "CgByAreaNTSC",
+    "CgByAreaDCI-P3",
     "CgRGB",
-    "CgNTSC"
+    "CgNTSC",
+    "CgDCI-P3",
 }
 MAJORITY_TYP_TOLERANCE = 0.01
 
@@ -61,8 +67,10 @@ CORPORATE_DEVICES_TYP_TOLERANCE_LIST = {
 CORPORATE_DEVICES_CG_TOLERANCE_LIST = {
     "Cg_rgb_area",
     "Cg_ntsc_area",
+    "Cg_dcip3_area",
+    "Cg_rgb",
     "Cg_ntsc",
-    "CgNTSC"
+    "Cg_dcip3"
 }
 
 # Keys that are considered coordinate tests (using min/max bounds)
@@ -79,8 +87,10 @@ YAML_TO_JSON_KEY_MAP = {
     "Brightness_uniformity": "BrightnessUniformity",
     "Cg_rgb_area": "CgByAreaRGB",
     "Cg_ntsc_area": "CgByAreaNTSC",
+    "Cg_dcip3_area": "CgByAreaDCI-P3",
     "Cg_rgb": "CgRGB",
     "Cg_ntsc": "CgNTSC",
+    "Cg_dcip3": "CgDCI-P3",
     "Delta_e": "DeltaE",
 
     # Special case: 'White_x' and 'White_y' are used for Center_x/y in JSON
@@ -97,8 +107,10 @@ def json_report(
         brightness_uniformity=None,
         cg_by_area_rgb=None,
         cg_by_area_ntsc=None,
+        cg_by_area_dcip3=None,
         cg_rgb=None,
         cg_ntsc=None,
+        cg_dcip3=None,
         contrast=None,
         temperature=None,
         delta_e=None,
@@ -120,8 +132,10 @@ def json_report(
             "BrightnessUniformity": brightness_uniformity,
             "CgByAreaRGB": cg_by_area_rgb,
             "CgByAreaNTSC": cg_by_area_ntsc,
+            "CgByAreaDCI-P3": cg_by_area_dcip3,
             "CgRGB": cg_rgb,
             "CgNTSC": cg_ntsc,
+            "CgDCI-P3": cg_dcip3,
             "Contrast": contrast,
             "Temperature": temperature,
             "DeltaE": delta_e,
