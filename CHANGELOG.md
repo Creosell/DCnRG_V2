@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Cell status legend visually attached to each table via `div.table-with-legend` wrapper
 - **`coordinates_tolerance` YAML key**: single tolerance value that automatically computes `min`/`max` as `typ ± tolerance` for all color coordinate metrics — replaces per-coordinate `min`/`max` fields in device configs
 - **`expand_coordinates_tolerance()`** utility in `report.py`: applied transparently at all YAML loading points
-- 20 new tests covering u'v' calculations, dynamic visibility, and coordinate tolerance expansion
+- 21 new tests covering u'v' calculations, dynamic visibility, coordinate tolerance expansion, and plot triangle visibility
 
 ### Changed
 - **`report_view.yaml` removed from visibility chain**: metric visibility is now driven exclusively by expected values presence in YAML config (dynamic visibility). Metrics in `DYNAMIC_VISIBILITY_KEYS` are shown only when at least one of min/typ/max is defined
@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `create_html_report` and `process_main_report` no longer accept `report_view_config` parameter
 - **Color gamut keys in `configuration_example.yaml` regrouped by color space**: sRGB → NTSC → DCI-P3, each group containing `_area`, standard, `_uv_area`, `_uv` variants
 - Coordinate entries in `configuration_example.yaml` simplified to `typ`-only using `coordinates_tolerance: 0.030`
+- **CIE diagram color space triangles** now activate when either the CIE 1931 xy or CIE 1976 u'v' area metric has expected values (previously only xy was checked)
 
 ### Removed
 - `REPORT_VIEW_CONFIG` constant and `report_view.yaml` from the processing pipeline (file preserved but no longer read)
