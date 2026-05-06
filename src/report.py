@@ -102,6 +102,9 @@ COORDINATE_TEST_KEYS = {
     "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y", "White_x", "White_y",
 }
 
+# YAML key for coordinate tolerance
+COORDINATES_TOLERANCE_KEY = "coordinates_tolerance"
+
 # Metrics where lower values are better (inverted logic)
 LOWER_IS_BETTER_KEYS = {"Delta_e"}
 
@@ -445,6 +448,44 @@ def load_yaml_file(filepath):
         return None
 
 
+def expand_coordinates_tolerance(main_tests: dict) -> dict:
+    """
+    Expands coordinate entries that only have a ``typ`` value into full
+    ``{min, typ, max}`` dicts using ``coordinates_tolerance`` from the same dict.
+
+    The tolerance key itself is removed from the returned dict so downstream
+    code never sees it as a test metric.
+
+    Args:
+        main_tests: Raw ``main_tests`` dict loaded from a device YAML config.
+
+    Returns:
+        dict: Copy of ``main_tests`` with coordinate entries expanded and the
+              ``coordinates_tolerance`` sentinel key removed.
+    """
+    result = dict(main_tests)
+    tolerance = result.pop(COORDINATES_TOLERANCE_KEY, None)
+
+    if tolerance is None:
+        return result
+
+    try:
+        tolerance = float(tolerance)
+    except (TypeError, ValueError):
+        logger.warning(f"Invalid coordinates_tolerance value: {tolerance!r}. Skipping expansion.")
+        return result
+
+    for key in COORDINATE_TEST_KEYS:
+        entry = result.get(key)
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("min") is None and entry.get("max") is None and entry.get("typ") is not None:
+            typ = entry["typ"]
+            result[key] = {"min": round(typ - tolerance, 4), "typ": typ, "max": round(typ + tolerance, 4)}
+
+    return result
+
+
 # Helper function for writing error reports
 def write_error_report(output_file, error_report_data, error_context):
     """Helper function to write an error report to a JSON file."""
@@ -720,7 +761,7 @@ def generate_comparison_report(
 
     # --- 2. ROOT KEY CHECK ---
     actual_result_root = actual_result_data.get("Results", {})
-    expected_result_root = expected_result_data.get("main_tests", {})
+    expected_result_root = expand_coordinates_tolerance(expected_result_data.get("main_tests", {}))
 
     if not isinstance(actual_result_root, dict):
         logger.warning(
@@ -907,7 +948,7 @@ def analyze_json_files_for_min_fail(device_reports, expected_result_path, output
     try:
         with open(expected_result_path, "r") as yaml_file:
             expected_data = yaml.safe_load(yaml_file)
-            expected_values = expected_data["main_tests"]
+            expected_values = expand_coordinates_tolerance(expected_data["main_tests"])
     except FileNotFoundError:
         logger.error(f"Expected result file not found at {expected_result_path}")
         return False

@@ -21,54 +21,61 @@ main_tests:
     min: 3000
     typ: 4000
     max: None
-  Cg_rgb_area: # Color gamut percent in sRGB color space
+
+  # --- Color gamut: sRGB ---
+  Cg_rgb_area: # sRGB gamut coverage, area ratio method
     min: 67
     typ: 72
     max: None
-  Cg_ntsc_area: # Color gamut percent in NTSC color space
+  Cg_rgb: # sRGB gamut coverage, intersection method
     min: 67
     typ: 72
     max: None
-  Cg_rgb: # Color gamut percent in sRGB color space (more accurate calculation method)
+  Cg_rgb_uv_area: # sRGB gamut coverage, CIE 1976 u'v', area ratio method
+    min: None
+    typ: None
+    max: None
+  Cg_rgb_uv: # sRGB gamut coverage, CIE 1976 u'v', intersection method
+    min: None
+    typ: None
+    max: None
+
+  # --- Color gamut: NTSC ---
+  Cg_ntsc_area: # NTSC gamut coverage, area ratio method
     min: 67
     typ: 72
     max: None
-  Cg_ntsc: # Color gamut percent in NTSC color space (more accurate calculation method)
+  Cg_ntsc: # NTSC gamut coverage, intersection method
     min: 67
     typ: 72
     max: None
-  Cg_dcip3_area: # Color gamut percent in DCI-P3 color space (area ratio method)
+  Cg_ntsc_uv_area: # NTSC gamut coverage, CIE 1976 u'v', area ratio method
     min: None
     typ: None
     max: None
-  Cg_dcip3: # Color gamut percent in DCI-P3 color space (more accurate calculation method)
+  Cg_ntsc_uv: # NTSC gamut coverage, CIE 1976 u'v', intersection method
     min: None
     typ: None
     max: None
-  Cg_rgb_uv_area: # Color gamut percent in sRGB color space, CIE 1976 u'v' (area ratio method)
+
+  # --- Color gamut: DCI-P3 ---
+  Cg_dcip3_area: # DCI-P3 gamut coverage, area ratio method
     min: None
     typ: None
     max: None
-  Cg_ntsc_uv_area: # Color gamut percent in NTSC color space, CIE 1976 u'v' (area ratio method)
+  Cg_dcip3: # DCI-P3 gamut coverage, intersection method
     min: None
     typ: None
     max: None
-  Cg_dcip3_uv_area: # Color gamut percent in DCI-P3 color space, CIE 1976 u'v' (area ratio method)
+  Cg_dcip3_uv_area: # DCI-P3 gamut coverage, CIE 1976 u'v', area ratio method
     min: 90
     typ: 95
     max: None
-  Cg_rgb_uv: # Color gamut percent in sRGB color space, CIE 1976 u'v' (more accurate calculation method)
-    min: None
-    typ: None
-    max: None
-  Cg_ntsc_uv: # Color gamut percent in NTSC color space, CIE 1976 u'v' (more accurate calculation method)
-    min: None
-    typ: None
-    max: None
-  Cg_dcip3_uv: # Color gamut percent in DCI-P3 color space, CIE 1976 u'v' (more accurate calculation method)
+  Cg_dcip3_uv: # DCI-P3 gamut coverage, CIE 1976 u'v', intersection method
     min: 90
     typ: 95
     max: None
+
   Temperature: # Color temperature range
     min: 8835
     typ: 9585
@@ -77,35 +84,23 @@ main_tests:
     min: None
     typ: None
     max: None
+
+  # --- Color coordinates ---
+  # min/max are computed automatically as typ ± coordinates_tolerance
+  coordinates_tolerance: 0.030
   Red_x: # Requirements for color coordinates of Red
-    min: 0.608
     typ: 0.638
-    max: 0.668
   Red_y:
-    min: 0.305
     typ: 0.335
-    max: 0.365
   Green_x: # Requirements for color coordinates of Green
-    min: 0.297
     typ: 0.307
-    max: 0.337
   Green_y:
-    min: 0.567
     typ: 0.597
-    max: 0.627
   Blue_x: # Requirements for color coordinates of Blue
-    min: 0.120
     typ: 0.150
-    max: 0.180
   Blue_y:
-    min: 0.032
     typ: 0.062
-    max: 0.092
   White_x: # Requirements for color coordinates of White
-    min: 0.253
     typ: 0.283
-    max: 0.313
   White_y:
-    min: 0.260
     typ: 0.290
-    max: 0.320

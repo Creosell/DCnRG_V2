@@ -268,7 +268,7 @@ def create_html_report(
     try:
         with open(expected_yaml, "r") as yaml_file:
             expected_data = yaml.safe_load(yaml_file)
-            expected_values = expected_data["main_tests"]
+            expected_values = r.expand_coordinates_tolerance(expected_data["main_tests"])
     except FileNotFoundError:
         logger.error(f"Expected result file not found at {expected_yaml}")
         return False

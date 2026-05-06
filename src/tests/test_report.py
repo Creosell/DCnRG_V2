@@ -775,3 +775,54 @@ def test_generate_comparison_report_returns_false_on_missing_expected_file(tmp_p
     )
 
     assert result is False
+
+
+# --------------------------------------------------------------------------------
+# expand_coordinates_tolerance tests
+# --------------------------------------------------------------------------------
+
+def test_expand_coordinates_tolerance_applies_tolerance():
+    """Expands typ-only coordinate entries using coordinates_tolerance."""
+    main_tests = {
+        "coordinates_tolerance": 0.030,
+        "Red_x": {"typ": 0.638},
+        "Red_y": {"typ": 0.335},
+        "Brightness": {"min": 260, "typ": 280, "max": None},
+    }
+    result = report.expand_coordinates_tolerance(main_tests)
+
+    assert "coordinates_tolerance" not in result
+    assert result["Red_x"] == {"min": round(0.638 - 0.030, 4), "typ": 0.638, "max": round(0.638 + 0.030, 4)}
+    assert result["Red_y"] == {"min": round(0.335 - 0.030, 4), "typ": 0.335, "max": round(0.335 + 0.030, 4)}
+    # Non-coordinate keys untouched
+    assert result["Brightness"] == {"min": 260, "typ": 280, "max": None}
+
+
+def test_expand_coordinates_tolerance_skips_entries_with_explicit_min_max():
+    """Does not overwrite entries that already have min or max set."""
+    main_tests = {
+        "coordinates_tolerance": 0.030,
+        "Red_x": {"min": 0.608, "typ": 0.638, "max": 0.668},
+    }
+    result = report.expand_coordinates_tolerance(main_tests)
+    # min/max already present — must not be overwritten
+    assert result["Red_x"] == {"min": 0.608, "typ": 0.638, "max": 0.668}
+
+
+def test_expand_coordinates_tolerance_no_tolerance_key():
+    """Returns dict unchanged when coordinates_tolerance is absent."""
+    main_tests = {
+        "Red_x": {"typ": 0.638},
+        "Brightness": {"min": 260, "typ": 280, "max": None},
+    }
+    result = report.expand_coordinates_tolerance(main_tests)
+    # Without tolerance, coordinate entry stays as-is
+    assert result["Red_x"] == {"typ": 0.638}
+    assert result["Brightness"] == {"min": 260, "typ": 280, "max": None}
+
+
+def test_expand_coordinates_tolerance_removes_key_from_result():
+    """coordinates_tolerance sentinel is never present in the output."""
+    main_tests = {"coordinates_tolerance": 0.020, "Brightness": {"min": 100, "typ": 120, "max": None}}
+    result = report.expand_coordinates_tolerance(main_tests)
+    assert "coordinates_tolerance" not in result
