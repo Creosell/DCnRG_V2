@@ -346,9 +346,9 @@ def create_html_report(
     }
 
     plot_triangles_checked = {
-        "srgb": _should_display_metric("CgByAreaRGB", expected_values),
-        "ntsc": _should_display_metric("CgByAreaNTSC", expected_values),
-        "dcip3": _should_display_metric("CgByAreaDCI-P3", expected_values),
+        "srgb": _should_display_metric("CgByAreaRGB", expected_values) or _should_display_metric("CgByAreaUVRGB", expected_values),
+        "ntsc": _should_display_metric("CgByAreaNTSC", expected_values) or _should_display_metric("CgByAreaUVNTSC", expected_values),
+        "dcip3": _should_display_metric("CgByAreaDCI-P3", expected_values) or _should_display_metric("CgByAreaUVDCI-P3", expected_values),
     }
 
     # --- 3. Set up Jinja2 Environment ---

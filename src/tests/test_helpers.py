@@ -726,6 +726,26 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
     assert context["plot_triangles_checked"]["ntsc"] is False
     assert context["plot_triangles_checked"]["dcip3"] is False
 
+    # Scenario 3: DCI-P3 only in UV variant — dcip3 must still be True
+    mock_template.render.reset_mock()
+    expected_file.write_text(
+        "main_tests:\n"
+        "  Cg_dcip3_area:\n    min: None\n    typ: None\n    max: None\n"
+        "  Cg_dcip3_uv_area:\n    min: 88\n    typ: 93\n    max: None\n"
+    )
+
+    helpers.create_html_report(
+        input_file=input_file, output_file=output_file, min_fail_file=min_fail_file,
+        cie_background_svg=svg_file,
+        device_reports=device_reports, current_device_name="TestDevice",
+        app_version="1.0.0", expected_yaml=expected_file,
+    )
+
+    context = mock_template.render.call_args[0][0]
+    assert context["plot_triangles_checked"]["srgb"] is False
+    assert context["plot_triangles_checked"]["ntsc"] is False
+    assert context["plot_triangles_checked"]["dcip3"] is True
+
 
 def test_collect_tolerance_legend():
     """
