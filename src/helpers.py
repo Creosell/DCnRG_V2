@@ -29,6 +29,12 @@ UFN_MAPPING = {
     "CgRGB": "sRGB Gamut Coverage (%)",
     "CgNTSC": "NTSC Gamut Coverage (%)",
     "CgDCI-P3": "DCI-P3 Gamut Coverage (%)",
+    "CgByAreaUVRGB": "sRGB Gamut Area 1976 (%)",
+    "CgByAreaUVNTSC": "NTSC Gamut Area 1976 (%)",
+    "CgByAreaUVDCI-P3": "DCI-P3 Gamut Area 1976 (%)",
+    "CgUVRGB": "sRGB Gamut Coverage 1976 (%)",
+    "CgUVNTSC": "NTSC Gamut Coverage 1976 (%)",
+    "CgUVDCI-P3": "DCI-P3 Gamut Coverage 1976 (%)",
     "DeltaE": "ΔE",
 
     # Coordinates (flattened)
@@ -49,10 +55,17 @@ COORD_KEYS_INTERNAL = {
     "White_x", "White_y", "Center_x", "Center_y"
 }
 
-GAMUT_KEYS_INTERNAL = {
+GAMUT_KEYS_XY = {
     "CgByAreaRGB", "CgByAreaNTSC", "CgByAreaDCI-P3",
-    "CgRGB", "CgNTSC", "CgDCI-P3"
+    "CgRGB", "CgNTSC", "CgDCI-P3",
 }
+
+GAMUT_KEYS_UV = {
+    "CgByAreaUVRGB", "CgByAreaUVNTSC", "CgByAreaUVDCI-P3",
+    "CgUVRGB", "CgUVNTSC", "CgUVDCI-P3",
+}
+
+GAMUT_KEYS_INTERNAL = GAMUT_KEYS_XY | GAMUT_KEYS_UV
 
 # Reverse mapping: JSON keys → YAML keys
 JSON_TO_YAML_KEY_MAP = {
@@ -63,13 +76,24 @@ JSON_TO_YAML_KEY_MAP = {
     "CgRGB": "Cg_rgb",
     "CgNTSC": "Cg_ntsc",
     "CgDCI-P3": "Cg_dcip3",
+    "CgByAreaUVRGB": "Cg_rgb_uv_area",
+    "CgByAreaUVNTSC": "Cg_ntsc_uv_area",
+    "CgByAreaUVDCI-P3": "Cg_dcip3_uv_area",
+    "CgUVRGB": "Cg_rgb_uv",
+    "CgUVNTSC": "Cg_ntsc_uv",
+    "CgUVDCI-P3": "Cg_dcip3_uv",
     "DeltaE": "Delta_e",
     "Center_x": "White_x",
     "Center_y": "White_y",
 }
 
 # Metrics with dynamic visibility based on expected values presence
-DYNAMIC_VISIBILITY_KEYS = {"CgByAreaRGB", "CgByAreaNTSC", "CgByAreaDCI-P3", "CgRGB", "CgNTSC", "CgDCI-P3" }
+DYNAMIC_VISIBILITY_KEYS = {
+    "CgByAreaRGB", "CgByAreaNTSC", "CgByAreaDCI-P3",
+    "CgRGB", "CgNTSC", "CgDCI-P3",
+    "CgByAreaUVRGB", "CgByAreaUVNTSC", "CgByAreaUVDCI-P3",
+    "CgUVRGB", "CgUVNTSC", "CgUVDCI-P3", "DeltaE"
+}
 
 # Metrics where lower values are better (inverted logic)
 LOWER_IS_BETTER_KEYS = {"DeltaE"}
@@ -202,7 +226,6 @@ def create_html_report(
         output_file: Path,
         min_fail_file: Path,
         cie_background_svg: Path,
-        report_view_config: Path,
         device_reports: list,
         current_device_name: str,
         app_version: str,
@@ -220,7 +243,6 @@ def create_html_report(
         device_reports (list): List of device reports.
         current_device_name (str): Name of the current device.
         app_version (str): Version of the app.
-        report_view_config (Path): Path to the report view config.
         expected_yaml (Path): Path to the expected YAML file.
 
     Returns:
@@ -261,7 +283,7 @@ def create_html_report(
     tolerance_legend = collect_tolerance_legend(main_report_data, UFN_MAPPING)
 
     main_report_data_filtered, main_report_coordinates_filtered = process_main_report(
-        main_report_data, UFN_MAPPING, report_view_config, expected_values
+        main_report_data, UFN_MAPPING, expected_values
     )
 
     main_report_filtered = {
@@ -355,13 +377,14 @@ def create_html_report(
     # --- 4. Define Template Context ---
 
     # 1. Collect and process device reports for the new table
-    device_reports_data_filtered, device_reports_gamut_filtered, device_reports_coordinates_filtered = process_device_reports(
+    device_reports_data_filtered, device_reports_gamut_xy_filtered, device_reports_gamut_uv_filtered, device_reports_coordinates_filtered = process_device_reports(
         device_reports, UFN_MAPPING, expected_values
     )
 
     device_reports_filtered = {
         "data": device_reports_data_filtered,
-        "gamut": device_reports_gamut_filtered,
+        "gamut_xy": device_reports_gamut_xy_filtered,
+        "gamut_uv": device_reports_gamut_uv_filtered,
         "coordinates": device_reports_coordinates_filtered
     }
 
@@ -459,51 +482,23 @@ def prepare_specification_plot_coordinates(expected_values):
         logger.error(f"Error processing specification coordinates for plot: {e}")
 
 
-def process_main_report(main_report_data: dict, ufn_mapping: dict, config_path: Path, expected_values: dict):
+def process_main_report(main_report_data: dict, ufn_mapping: dict, expected_values: dict):
     """
     Processes the main aggregated report data.
-    - Filters keys based on config (YAML).
     - Filters metrics with dynamic visibility based on expected values presence.
-    - Sorts keys based on config order.
     - Maps internal keys to UFN names.
     - Splits into Main and Coordinate rows.
 
     Args:
         main_report_data: Aggregated report data
         ufn_mapping: Mapping from internal keys to user-friendly names
-        config_path: Path to report_view.yaml
         expected_values: Expected values from device configuration YAML
 
     Returns:
         tuple: (main_summary_rows, coord_summary_rows)
         Returns DICTIONARIES where keys are UFN names and values are data objects.
     """
-    summary_keys = []
-
-    # 1. Determine keys from config
-    if config_path.exists():
-        try:
-            with open(config_path, "r") as f:
-                view_conf = yaml.safe_load(f)
-                columns_config = view_conf.get("columns", {})
-
-            if isinstance(columns_config, dict):
-                # Filter enabled keys, preserving YAML order
-                summary_keys = [k for k, enabled in columns_config.items() if enabled]
-            elif isinstance(columns_config, list):
-                summary_keys = columns_config
-
-            # Validate keys exist
-            summary_keys = [k for k in summary_keys if k in main_report_data]
-
-        except Exception as e:
-            logger.warning(f"Config error: {e}. Showing all columns.")
-            summary_keys = list(main_report_data.keys())
-    else:
-        summary_keys = list(main_report_data.keys())
-
-    # 1.5. Filter metrics by expected values presence (dynamic visibility)
-    summary_keys = [k for k in summary_keys if _should_display_metric(k, expected_values)]
+    summary_keys = [k for k in main_report_data if _should_display_metric(k, expected_values)]
 
     # 2. Build ROWS as DICTIONARIES (not lists)
     # Используем словари {}, чтобы в шаблоне работал метод .items()
@@ -534,10 +529,11 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
         expected_values: Expected values from device configuration YAML
 
     Returns:
-        tuple: (main_reports, gamut_reports, coord_reports) with cell status flags
+        tuple: (main_reports, gamut_xy_reports, gamut_uv_reports, coord_reports) with cell status flags
     """
     main_reports = {}
-    gamut_reports = {}
+    gamut_xy_reports = {}
+    gamut_uv_reports = {}
     coord_reports = {}
 
     for data in device_reports:
@@ -553,10 +549,12 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
         }
 
         processed_main = {}
-        processed_gamut = {}
+        processed_gamut_xy = {}
+        processed_gamut_uv = {}
         processed_coords = {}
         cell_status_main = {}
-        cell_status_gamut = {}
+        cell_status_gamut_xy = {}
+        cell_status_gamut_uv = {}
         cell_status_coords = {}
 
         # Process Results
@@ -580,12 +578,18 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
                     status = _get_cell_status(c_key, c_val, expected_values, is_coordinate=True)
                     if status:
                         cell_status_coords[name] = status
-            elif key in GAMUT_KEYS_INTERNAL:
+            elif key in GAMUT_KEYS_XY:
                 name, val = format_val(key, value, 0)
-                processed_gamut[name] = val
+                processed_gamut_xy[name] = val
                 status = _get_cell_status(key, value, expected_values, is_coordinate=False)
                 if status:
-                    cell_status_gamut[name] = status
+                    cell_status_gamut_xy[name] = status
+            elif key in GAMUT_KEYS_UV:
+                name, val = format_val(key, value, 0)
+                processed_gamut_uv[name] = val
+                status = _get_cell_status(key, value, expected_values, is_coordinate=False)
+                if status:
+                    cell_status_gamut_uv[name] = status
             else:
                 name, val = format_val(key, value, 0)
                 processed_main[name] = val
@@ -595,10 +599,11 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
 
         # Save results once per device
         main_reports[sn] = {"results": processed_main, "cell_status": cell_status_main, **meta}
-        gamut_reports[sn] = {"results": processed_gamut, "cell_status": cell_status_gamut, **meta}
+        gamut_xy_reports[sn] = {"results": processed_gamut_xy, "cell_status": cell_status_gamut_xy, **meta}
+        gamut_uv_reports[sn] = {"results": processed_gamut_uv, "cell_status": cell_status_gamut_uv, **meta}
         coord_reports[sn] = {"results": processed_coords, "cell_status": cell_status_coords, **meta}
 
-    return main_reports, gamut_reports, coord_reports
+    return main_reports, gamut_xy_reports, gamut_uv_reports, coord_reports
 
 
 def archive_specific_files(zip_path, files_to_archive, base_folder):

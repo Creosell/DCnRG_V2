@@ -196,6 +196,8 @@ def test_run_calculations_fulltest(mock_display_data):
         "brightness", "brightness_uniformity", "contrast",
         "cg_by_area_rgb", "cg_by_area_ntsc", "cg_by_area_dcip3",
         "cg_rgb", "cg_ntsc", "cg_dcip3",
+        "cg_by_area_uv_rgb", "cg_by_area_uv_ntsc", "cg_by_area_uv_dcip3",
+        "cg_uv_rgb", "cg_uv_ntsc", "cg_uv_dcip3",
         "temperature", "delta_e", "coordinates"
     ]
     assert all(key in results for key in expected_keys)
@@ -210,6 +212,65 @@ def test_run_calculations_fulltest(mock_display_data):
     assert results["brightness"] == pytest.approx(159.7)
     assert results["contrast"] == pytest.approx(round(159.7 / 0.6183643, 2))
     assert results["temperature"] == 6752
+
+
+def test_xy_to_uv_known_values():
+    """Tests xy_to_uv conversion against pre-computed reference values."""
+    # D65 white point: xy(0.3127, 0.3290) → u'v'(0.1978, 0.4683)
+    u, v = calculate.xy_to_uv(0.3127, 0.3290)
+    assert u == pytest.approx(0.1978, abs=1e-4)
+    assert v == pytest.approx(0.4683, abs=1e-4)
+
+    # DCI-P3 Red: xy(0.680, 0.320)
+    u, v = calculate.xy_to_uv(0.680, 0.320)
+    assert u == pytest.approx(0.4964, abs=1e-4)
+    assert v == pytest.approx(0.5255, abs=1e-4)
+
+
+def test_coords_xy_to_uv_format():
+    """Tests that coords_xy_to_uv returns 6 values and converts each pair correctly."""
+    coords_xy = [0.680, 0.320, 0.265, 0.690, 0.150, 0.060]
+    result = calculate.coords_xy_to_uv(coords_xy)
+
+    assert len(result) == 6
+
+    # First pair must match direct xy_to_uv call
+    u, v = calculate.xy_to_uv(0.680, 0.320)
+    assert result[0] == pytest.approx(u)
+    assert result[1] == pytest.approx(v)
+
+    u, v = calculate.xy_to_uv(0.150, 0.060)
+    assert result[4] == pytest.approx(u)
+    assert result[5] == pytest.approx(v)
+
+
+def test_cg_by_area_uv_returns_values(mocker, mock_display_data):
+    """Tests that cg_by_area_uv returns a dict with numeric values for all color spaces."""
+    mock_coords = [0.636, 0.329, 0.311, 0.615, 0.156, 0.049]
+    mocker.patch('src.parse.coordinates_of_triangle', return_value=mock_coords)
+
+    result = calculate.cg_by_area_uv(mock_display_data)
+
+    assert result is not None
+    assert isinstance(result[ColorSpace.SRGB], float)
+    assert isinstance(result[ColorSpace.NTSC], float)
+    assert isinstance(result[ColorSpace.DCI_P3], float)
+    # u'v' DCI-P3 coverage is consistently higher than xy by ~4–5 pp
+    xy_result = calculate.cg_by_area(mock_display_data)
+    assert result[ColorSpace.DCI_P3] > xy_result[ColorSpace.DCI_P3]
+
+
+def test_cg_uv_returns_values(mocker, mock_display_data):
+    """Tests that cg_uv returns a dict with numeric values for all color spaces."""
+    mock_coords = [0.636, 0.329, 0.311, 0.615, 0.156, 0.049]
+    mocker.patch('src.parse.coordinates_of_triangle', return_value=mock_coords)
+
+    result = calculate.cg_uv(mock_display_data)
+
+    assert result is not None
+    assert isinstance(result[ColorSpace.SRGB], float)
+    assert isinstance(result[ColorSpace.NTSC], float)
+    assert isinstance(result[ColorSpace.DCI_P3], float)
 
 
 def test_run_calculations_handles_error(mock_display_data):

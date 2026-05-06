@@ -39,6 +39,21 @@ def area(p):
     return 0.5 * abs(np.cross(p[1] - p[0], p[2] - p[0]))
 
 
+def xy_to_uv(x, y):
+    """Converts CIE 1931 xy chromaticity coordinates to CIE 1976 u'v'."""
+    denom = -2 * x + 12 * y + 3
+    return 4 * x / denom, 9 * y / denom
+
+
+def coords_xy_to_uv(coords):
+    """Converts flat [Rx, Ry, Gx, Gy, Bx, By] from CIE 1931 xy to CIE 1976 u'v'."""
+    rx, ry, gx, gy, bx, by = coords
+    ru, rv = xy_to_uv(rx, ry)
+    gu, gv = xy_to_uv(gx, gy)
+    bu, bv = xy_to_uv(bx, by)
+    return [ru, rv, gu, gv, bu, bv]
+
+
 def calculate_overlap_percentage(x1, y1, x2, y2, x3, y3, x4, y4, x5, y5, x6, y6):
     """Calculates the percentage for area of the first triangle covered by the second triangle."""
     triangle1 = np.array([[x1, y1], [x2, y2], [x3, y3]])
@@ -153,6 +168,59 @@ def cg_by_area(device_report):
     }
 
     return return_map
+
+
+def _std_to_uv_flat(color_space):
+    """Converts a COLOR_STANDARDS entry to flat u'v' list [u1, v1, u2, v2, u3, v3]."""
+    flat = [coord for point in COLOR_STANDARDS[color_space] for coord in point]
+    return coords_xy_to_uv(flat)
+
+
+def _std_to_uv_triangle(color_space):
+    """Converts a COLOR_STANDARDS entry to a numpy u'v' triangle array."""
+    u1, v1, u2, v2, u3, v3 = _std_to_uv_flat(color_space)
+    return np.array([[u1, v1], [u2, v2], [u3, v3]])
+
+
+def cg_by_area_uv(device_report):
+    """Calculates color gamut area ratio in CIE 1976 u'v' color space."""
+    coordinate = parse.coordinates_of_triangle(device_report)
+    if len(coordinate) != 6:
+        return None
+
+    u1, v1, u2, v2, u3, v3 = coords_xy_to_uv(coordinate)
+    dut_triangle = np.array([[u1, v1], [u2, v2], [u3, v3]])
+    dut_triangle_area = area(dut_triangle)
+    if dut_triangle_area == 0:
+        return None
+
+    return {
+        ColorSpace.SRGB: (dut_triangle_area / area(_std_to_uv_triangle(ColorSpace.SRGB))) * 100,
+        ColorSpace.NTSC: (dut_triangle_area / area(_std_to_uv_triangle(ColorSpace.NTSC))) * 100,
+        ColorSpace.DCI_P3: (dut_triangle_area / area(_std_to_uv_triangle(ColorSpace.DCI_P3))) * 100,
+    }
+
+
+def cg_uv(device_report):
+    """Calculates color gamut overlap percentage in CIE 1976 u'v' color space."""
+    dut_coordinates = parse.coordinates_of_triangle(device_report)
+    if len(dut_coordinates) != 6:
+        return None
+
+    u1, v1, u2, v2, u3, v3 = coords_xy_to_uv(dut_coordinates)
+
+    ntsc_overlap = calculate_overlap_percentage(*_std_to_uv_flat(ColorSpace.NTSC), u1, v1, u2, v2, u3, v3)
+    rgb_overlap = calculate_overlap_percentage(*_std_to_uv_flat(ColorSpace.SRGB), u1, v1, u2, v2, u3, v3)
+    dci_p3_overlap = calculate_overlap_percentage(*_std_to_uv_flat(ColorSpace.DCI_P3), u1, v1, u2, v2, u3, v3)
+
+    if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str) or isinstance(dci_p3_overlap, str):
+        return None
+
+    return {
+        ColorSpace.SRGB: rgb_overlap,
+        ColorSpace.NTSC: ntsc_overlap,
+        ColorSpace.DCI_P3: dci_p3_overlap,
+    }
 
 
 def cg(device_report):
@@ -343,12 +411,22 @@ def run_calculations(device_report, is_tv):
         results["cg_ntsc"] = cg_val.get(ColorSpace.NTSC) if cg_val else None
         results["cg_dcip3"] = cg_val.get(ColorSpace.DCI_P3) if cg_val else None
 
+        cg_by_area_uv_val = cg_by_area_uv(device_report)
+        cg_uv_val = cg_uv(device_report)
+        results["cg_by_area_uv_rgb"] = cg_by_area_uv_val.get(ColorSpace.SRGB) if cg_by_area_uv_val else None
+        results["cg_by_area_uv_ntsc"] = cg_by_area_uv_val.get(ColorSpace.NTSC) if cg_by_area_uv_val else None
+        results["cg_by_area_uv_dcip3"] = cg_by_area_uv_val.get(ColorSpace.DCI_P3) if cg_by_area_uv_val else None
+        results["cg_uv_rgb"] = cg_uv_val.get(ColorSpace.SRGB) if cg_uv_val else None
+        results["cg_uv_ntsc"] = cg_uv_val.get(ColorSpace.NTSC) if cg_uv_val else None
+        results["cg_uv_dcip3"] = cg_uv_val.get(ColorSpace.DCI_P3) if cg_uv_val else None
+
     except Exception as e:
         logger.error(f"Failed 'Color Gamut' calculation: {e}")
         results.update({
             "cg_by_area_rgb": None, "cg_by_area_ntsc": None, "cg_by_area_dcip3": None,
             "cg_rgb": None, "cg_ntsc": None, "cg_dcip3": None,
-
+            "cg_by_area_uv_rgb": None, "cg_by_area_uv_ntsc": None, "cg_by_area_uv_dcip3": None,
+            "cg_uv_rgb": None, "cg_uv_ntsc": None, "cg_uv_dcip3": None,
         })
 
     try:

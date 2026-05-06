@@ -19,8 +19,8 @@ from src import report  # Import for precision constants
 def test_process_device_reports(mocker):
     """
     Tests 'process_device_reports'.
-    Returns a tuple: (main_reports, gamut_reports, coord_reports).
-    Checks flattening, formatting, UFN mapping, and separation into three groups.
+    Returns a tuple: (main_reports, gamut_xy_reports, gamut_uv_reports, coord_reports).
+    Checks flattening, formatting, UFN mapping, and separation into four groups.
     """
 
     # 1. Input data
@@ -61,12 +61,13 @@ def test_process_device_reports(mocker):
     expected_values = {}
 
     # 3. Execute
-    main_data, gamut_data, coord_data = helpers.process_device_reports(device_reports_list, ufn_mapping, expected_values)
+    main_data, gamut_xy_data, gamut_uv_data, coord_data = helpers.process_device_reports(device_reports_list, ufn_mapping, expected_values)
 
     # 4. Verify Structure
     sn = "Device123"
     assert sn in main_data
-    assert sn in gamut_data
+    assert sn in gamut_xy_data
+    assert sn in gamut_uv_data
     assert sn in coord_data
 
     # 5. Verify Main Data content
@@ -75,13 +76,13 @@ def test_process_device_reports(mocker):
     assert "sRGB Area (%)" not in main_data[sn]["results"]
     assert "Red (x)" not in main_data[sn]["results"]
 
-    # 6. Verify Gamut Data content
-    assert "sRGB Area (%)" in gamut_data[sn]["results"]
-    assert gamut_data[sn]["results"]["sRGB Area (%)"] == "95.5"
-    assert "sRGB Coverage (%)" in gamut_data[sn]["results"]
-    assert gamut_data[sn]["results"]["sRGB Coverage (%)"] == "88.2"
-    assert "Peak Brightness" not in gamut_data[sn]["results"]
-    assert "Red (x)" not in gamut_data[sn]["results"]
+    # 6. Verify Gamut XY Data content (CIE 1931)
+    assert "sRGB Area (%)" in gamut_xy_data[sn]["results"]
+    assert gamut_xy_data[sn]["results"]["sRGB Area (%)"] == "95.5"
+    assert "sRGB Coverage (%)" in gamut_xy_data[sn]["results"]
+    assert gamut_xy_data[sn]["results"]["sRGB Coverage (%)"] == "88.2"
+    assert "Peak Brightness" not in gamut_xy_data[sn]["results"]
+    assert "Red (x)" not in gamut_xy_data[sn]["results"]
 
     # 7. Verify Coordinate Data content
     assert "Red (x)" in coord_data[sn]["results"]
@@ -91,69 +92,44 @@ def test_process_device_reports(mocker):
 
     # 8. Verify Metadata
     assert main_data[sn]["measurement_date"] == "20250101120000"  # Underscore removed
-    assert gamut_data[sn]["is_tv"] is False
+    assert gamut_xy_data[sn]["is_tv"] is False
     assert coord_data[sn]["is_tv"] is False
 
 
 def test_process_main_report(tmp_path):
     """
     Tests 'process_main_report'.
-    Checks filtering based on config, sorting, renaming, and separation.
+    Checks UFN renaming and main/coord separation.
     """
-    # 1. Mock Data
     raw_data = {
         "Brightness": {"actual_values": {"avg": 100}},
-        "Contrast": {"actual_values": {"avg": 200}}, # Should be filtered out by config
+        "Contrast": {"actual_values": {"avg": 200}},
         "Red_x": {"actual_values": {"avg": 0.65}},
-        "Blue_x": {"actual_values": {"avg": 0.15}}
+        "Blue_x": {"actual_values": {"avg": 0.15}},
     }
 
-    # ИСПРАВЛЕНИЕ: Используем имена, совпадающие с helpers.COORD_HEADERS_UFN
     ufn_mapping = {
         "Brightness": "Brightness (nits)",
-        "Red_x": "Red (x)",   # Было "Red X"
-        "Blue_x": "Blue (x)"  # Было "Blue X"
+        "Red_x": "Red (x)",
+        "Blue_x": "Blue (x)",
     }
 
-    # 2. Create Mock Config File
-    config_path = tmp_path / "view_config.yaml"
-    config_data = {
-        "columns": {
-            "Brightness": True,
-            "Contrast": False,  # Explicitly disabled
-            "Red_x": True,
-            # Blue_x is missing from config, should be ignored if dict is used
-        }
-    }
-    with open(config_path, "w") as f:
-        yaml.dump(config_data, f)
-
-    # 2.5. Mock expected values (empty for this test, no CG metrics involved)
     expected_values = {}
 
-    # 3. Execute
-    main_rows, coord_rows = helpers.process_main_report(raw_data, ufn_mapping, config_path, expected_values)
+    main_rows, coord_rows = helpers.process_main_report(raw_data, ufn_mapping, expected_values)
 
-    # 4. Verify Output Types
     assert isinstance(main_rows, dict)
     assert isinstance(coord_rows, dict)
 
-    # 5. Verify Filtering & Separation
-    # Brightness -> Main, Enabled
+    # Brightness and Contrast → Main (not in COORD_KEYS_INTERNAL)
     assert "Brightness (nits)" in main_rows
     assert main_rows["Brightness (nits)"] == raw_data["Brightness"]
+    assert "Contrast" in main_rows  # no UFN mapping, key used as-is
 
-    # Contrast -> Disabled in config
-    assert "Contrast" not in main_rows
-    assert "Contrast Ratio" not in main_rows
-
-    # Red_x -> Coords, Enabled
+    # Red_x, Blue_x → Coordinates
     assert "Red (x)" in coord_rows
     assert coord_rows["Red (x)"] == raw_data["Red_x"]
-
-    # Blue_x -> Not in config (if config is dict, usually implies strict filter)
-    # Based on logic: [k for k, enabled in columns_config.items() if enabled]
-    assert "Blue (x)" not in coord_rows
+    assert "Blue (x)" in coord_rows
 
 
 def test_create_html_report(mocker, tmp_path):
@@ -195,7 +171,6 @@ def test_create_html_report(mocker, tmp_path):
         output_file=output_file,
         min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
-        report_view_config=view_config,
         device_reports=device_reports,
         current_device_name="TestDevice",
         app_version="1.0.0",
@@ -283,7 +258,6 @@ def test_create_html_report_returns_true_on_success(mocker, tmp_path):
         output_file=output_file,
         min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
-        report_view_config=view_config,
         device_reports=device_reports,
         current_device_name="TestDevice",
         app_version="1.0.0",
@@ -313,7 +287,6 @@ def test_create_html_report_returns_false_on_missing_input_file(mocker, tmp_path
         output_file=output_file,
         min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
-        report_view_config=view_config,
         device_reports=[],
         current_device_name="TestDevice",
         app_version="1.0.0",
@@ -343,7 +316,6 @@ def test_create_html_report_returns_false_on_missing_expected_yaml(mocker, tmp_p
         output_file=output_file,
         min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
-        report_view_config=view_config,
         device_reports=[],
         current_device_name="TestDevice",
         app_version="1.0.0",
@@ -384,7 +356,6 @@ def test_create_html_report_returns_false_on_template_load_error(mocker, tmp_pat
         output_file=output_file,
         min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
-        report_view_config=view_config,
         device_reports=[],
         current_device_name="TestDevice",
         app_version="1.0.0",
@@ -416,20 +387,6 @@ def test_process_main_report_dynamic_cg_filter(tmp_path):
         "CgNTSC": "NTSC Gamut Coverage (%)",
     }
 
-    # Config enables all metrics
-    config_path = tmp_path / "view_config.yaml"
-    config_data = {
-        "columns": {
-            "Brightness": True,
-            "CgByAreaRGB": True,
-            "CgByAreaNTSC": True,
-            "CgRGB": True,
-            "CgNTSC": True,
-        }
-    }
-    with open(config_path, "w") as f:
-        yaml.dump(config_data, f)
-
     # Expected values: only Cg_rgb_area and Cg_rgb have values
     # Using string 'None' to simulate YAML parsing behavior
     expected_values = {
@@ -440,7 +397,7 @@ def test_process_main_report_dynamic_cg_filter(tmp_path):
     }
 
     # Execute
-    main_rows, coord_rows = helpers.process_main_report(raw_data, ufn_mapping, config_path, expected_values)
+    main_rows, coord_rows = helpers.process_main_report(raw_data, ufn_mapping, expected_values)
 
     # Verify filtering
     assert "Brightness (cd/m²)" in main_rows  # Always visible
@@ -576,7 +533,7 @@ def test_process_device_reports_with_cell_status(mocker):
         "Red_y": 3
     })
 
-    main_data, gamut_data, coord_data = helpers.process_device_reports([mock_report_data], ufn_mapping, expected_values)
+    main_data, gamut_xy_data, gamut_uv_data, coord_data = helpers.process_device_reports([mock_report_data], ufn_mapping, expected_values)
 
     sn = "Device456"
 
@@ -585,13 +542,39 @@ def test_process_device_reports_with_cell_status(mocker):
     assert main_data[sn]["cell_status"]["Contrast Ratio"] == "fail"
     assert "Color Temperature (K)" not in main_data[sn]["cell_status"]  # Normal, no status
 
-    # Check cell status for gamut data
-    assert gamut_data[sn]["cell_status"]["sRGB Area (%)"] == "warning"
-    assert gamut_data[sn]["cell_status"]["sRGB Coverage (%)"] == "fail"
+    # Check cell status for gamut_xy data (CIE 1931)
+    assert gamut_xy_data[sn]["cell_status"]["sRGB Area (%)"] == "warning"
+    assert gamut_xy_data[sn]["cell_status"]["sRGB Coverage (%)"] == "fail"
 
     # Check cell status for coordinates
     assert coord_data[sn]["cell_status"]["Red (x)"] == "fail"
     assert "Red (y)" not in coord_data[sn]["cell_status"]  # Normal, no status
+
+
+def test_should_display_metric_uv():
+    """Tests _should_display_metric for CIE 1976 u'v' keys."""
+    # Valid expected values — display
+    assert helpers._should_display_metric("CgByAreaUVDCI-P3", {"Cg_dcip3_uv_area": {"min": 90, "typ": 95, "max": None}}) is True
+    assert helpers._should_display_metric("CgUVDCI-P3", {"Cg_dcip3_uv": {"min": None, "typ": 93, "max": None}}) is True
+
+    # All None — hide
+    assert helpers._should_display_metric("CgByAreaUVRGB", {"Cg_rgb_uv_area": {"min": None, "typ": None, "max": None}}) is False
+    assert helpers._should_display_metric("CgUVNTSC", {"Cg_ntsc_uv": {"min": "None", "typ": "None", "max": "None"}}) is False
+
+    # Key missing entirely — hide
+    assert helpers._should_display_metric("CgByAreaUVDCI-P3", {}) is False
+
+
+def test_should_display_metric_delta_e():
+    """Tests that DeltaE is now dynamically gated by expected values."""
+    # Has expected value — display
+    assert helpers._should_display_metric("DeltaE", {"Delta_e": {"min": None, "typ": 5, "max": 7}}) is True
+
+    # All None — hide
+    assert helpers._should_display_metric("DeltaE", {"Delta_e": {"min": None, "typ": None, "max": None}}) is False
+
+    # Key absent — hide
+    assert helpers._should_display_metric("DeltaE", {}) is False
 
 
 def test_should_display_metric_dcip3():
@@ -653,22 +636,13 @@ def test_process_main_report_dynamic_dcip3_filter(tmp_path):
         "CgDCI-P3": "DCI-P3 Gamut Coverage (%)",
     }
 
-    config_path = tmp_path / "view_config.yaml"
-    with open(config_path, "w") as f:
-        yaml.dump({"columns": {
-            "Brightness": True,
-            "CgByAreaRGB": True,
-            "CgByAreaDCI-P3": True,
-            "CgDCI-P3": True,
-        }}, f)
-
     # Scenario 1: DCI-P3 expected values present — columns visible
     expected_with_dcip3 = {
         "Cg_rgb_area": {"min": 67, "typ": 72, "max": None},
         "Cg_dcip3_area": {"min": 60, "typ": 70, "max": None},
         "Cg_dcip3": {"min": 55, "typ": 65, "max": None},
     }
-    main_rows, _ = helpers.process_main_report(raw_data, ufn_mapping, config_path, expected_with_dcip3)
+    main_rows, _ = helpers.process_main_report(raw_data, ufn_mapping, expected_with_dcip3)
 
     assert "sRGB Gamut Area (%)" in main_rows
     assert "DCI-P3 Gamut Area (%)" in main_rows
@@ -680,7 +654,7 @@ def test_process_main_report_dynamic_dcip3_filter(tmp_path):
         "Cg_dcip3_area": {"min": None, "typ": None, "max": None},
         "Cg_dcip3": {"min": None, "typ": None, "max": None},
     }
-    main_rows, _ = helpers.process_main_report(raw_data, ufn_mapping, config_path, expected_without_dcip3)
+    main_rows, _ = helpers.process_main_report(raw_data, ufn_mapping, expected_without_dcip3)
 
     assert "sRGB Gamut Area (%)" in main_rows
     assert "DCI-P3 Gamut Area (%)" not in main_rows
@@ -723,7 +697,7 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
 
     helpers.create_html_report(
         input_file=input_file, output_file=output_file, min_fail_file=min_fail_file,
-        cie_background_svg=svg_file, report_view_config=view_config,
+        cie_background_svg=svg_file,
         device_reports=device_reports, current_device_name="TestDevice",
         app_version="1.0.0", expected_yaml=expected_file,
     )
@@ -742,7 +716,7 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
 
     helpers.create_html_report(
         input_file=input_file, output_file=output_file, min_fail_file=min_fail_file,
-        cie_background_svg=svg_file, report_view_config=view_config,
+        cie_background_svg=svg_file,
         device_reports=device_reports, current_device_name="TestDevice",
         app_version="1.0.0", expected_yaml=expected_file,
     )

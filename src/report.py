@@ -18,6 +18,12 @@ REPORT_PRECISION = {
     "CgRGB": 1,
     "CgNTSC": 1,
     "CgDCI-P3": 1,
+    "CgByAreaUVRGB": 1,
+    "CgByAreaUVNTSC": 1,
+    "CgByAreaUVDCI-P3": 1,
+    "CgUVRGB": 1,
+    "CgUVNTSC": 1,
+    "CgUVDCI-P3": 1,
     "DeltaE": 1,
 
     "Red_x": 3,
@@ -42,6 +48,12 @@ AVG_FAIL_SKIP_KEYS_FOR_TV = {  # Keys which we skip while checking for FAIL by a
     "CgRGB",
     "CgNTSC",
     "CgDCI-P3",
+    "CgByAreaUVRGB",
+    "CgByAreaUVNTSC",
+    "CgByAreaUVDCI-P3",
+    "CgUVRGB",
+    "CgUVNTSC",
+    "CgUVDCI-P3",
     "Temperature"
 }
 
@@ -54,6 +66,12 @@ MAJORITY_TYP_CHECK_KEYS_FOR_TV = {
     "CgRGB",
     "CgNTSC",
     "CgDCI-P3",
+    "CgByAreaUVRGB",
+    "CgByAreaUVNTSC",
+    "CgByAreaUVDCI-P3",
+    "CgUVRGB",
+    "CgUVNTSC",
+    "CgUVDCI-P3",
 }
 MAJORITY_TYP_TOLERANCE = 0.01
 
@@ -70,7 +88,13 @@ CORPORATE_DEVICES_CG_TOLERANCE_LIST = {
     "Cg_dcip3_area",
     "Cg_rgb",
     "Cg_ntsc",
-    "Cg_dcip3"
+    "Cg_dcip3",
+    "Cg_rgb_uv_area",
+    "Cg_ntsc_uv_area",
+    "Cg_dcip3_uv_area",
+    "Cg_rgb_uv",
+    "Cg_ntsc_uv",
+    "Cg_dcip3_uv",
 }
 
 # Keys that are considered coordinate tests (using min/max bounds)
@@ -91,6 +115,12 @@ YAML_TO_JSON_KEY_MAP = {
     "Cg_rgb": "CgRGB",
     "Cg_ntsc": "CgNTSC",
     "Cg_dcip3": "CgDCI-P3",
+    "Cg_rgb_uv_area": "CgByAreaUVRGB",
+    "Cg_ntsc_uv_area": "CgByAreaUVNTSC",
+    "Cg_dcip3_uv_area": "CgByAreaUVDCI-P3",
+    "Cg_rgb_uv": "CgUVRGB",
+    "Cg_ntsc_uv": "CgUVNTSC",
+    "Cg_dcip3_uv": "CgUVDCI-P3",
     "Delta_e": "DeltaE",
 
     # Special case: 'White_x' and 'White_y' are used for Center_x/y in JSON
@@ -111,6 +141,12 @@ def json_report(
         cg_rgb=None,
         cg_ntsc=None,
         cg_dcip3=None,
+        cg_by_area_uv_rgb=None,
+        cg_by_area_uv_ntsc=None,
+        cg_by_area_uv_dcip3=None,
+        cg_uv_rgb=None,
+        cg_uv_ntsc=None,
+        cg_uv_dcip3=None,
         contrast=None,
         temperature=None,
         delta_e=None,
@@ -136,6 +172,12 @@ def json_report(
             "CgRGB": cg_rgb,
             "CgNTSC": cg_ntsc,
             "CgDCI-P3": cg_dcip3,
+            "CgByAreaUVRGB": cg_by_area_uv_rgb,
+            "CgByAreaUVNTSC": cg_by_area_uv_ntsc,
+            "CgByAreaUVDCI-P3": cg_by_area_uv_dcip3,
+            "CgUVRGB": cg_uv_rgb,
+            "CgUVNTSC": cg_uv_ntsc,
+            "CgUVDCI-P3": cg_uv_dcip3,
             "Contrast": contrast,
             "Temperature": temperature,
             "DeltaE": delta_e,

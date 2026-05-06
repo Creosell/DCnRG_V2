@@ -13,7 +13,7 @@ import src.parse as parse
 import src.report as r
 
 # --- Constants & Configuration ---
-APP_VERSION = "1.1.4"
+APP_VERSION = "1.2.0"
 
 
 class ExitCode(IntEnum):
@@ -33,7 +33,6 @@ CONFIG_DIR = Path("config")
 
 CIE_BG_SVG = CONFIG_DIR / "CIExy1931.svg"
 DEFAULT_EXPECTED_YAML = CONFIG_DIR / "configuration_example.yaml"
-REPORT_VIEW_CONFIG = CONFIG_DIR / "report_view.yaml"
 
 
 def parse_args():
@@ -234,7 +233,6 @@ def main() -> int:
                 device_reports=device_reports,
                 min_fail_file=f_min_fail,
                 cie_background_svg=CIE_BG_SVG,
-                report_view_config=REPORT_VIEW_CONFIG,
                 current_device_name=dev_name,
                 app_version=APP_VERSION,
                 expected_yaml = expected_yaml,

@@ -37,14 +37,46 @@ main_tests:
     min: 67
     typ: 72
     max: None
+  Cg_dcip3_area: # Color gamut percent in DCI-P3 color space (area ratio method)
+    min: None
+    typ: None
+    max: None
+  Cg_dcip3: # Color gamut percent in DCI-P3 color space (more accurate calculation method)
+    min: None
+    typ: None
+    max: None
+  Cg_rgb_uv_area: # Color gamut percent in sRGB color space, CIE 1976 u'v' (area ratio method)
+    min: None
+    typ: None
+    max: None
+  Cg_ntsc_uv_area: # Color gamut percent in NTSC color space, CIE 1976 u'v' (area ratio method)
+    min: None
+    typ: None
+    max: None
+  Cg_dcip3_uv_area: # Color gamut percent in DCI-P3 color space, CIE 1976 u'v' (area ratio method)
+    min: 90
+    typ: 95
+    max: None
+  Cg_rgb_uv: # Color gamut percent in sRGB color space, CIE 1976 u'v' (more accurate calculation method)
+    min: None
+    typ: None
+    max: None
+  Cg_ntsc_uv: # Color gamut percent in NTSC color space, CIE 1976 u'v' (more accurate calculation method)
+    min: None
+    typ: None
+    max: None
+  Cg_dcip3_uv: # Color gamut percent in DCI-P3 color space, CIE 1976 u'v' (more accurate calculation method)
+    min: 90
+    typ: 95
+    max: None
   Temperature: # Color temperature range
     min: 8835
     typ: 9585
     max: 10335
   Delta_e: # Requirements for color accuracy
-    min: 3
-    typ: 5
-    max: 7
+    min: None
+    typ: None
+    max: None
   Red_x: # Requirements for color coordinates of Red
     min: 0.608
     typ: 0.638
