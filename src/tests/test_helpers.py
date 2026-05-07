@@ -150,8 +150,6 @@ def test_create_html_report(mocker, tmp_path):
     expected_file = tmp_path / "expected_report.yaml"
     expected_file.write_text("Brightness:\n  min: 80\n  typ: 100\n  max: 120")
 
-    min_fail_file = tmp_path / "min_fail.json"
-    min_fail_file.write_text("[]")
 
     svg_file = tmp_path / "bg.svg"
     svg_file.write_text("<svg></svg>")
@@ -169,7 +167,6 @@ def test_create_html_report(mocker, tmp_path):
     helpers.create_html_report(
         input_file=input_file,
         output_file=output_file,
-        min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
         device_reports=device_reports,
         current_device_name="TestDevice",
@@ -237,8 +234,6 @@ def test_create_html_report_returns_true_on_success(mocker, tmp_path):
     expected_file = tmp_path / "expected_report.yaml"
     expected_file.write_text("Brightness:\n  min: 80\n  typ: 100\n  max: 120")
 
-    min_fail_file = tmp_path / "min_fail.json"
-    min_fail_file.write_text("[]")
 
     svg_file = tmp_path / "bg.svg"
     svg_file.write_text("<svg></svg>")
@@ -256,7 +251,6 @@ def test_create_html_report_returns_true_on_success(mocker, tmp_path):
     result = helpers.create_html_report(
         input_file=input_file,
         output_file=output_file,
-        min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
         device_reports=device_reports,
         current_device_name="TestDevice",
@@ -273,8 +267,6 @@ def test_create_html_report_returns_false_on_missing_input_file(mocker, tmp_path
     """Tests that create_html_report returns False when input file is missing."""
     input_file = tmp_path / "nonexistent.json"  # Does not exist
     output_file = tmp_path / "output.html"
-    min_fail_file = tmp_path / "min_fail.json"
-    min_fail_file.write_text("[]")
     svg_file = tmp_path / "bg.svg"
     svg_file.write_text("<svg></svg>")
     view_config = tmp_path / "view.yaml"
@@ -285,7 +277,6 @@ def test_create_html_report_returns_false_on_missing_input_file(mocker, tmp_path
     result = helpers.create_html_report(
         input_file=input_file,
         output_file=output_file,
-        min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
         device_reports=[],
         current_device_name="TestDevice",
@@ -303,8 +294,6 @@ def test_create_html_report_returns_false_on_missing_expected_yaml(mocker, tmp_p
     input_file.write_text(json.dumps({"Results": {}}))
 
     output_file = tmp_path / "output.html"
-    min_fail_file = tmp_path / "min_fail.json"
-    min_fail_file.write_text("[]")
     svg_file = tmp_path / "bg.svg"
     svg_file.write_text("<svg></svg>")
     view_config = tmp_path / "view.yaml"
@@ -314,7 +303,6 @@ def test_create_html_report_returns_false_on_missing_expected_yaml(mocker, tmp_p
     result = helpers.create_html_report(
         input_file=input_file,
         output_file=output_file,
-        min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
         device_reports=[],
         current_device_name="TestDevice",
@@ -335,8 +323,6 @@ def test_create_html_report_returns_false_on_template_load_error(mocker, tmp_pat
     expected_file = tmp_path / "expected.yaml"
     expected_file.write_text("{}")
 
-    min_fail_file = tmp_path / "min_fail.json"
-    min_fail_file.write_text("[]")
 
     svg_file = tmp_path / "bg.svg"
     svg_file.write_text("<svg></svg>")
@@ -354,7 +340,6 @@ def test_create_html_report_returns_false_on_template_load_error(mocker, tmp_pat
     result = helpers.create_html_report(
         input_file=input_file,
         output_file=output_file,
-        min_fail_file=min_fail_file,
         cie_background_svg=svg_file,
         device_reports=[],
         current_device_name="TestDevice",
@@ -675,8 +660,6 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
     # Common files
     input_file = tmp_path / "report.json"
     input_file.write_text(json.dumps({"Results": {}}))
-    min_fail_file = tmp_path / "min_fail.json"
-    min_fail_file.write_text("[]")
     svg_file = tmp_path / "bg.svg"
     svg_file.write_text("<svg></svg>")
     view_config = tmp_path / "view.yaml"
@@ -695,7 +678,7 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
     )
 
     helpers.create_html_report(
-        input_file=input_file, output_file=output_file, min_fail_file=min_fail_file,
+        input_file=input_file, output_file=output_file,
         cie_background_svg=svg_file,
         device_reports=device_reports, current_device_name="TestDevice",
         app_version="1.0.0", expected_yaml=expected_file,
@@ -713,7 +696,7 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
     )
 
     helpers.create_html_report(
-        input_file=input_file, output_file=output_file, min_fail_file=min_fail_file,
+        input_file=input_file, output_file=output_file,
         cie_background_svg=svg_file,
         device_reports=device_reports, current_device_name="TestDevice",
         app_version="1.0.0", expected_yaml=expected_file,
@@ -732,7 +715,7 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
     )
 
     helpers.create_html_report(
-        input_file=input_file, output_file=output_file, min_fail_file=min_fail_file,
+        input_file=input_file, output_file=output_file,
         cie_background_svg=svg_file,
         device_reports=device_reports, current_device_name="TestDevice",
         app_version="1.0.0", expected_yaml=expected_file,

@@ -34,6 +34,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 - `REPORT_VIEW_CONFIG` constant and `report_view.yaml` from the processing pipeline (file preserved but no longer read)
+- **Fail on Minimum Values Report** section removed from HTML output — individual min violations are already visible via red highlighting and column sorting in Device reports, making this section redundant
+- `analyze_json_files_for_min_fail()` function removed from `report.py`
+- `min_fail_file` parameter removed from `create_html_report()` in `helpers.py`
 
 ---
 

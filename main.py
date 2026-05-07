@@ -176,7 +176,6 @@ def main() -> int:
                 expected_yaml = DEFAULT_EXPECTED_YAML
 
             # Output file paths (with or without timestamp)
-            f_min_fail = REPORT_DIR / f"min_fail_{dev_name}.json"
             f_full_report = REPORT_DIR / f"full_report_{dev_name}.json"
 
             if timestamp:
@@ -219,10 +218,6 @@ def main() -> int:
                 logger.error(f"Failed to calculate full report for {dev_name}")
                 continue
 
-            if not r.analyze_json_files_for_min_fail(device_reports, expected_yaml, f_min_fail, dev_name):
-                logger.error(f"Failed to analyze min/fail for {dev_name}")
-                continue
-
             if not r.generate_comparison_report(f_full_report, expected_yaml, f_final_json, group_is_tv, device_reports):
                 logger.error(f"Failed to generate comparison report for {dev_name}")
                 continue
@@ -231,7 +226,6 @@ def main() -> int:
                 input_file=f_final_json,
                 output_file=f_html_result,
                 device_reports=device_reports,
-                min_fail_file=f_min_fail,
                 cie_background_svg=CIE_BG_SVG,
                 current_device_name=dev_name,
                 app_version=APP_VERSION,
@@ -245,7 +239,7 @@ def main() -> int:
 
             # Archive and Cleanup (skip if --noclean)
             if not args.noclean:
-                generated_files = [f_min_fail, f_full_report, f_final_json, f_html_result]
+                generated_files = [f_full_report, f_final_json, f_html_result]
                 all_files = source_files_to_archive + generated_files
 
                 if timestamp:
@@ -255,7 +249,7 @@ def main() -> int:
 
                 archive_result = h.archive_specific_files(zip_path, all_files, Path.cwd())
                 if archive_result:
-                    h.clear_specific_files(source_files_to_archive + [f_min_fail, f_full_report, f_final_json])
+                    h.clear_specific_files(source_files_to_archive + [f_full_report, f_final_json])
                 else:
                     logger.warning(f"Archiving failed for {dev_name}, skipping cleanup to preserve files")
 

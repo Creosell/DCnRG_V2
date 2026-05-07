@@ -565,70 +565,6 @@ def test_generate_comparison_report_temperature_ignores_typ(tmp_path):
     assert "Temperature checks passed" in result["Temperature"]["reason"]
 
 
-def test_analyze_json_files_for_min_fail(tmp_path, mock_yaml_data):
-    """
-    REFACTORED: Tests the min_fail logic by passing a list of dictionaries.
-    """
-    # 1. Setup expected YAML
-    expected_values_path = tmp_path / "expected.yaml"
-    # We only care about Brightness and Red_x for this test
-    mock_yaml_data["Brightness"] = {"min": 100.0}
-    mock_yaml_data["Red_x"] = {"min": 0.60}
-    with open(expected_values_path, "w") as f:
-        yaml.safe_dump(mock_yaml_data, f)
-
-    # 2. Setup input data (list of dicts)
-    device_reports = [
-        {
-            "SerialNumber": "SN1_PASS",
-            "Results": {
-                "Brightness": 110.0,
-                "Coordinates": {"Red_x": 0.61}
-            }
-        },
-        {
-            "SerialNumber": "SN2_FAIL_BRIGHTNESS",
-            "Results": {
-                "Brightness": 90.0,  # <-- Fails ( < 100.0)
-                "Coordinates": {"Red_x": 0.61}
-            }
-        },
-        {
-            "SerialNumber": "SN3_FAIL_REDX",
-            "Results": {
-                "Brightness": 110.0,
-                "Coordinates": {"Red_x": 0.59}  # <-- Fails ( < 0.60)
-            }
-        }
-    ]
-
-    output_path = tmp_path / "min_fail.json"
-
-    # 3. Run function
-    report.analyze_json_files_for_min_fail(
-        device_reports=device_reports,
-        expected_result_path=expected_values_path,
-        output_path=output_path,
-        device_name="TestDevice"
-    )
-
-    # 4. Check results
-    with open(output_path, "r") as f:
-        results = json.load(f)
-
-    assert len(results) == 2  # Two failures
-
-    # Check failure 1
-    assert "SN2_FAIL_BRIGHTNESS" in results[0]
-    assert results[0]["SN2_FAIL_BRIGHTNESS"]["key"] == "Brightness"
-    assert results[0]["SN2_FAIL_BRIGHTNESS"]["min_value"] == 90.0
-
-    # Check failure 2
-    assert "SN3_FAIL_REDX" in results[1]
-    assert results[1]["SN3_FAIL_REDX"]["key"] == "Red_x"
-    assert results[1]["SN3_FAIL_REDX"]["min_value"] == 0.59
-
-
 # --------------------------------------------------------------------------------
 # NEW TESTS for Return Values (bool validation)
 # --------------------------------------------------------------------------------
@@ -662,66 +598,6 @@ def test_calculate_full_report_returns_false_on_write_error(tmp_path):
         device_reports=reports_list,
         output_file=str(invalid_output),
         device_name="Monitor"
-    )
-
-    assert result is False
-
-
-def test_analyze_json_files_for_min_fail_returns_true_on_success(tmp_path):
-    """Tests that analyze_json_files_for_min_fail returns True on success."""
-    device_reports = [
-        {"SerialNumber": "SN1", "Results": {"Brightness": 80.0}}  # Below min of 100
-    ]
-
-    expected_yaml = tmp_path / "expected.yaml"
-    expected_yaml.write_text("Brightness:\n  min: 100.0")
-
-    output_path = tmp_path / "min_fail.json"
-
-    result = report.analyze_json_files_for_min_fail(
-        device_reports=device_reports,
-        expected_result_path=expected_yaml,
-        output_path=output_path,
-        device_name="TestDevice"
-    )
-
-    assert result is True
-    assert output_path.exists()
-
-
-def test_analyze_json_files_for_min_fail_returns_false_on_missing_yaml(tmp_path):
-    """Tests that analyze_json_files_for_min_fail returns False when YAML is missing."""
-    device_reports = [{"SerialNumber": "SN1", "Results": {"Brightness": 80.0}}]
-
-    nonexistent_yaml = tmp_path / "nonexistent.yaml"  # Does not exist
-    output_path = tmp_path / "min_fail.json"
-
-    result = report.analyze_json_files_for_min_fail(
-        device_reports=device_reports,
-        expected_result_path=nonexistent_yaml,
-        output_path=output_path,
-        device_name="TestDevice"
-    )
-
-    assert result is False
-    assert not output_path.exists()
-
-
-def test_analyze_json_files_for_min_fail_returns_false_on_write_error(tmp_path):
-    """Tests that analyze_json_files_for_min_fail returns False on write error."""
-    device_reports = [{"SerialNumber": "SN1", "Results": {"Brightness": 80.0}}]
-
-    expected_yaml = tmp_path / "expected.yaml"
-    expected_yaml.write_text("Brightness:\n  min: 100.0")
-
-    # Invalid output path
-    invalid_output = tmp_path / "nonexistent_dir" / "min_fail.json"
-
-    result = report.analyze_json_files_for_min_fail(
-        device_reports=device_reports,
-        expected_result_path=expected_yaml,
-        output_path=invalid_output,
-        device_name="TestDevice"
     )
 
     assert result is False

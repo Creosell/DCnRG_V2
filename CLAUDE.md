@@ -103,7 +103,6 @@ report_archive/*.zip (Archive)
 **report.py** - Report Generation & Comparison
 - `json_report()`: Creates individual device report JSON structure
 - `calculate_full_report() -> bool`: Aggregates multiple device reports, returns `True` on success, `False` on error
-- `analyze_json_files_for_min_fail() -> bool`: Identifies minimum/fail threshold violations, returns `True` on success
 - `generate_comparison_report() -> bool`: Compares measurements against YAML standards, returns `True` on success
 - Contains `REPORT_PRECISION` dict for metric rounding
 - TV-specific tolerances: `CONTRAST_TOLERANCE_FOR_TV`, `AVG_FAIL_SKIP_KEYS_FOR_TV`, `MAJORITY_TYP_CHECK_KEYS_FOR_TV`
@@ -196,10 +195,6 @@ else:
   - Returns `False` on: aggregation errors, file write failures
   - Returns `True` when aggregated report is successfully saved
 
-- `report.analyze_json_files_for_min_fail() -> bool`
-  - Returns `False` on: missing YAML, YAML parsing errors, write failures
-  - Returns `True` when min/fail analysis is complete
-
 - `report.generate_comparison_report() -> bool`
   - Returns `False` on: missing files, YAML parsing errors, write failures, serialization errors
   - Returns `True` when comparison report is successfully saved
@@ -223,9 +218,9 @@ else:
 
 Tests use pytest with pytest-mock. Fixtures in `conftest.py` provide mock TV and monitor measurement data.
 
-**Test coverage** (107 tests total):
+**Test coverage** (104 tests total):
 - `test_calculate.py` (14 tests): Math validation, brightness, contrast, color gamut, delta E, temperature
-- `test_report.py` (57 tests): JSON report generation, min/fail analysis, comparison reports, return value validation, coordinate tolerance expansion
+- `test_report.py` (54 tests): JSON report generation, comparison reports, return value validation, coordinate tolerance expansion
 - `test_parse.py` (10 tests): JSON parsing, device info extraction, coordinate extraction
 - `test_helpers.py` (26 tests): HTML generation, archiving, cleanup operations, return value validation, cell status logic, dynamic metric visibility, plot triangle visibility
 

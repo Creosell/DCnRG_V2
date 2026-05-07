@@ -224,7 +224,6 @@ def collect_tolerance_legend(main_report_data: dict, ufn_mapping: dict) -> dict:
 def create_html_report(
         input_file: Path,
         output_file: Path,
-        min_fail_file: Path,
         cie_background_svg: Path,
         device_reports: list,
         current_device_name: str,
@@ -238,7 +237,6 @@ def create_html_report(
     Args:
         input_file (Path): Path to the main JSON report data.
         output_file (Path): Path to save the final .html report.
-        min_fail_file (Path): Path to the min_fail JSON file.
         cie_background_svg (Path): Path to the SVG background image.
         device_reports (list): List of device reports.
         current_device_name (str): Name of the current device.
@@ -257,13 +255,6 @@ def create_html_report(
     except (FileNotFoundError, json.JSONDecodeError) as e:
         logger.error(f"Error reading/parsing main report file {input_file}: {e}")
         return False
-
-    try:
-        with open(min_fail_file, "r") as f:
-            min_fail_data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.warning(f"Error reading min_fail file {min_fail_file}: {e}")
-        min_fail_data = []
 
     try:
         with open(expected_yaml, "r") as yaml_file:
@@ -287,22 +278,6 @@ def create_html_report(
         "data": main_report_data_filtered,
         "coordinates": main_report_coordinates_filtered
     }
-
-    # --- 1.2. Process Min Fail Data (Grouping) ---
-    min_fail_grouped = defaultdict(list)
-
-    if min_fail_data:
-        for item in min_fail_data:
-            for sn, info in item.items():
-                raw_key = info.get("key")
-                # Convert to User Friendly Name
-                ufn_name = UFN_MAPPING.get(raw_key, raw_key)
-
-                min_fail_grouped[ufn_name].append({
-                    "sn": sn,
-                    "min_value": info.get("min_value"),
-                    "expected_min": info.get("expected_min")
-                })
 
     # --- 1.5. SVG LOAD ---
     raw_svg_background = ""
@@ -390,8 +365,6 @@ def create_html_report(
 
     context = {
         "main_report": main_report_filtered,
-        "min_fail_grouped": min_fail_grouped,
-        "min_fail_data_json": json.dumps(min_fail_data, indent=4),
         "raw_svg_background": raw_svg_background,
         "summary_plot_points": summary_plot_points,
         "plot_triangles_checked": plot_triangles_checked,
