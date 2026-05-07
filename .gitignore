@@ -11,11 +11,11 @@
 /build/
 /logs/
 /ReportGenerator.exe
-/ReportGenerator.spec
 
 /tools/release/release_manager.py
+/tools/release/ReportGenerator.spec
+/tools/release/upx.exe
 /release_artifacts/
-/upx.exe
 /release.log
 /LatesRelease_ReportGenerator.exe
 /config/color_space.yaml
