@@ -187,11 +187,10 @@ def main() -> int:
 
             device_reports = []
             source_files_to_archive = []
-            group_is_tv = False
+            group_is_tv = files[0][1] if files else False
 
             # Process individual files
             for f_path, is_tv, sn in files:
-                group_is_tv = is_tv
                 try:
                     data = parse.parse_one_file(f_path)
                     if not data: continue

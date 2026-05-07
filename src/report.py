@@ -777,11 +777,14 @@ def generate_comparison_report(
         return False
 
     # --- 2. MAJORITY CHECK ---
+    # Pending customer confirmation before enabling in production inspections.
+    is_tv_majority_report = False
+
     devices_values_map = defaultdict(list)
     total_device_count = 0
     majority_needed = 0
 
-    if is_tv_flag and device_reports:
+    if is_tv_majority_report and device_reports:
         logger.debug("TV flag is ON. Loading individual reports for 'majority' logic...")
 
         total_device_count = len(device_reports)
@@ -792,28 +795,22 @@ def generate_comparison_report(
 
             for data in device_reports:
                 if not data or "Results" not in data:
-                    logger.warning(f"Skipping device report: {data.get("SerialNumber")} (invalid or no 'Results')")
+                    logger.warning(f"Skipping device report: {data.get('SerialNumber')} (invalid or no 'Results')")
                     continue
 
                 current_device_results = data.get("Results", {})
 
                 for yaml_key in MAJORITY_TYP_CHECK_KEYS_FOR_TV:
-                    json_key = YAML_TO_JSON_KEY_MAP.get(yaml_key,yaml_key)
+                    json_key = YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key)
 
                     value = current_device_results.get(json_key)
                     if isinstance(value, (int, float)):
                         devices_values_map[yaml_key].append(value)
                     else:
-                        logger.debug(f"Value for {json_key} in {data.get("SerialNumber")} is missing or not numeric.")
+                        logger.debug(f"Value for {json_key} in {data.get('SerialNumber')} is missing or not numeric.")
 
         else:
-            logger.warning(f"TV 'majority' logic active, but no individual reports found matching pattern")
-
-    # This is true if it's a TV and we have individual reports to check.
-    is_tv_majority_report = (is_tv_flag and len(devices_values_map) > 0)
-
-    # DISABLE MAJORITY LOGIC FLAG
-    is_tv_majority_report = False
+            logger.warning("TV 'majority' logic active, but no individual reports found matching pattern")
 
     full_report = {}
 

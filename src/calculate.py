@@ -318,7 +318,7 @@ def delta_e(device_report):
         "TopLeft", "TopCenter", "TopRight",
     }
     if device_report is None:
-        return "Error: Report is empty or could not be parsed."
+        raise ValueError("Report is empty or could not be parsed.")
 
     measurements = device_report.get("Measurements", [])
 
@@ -340,15 +340,15 @@ def delta_e(device_report):
     reference_location = ref.get("Location")
 
     if ref_x is None or ref_y is None or ref_lv is None:
-        return "Error: Missing reference color data for Center."
+        raise ValueError("Missing reference color data for Center.")
 
     delta_e_values = []
 
     try:
         ref_color = xyYColor(float(ref_x), float(ref_y), float(ref_lv))
         ref_lab = convert_color(ref_color, LabColor)
-    except (ValueError, TypeError):
-        return "Error: Invalid reference color data."
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Invalid reference color data: {e}") from e
 
     for measurement in measurements:
         location = measurement.get("Location")
@@ -371,11 +371,10 @@ def delta_e(device_report):
         delta_e_values.append(delta_e_value)
 
     # Calculate average Delta E
-    if delta_e_values:
-        avg_delta_e = sum(delta_e_values) / len(delta_e_values)
-        return round(avg_delta_e,2)
-    else:
-        return "Error: No valid Delta E values calculated."
+    if not delta_e_values:
+        raise ValueError("No valid Delta E values calculated.")
+    avg_delta_e = sum(delta_e_values) / len(delta_e_values)
+    return round(avg_delta_e, 2)
 
 def run_calculations(device_report, is_tv):
     """
@@ -436,13 +435,7 @@ def run_calculations(device_report, is_tv):
         results["temperature"] = None
 
     try:
-        delta_e_val = delta_e(device_report)
-        # delta_e can return an error string, check for it
-        if isinstance(delta_e_val, str):
-            logger.error(f"'delta_e' calculation returned an error string: {delta_e_val}")
-            results["delta_e"] = None
-        else:
-            results["delta_e"] = delta_e_val
+        results["delta_e"] = delta_e(device_report)
     except Exception as e:
         logger.error(f"Failed 'delta_e' calculation: {e}")
         results["delta_e"] = None

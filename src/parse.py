@@ -15,12 +15,16 @@ def coordinates_of_triangle(device_report):
     rgb_coordinates = {"RedColor": None, "GreenColor": None, "BlueColor": None}
 
     # Iterate through the measurements and extract coordinates
-    for measurement in device_report["Measurements"]:
-        location = measurement["Location"]
+    for measurement in device_report.get("Measurements", []):
+        location = measurement.get("Location")
         if location in rgb_coordinates:
-            x = float(measurement["x"])
-            y = float(measurement["y"])
-            rgb_coordinates[location] = (x, y)
+            try:
+                x = float(measurement["x"])
+                y = float(measurement["y"])
+                rgb_coordinates[location] = (x, y)
+            except (KeyError, ValueError, TypeError):
+                logger.warning(f"Invalid or missing x/y for location '{location}', skipping.")
+                continue
 
     # Ensure the coordinates are extracted in the correct order: Red, Green, Blue
     result = []
