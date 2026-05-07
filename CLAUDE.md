@@ -89,6 +89,7 @@ report_archive/*.zip (Archive)
 - `parse_one_file()`: Loads and validates JSON measurement files
 - `get_coordinates()`: Extracts RGB color point coordinates from measurements
 - `coordinates_of_triangle()`: Gets RGB triangle vertices for gamut calculations
+- `parse_yaml(yaml_file, key_name, k)`: Reads a single value from the root of a YAML file
 
 **calculate.py** - Photometric & Colorimetric Calculations
 - `brightness()`: Calculates min/typ/max brightness from Lv measurements
@@ -107,6 +108,7 @@ report_archive/*.zip (Archive)
 - Contains `REPORT_PRECISION` dict for metric rounding
 - TV-specific tolerances: `CONTRAST_TOLERANCE_FOR_TV`, `AVG_FAIL_SKIP_KEYS_FOR_TV`, `MAJORITY_TYP_CHECK_KEYS_FOR_TV`
 - Legacy YAML key mapping: `YAML_TO_JSON_KEY_MAP` (maintains backward compatibility)
+- `expand_coordinates_tolerance(config)`: expands `typ`-only coordinate entries using `Coordinates_tolerance` key; called at all YAML loading points
 - **All report generation functions return bool to enable proper error handling**
 
 **helpers.py** - HTML Generation & File Operations
@@ -210,23 +212,22 @@ else:
 
 ## Configuration Files
 
-- **`config/expected_result.yaml`**: Measurement specification standards (min/typ/max values for all metrics)
 - **`config/configuration_example.yaml`**: Default expected result template when device-specific config not found
-- **`config/device_configs/*.yaml`**: Per-device expected values (named by `DeviceConfiguration` field from JSON). Allows customized thresholds for different device models.
-- **`config/report_view.yaml`**: Boolean flags controlling which columns appear in HTML reports
+- **`config/device_configs/*.yaml`**: Per-device expected values (named by `DeviceConfiguration` field from JSON). Metrics are defined at the **root level** — no `main_tests:` wrapper. Supports `Coordinates_tolerance` key for automatic `min`/`max` expansion.
 - **`config/color_space.yaml`**: Color space definitions (sRGB, NTSC, DCI-P3 primaries as CIE xy coordinates)
 - **`config/report_template.html`**: Jinja2 template for HTML report rendering. Includes CSS for color-coded cell highlighting and legends.
 - **`config/CIExy1931.svg`**: CIE 1931 chromaticity diagram SVG background for visualizations
+- **`config/report_view.yaml`**: Preserved but no longer read by the pipeline — metric visibility is driven exclusively by expected values in device YAML configs
 
 ## Testing
 
 Tests use pytest with pytest-mock. Fixtures in `conftest.py` provide mock TV and monitor measurement data.
 
-**Test coverage** (71 tests total):
+**Test coverage** (107 tests total):
 - `test_calculate.py` (14 tests): Math validation, brightness, contrast, color gamut, delta E, temperature
-- `test_report.py` (34 tests): JSON report generation, min/fail analysis, comparison reports, **return value validation**
+- `test_report.py` (57 tests): JSON report generation, min/fail analysis, comparison reports, return value validation, coordinate tolerance expansion
 - `test_parse.py` (10 tests): JSON parsing, device info extraction, coordinate extraction
-- `test_helpers.py` (13 tests): HTML generation, archiving, cleanup operations, **return value validation**, cell status logic, dynamic metric visibility
+- `test_helpers.py` (26 tests): HTML generation, archiving, cleanup operations, return value validation, cell status logic, dynamic metric visibility, plot triangle visibility
 
 ### Return Value Tests (Added 2025-01-23)
 New tests validate that report generation functions correctly return `True` on success and `False` on errors:
@@ -269,7 +270,7 @@ These tests ensure that exit codes are correctly propagated based on actual succ
 - Prevents empty columns when certain color spaces aren't specified in device config
 - Checked by `should_display_metric()` function
 
-**Coordinate Tests**: Metrics like `Red_x`, `Red_y`, `Green_x`, `Green_y`, `Blue_x`, `Blue_y`, `White_x`, `White_y` are validated against min/max bounds (not typ values). These are listed in `report.py::COORDINATE_TEST_KEYS`.
+**Coordinate Tests**: Metrics like `Red_x`, `Red_y`, `Green_x`, `Green_y`, `Blue_x`, `Blue_y`, `White_x`, `White_y` are validated against min/max bounds (not typ values). Listed in `report.py::COORDINATE_TEST_KEYS`. In YAML configs, specify only `typ` + `Coordinates_tolerance` — min/max are computed automatically by `expand_coordinates_tolerance()`.
 
 **Color Gamut Calculations**: Two methods available:
 - `cg()`: Overlap percentage using Shapely polygon intersection
