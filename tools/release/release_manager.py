@@ -35,7 +35,7 @@ MAX_WORKERS = 20
 # --- LOGGING ---
 logger.remove()
 logger.add(sys.stderr, format="<green>{time:HH:mm:ss}</green> | {message}", level="INFO")
-logger.add("release.log", rotation="5 MB", level="DEBUG")
+logger.add(Path(__file__).parent / "release.log", rotation="5 MB", level="DEBUG")
 
 # --- GLOBAL CACHE ---
 _DIR_CACHE = set()
