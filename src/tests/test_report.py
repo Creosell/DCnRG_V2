@@ -208,6 +208,28 @@ def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
     assert "is null or missing in JSON" in result["White_x"]["reason"]
 
 
+def test_generate_comparison_report_min_violation_takes_priority_over_typ(tmp_path):
+    """When avg is below both min and typ, the reason must cite the min violation, not typ."""
+    full_report_data = {"Results": {"Brightness": {"avg": 251.0, "min": 240.0}}}
+    yaml_data = {"Brightness": {"min": 260.0, "typ": 280.0}}
+
+    json_file = tmp_path / "report.json"
+    yaml_file = tmp_path / "expected.yaml"
+    output_file = tmp_path / "comparison.json"
+
+    json_file.write_text(json.dumps(full_report_data))
+    yaml_file.write_text("Brightness:\n  min: 260.0\n  typ: 280.0")
+
+    report.generate_comparison_report(str(json_file), str(yaml_file), str(output_file), is_tv_flag=False, device_reports=[])
+
+    with open(output_file) as f:
+        result = json.load(f)
+
+    assert result["Brightness"]["status"] == "FAIL"
+    assert "Expected min" in result["Brightness"]["reason"]
+    assert "Expected typ" not in result["Brightness"]["reason"]
+
+
 @pytest.mark.parametrize(
     "actual_avg, expected_status, expected_reason_part",
     [

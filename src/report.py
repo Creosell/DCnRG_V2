@@ -713,10 +713,10 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
             "adjusted_typ": expected_typ
         }
 
-    if actual_avg < expected_typ:
-        return "FAIL", f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})", tolerance_info
     if actual_min_val < expected_min:
         return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})", tolerance_info
+    if actual_avg < expected_typ:
+        return "FAIL", f"Actual avg ({actual_avg}) < Expected typ ({expected_typ})", tolerance_info
 
     # 2.7. General PASS condition
     if actual_avg >= expected_typ:
