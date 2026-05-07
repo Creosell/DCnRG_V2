@@ -85,6 +85,44 @@ fi
 
 -----
 
+## Device Configuration
+
+Each device model is configured via a YAML file in `config/device_configs/`. The file name must match the `DeviceConfiguration` field in the measurement JSON (e.g., `SDX-43U4169.yaml`). If no matching file is found, `config/configuration_example.yaml` is used as a fallback.
+
+### Metric fields
+
+Each metric supports three threshold fields:
+
+```yaml
+Brightness:
+  min: 260   # Lower bound — values below this are highlighted red (critical)
+  typ: 280   # Target — values below this but above min are highlighted yellow (warning)
+  max: None  # Upper bound — set to None if no upper limit is required
+```
+
+### Dynamic visibility
+
+**Color Gamut** (`Cg_*`) and **Delta E** columns are hidden in the HTML report when all of `min`/`typ`/`max` are `None`. This prevents empty columns from appearing for metrics that are not part of the device specification.
+
+| Goal | How to configure |
+|------|-----------------|
+| Show a metric column | Set at least one of `min`/`typ`/`max` to a number |
+| Hide a metric column | Leave all of `min`/`typ`/`max` as `None` |
+
+This applies to all `Cg_rgb*`, `Cg_ntsc*`, `Cg_dcip3*` variants (both CIE 1931 xy and CIE 1976 u'v') and `Delta_e`.
+
+### Color coordinate tolerance
+
+Instead of specifying `min`/`max` for each color coordinate manually, use `Coordinates_tolerance`:
+
+```yaml
+Coordinates_tolerance: 0.030  # applied to all coordinate metrics
+Red_x:
+  typ: 0.638  # min/max computed automatically as 0.638 ± 0.030
+```
+
+-----
+
 ## Release & Deployment
 
 The project uses `tools/release/release_manager.py` to build the executable (via PyInstaller), package it, and upload it to the Nextcloud server. This script manages its own dependencies using `uv`.
