@@ -31,6 +31,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - **Min violation priority in comparison report**: when actual avg is below both `min` and `typ` thresholds, the FAIL reason now cites the min bound violation (more critical) instead of the typ check
+- **`coordinates_of_triangle()`** in `parse.py` now guards against missing or invalid `x`/`y` keys — previously raised `KeyError` on malformed measurement data
+- **`group_is_tv` flag** in `main.py` now taken from the first file in a group instead of being overwritten on each iteration
+
+### Changed
+- **`delta_e()`** in `calculate.py` now raises `ValueError` on all error conditions instead of returning error strings — consistent with all other calculation functions
+- **TV majority check block** in `report.py` now gated behind `is_tv_majority_report` flag and only executes when enabled — pending customer confirmation for production use
 
 ### Removed
 - `REPORT_VIEW_CONFIG` constant and `report_view.yaml` from the processing pipeline (file preserved but no longer read)
