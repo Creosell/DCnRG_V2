@@ -56,10 +56,10 @@ pytest -v src/tests/
 pip install uv
 
 # Build, zip, and upload release (includes config folder)
-uv run --active release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build --upload
+uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build --upload
 
 # Build only (no upload)
-uv run --active release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build
+uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build
 ```
 
 **Optional**: For smaller executables, place `upx.exe` in `.venv\Scripts\` for automatic compression during PyInstaller build.

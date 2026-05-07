@@ -11,7 +11,7 @@ A comprehensive tool for analyzing display device test results (TVs, Monitors). 
 * **`test_reports/`**: Intermediate JSON aggregated reports.
 * **`report_archive/`**: Zipped archives of processed sessions.
 * **`main.py`**: Entry point of the application.
-* **`release_manager.py`**: Script for building and uploading releases.
+* **`tools/release/release_manager.py`**: Script for building and uploading releases.
 
 ---
 
@@ -87,7 +87,7 @@ fi
 
 ## Release & Deployment
 
-The project uses `release_manager.py` to build the executable (via PyInstaller), package it, and upload it to the Nextcloud server. This script manages its own dependencies using `uv`.
+The project uses `tools/release/release_manager.py` to build the executable (via PyInstaller), package it, and upload it to the Nextcloud server. This script manages its own dependencies using `uv`.
 
 ### Prerequisites
 
@@ -100,7 +100,7 @@ Install `uv`:
 ### Command Syntax
 
 ```bash
-    uv run --active release_manager.py [mode] [path] [product_id] [version] [flags]
+    uv run --active tools/release/release_manager.py [mode] [path] [product_id] [version] [flags]
 ```
 
 **Arguments:**
@@ -123,7 +123,7 @@ Install `uv`:
 This command builds the `.exe` from the spec file, zips the contents of `dist/ReportGenerator`, includes the `config` folder, and uploads it as version `1.0.0`.
 
 ```bash
-    uv run --active release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build --upload
+    uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build --upload
 ```
 
 ### Example: Upload Files Only
@@ -131,7 +131,7 @@ This command builds the `.exe` from the spec file, zips the contents of `dist/Re
 If you only want to upload the raw files without zipping:
 
 ```bash
-    uv run --active release_manager.py files build\dist\ReportGenerator report_generator 1.0.0 --upload
+    uv run --active tools/release/release_manager.py files build\dist\ReportGenerator report_generator 1.0.0 --upload
 ```
 
 ## Optimization: UPX Compression

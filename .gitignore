@@ -13,7 +13,7 @@
 /ReportGenerator.exe
 /ReportGenerator.spec
 
-/release_manager.py
+/tools/release/release_manager.py
 /release_artifacts/
 /upx.exe
 /release.log
