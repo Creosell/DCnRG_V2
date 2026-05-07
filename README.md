@@ -102,12 +102,14 @@ Brightness:
 
 ### Dynamic visibility
 
-**Color Gamut** (`Cg_*`) and **Delta E** columns are hidden in the HTML report when all of `min`/`typ`/`max` are `None`. This prevents empty columns from appearing for metrics that are not part of the device specification.
+**Color Gamut** (`Cg_*`) and **Delta E** columns are hidden in the **Main Test Results** comparison table when all of `min`/`typ`/`max` are `None`. This prevents empty columns from appearing for metrics that are not part of the device specification.
+
+> **Note:** Device Reports always display the full measured data regardless of this setting.
 
 | Goal | How to configure |
 |------|-----------------|
-| Show a metric column | Set at least one of `min`/`typ`/`max` to a number |
-| Hide a metric column | Leave all of `min`/`typ`/`max` as `None` |
+| Show a metric in Main Test Results | Set at least one of `min`/`typ`/`max` to a number |
+| Hide a metric in Main Test Results | Leave all of `min`/`typ`/`max` as `None` |
 
 This applies to all `Cg_rgb*`, `Cg_ntsc*`, `Cg_dcip3*` variants (both CIE 1931 xy and CIE 1976 u'v') and `Delta_e`.
 

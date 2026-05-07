@@ -11,13 +11,12 @@
 #   Leave a field as None if there is no requirement for it.
 #
 # --- Dynamic visibility ---
-#   Color Gamut metrics (Cg_*) and Delta_e are HIDDEN in the HTML report
-#   unless at least one of min/typ/max has a real value (not None).
-#   This prevents empty columns from appearing when a color space or
-#   accuracy metric is not part of the device specification.
+#   Color Gamut metrics (Cg_*) and Delta_e are HIDDEN in the Main Test Results
+#   comparison table unless at least one of min/typ/max has a real value (not None).
+#   Device Reports always show the full measured data regardless of this setting.
 #
-#   To SHOW a metric column  → set at least one of min/typ/max to a number.
-#   To HIDE a metric column  → set all of min/typ/max to None.
+#   To SHOW a metric in Main Test Results  → set at least one of min/typ/max to a number.
+#   To HIDE a metric in Main Test Results  → set all of min/typ/max to None.
 #
 # --- Color coordinates ---
 #   Specify only typ per coordinate and set Coordinates_tolerance.
