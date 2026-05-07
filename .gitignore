@@ -12,8 +12,6 @@
 /logs/
 /ReportGenerator.exe
 
-/tools/release/release_manager.py
-/tools/release/ReportGenerator.spec
 /tools/release/upx.exe
 /release_artifacts/
 /release.log
