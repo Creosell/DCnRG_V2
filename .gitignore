@@ -12,7 +12,6 @@
 /logs/
 /ReportGenerator.exe
 
-/tools/release/upx.exe
 /release_artifacts/
 /release.log
 /LatesRelease_ReportGenerator.exe
