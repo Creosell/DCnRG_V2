@@ -165,7 +165,7 @@ def test_generate_comparison_report_logic(tmp_path, mock_yaml_data):
 
     # 2. Create YAML with expectations
     # Temperature: only min/max should be checked, typ should be ignored
-    mock_yaml_data["main_tests"]["Temperature"]["min"] = 5500.0
+    mock_yaml_data["Temperature"]["min"] = 5500.0
     yaml_file = tmp_path / "expected.yaml"
     with open(yaml_file, "w") as f:
         # Use yaml.safe_dump, not json.dump
@@ -234,7 +234,7 @@ def test_generate_comparison_report_tv_contrast_tolerance_scenarios(
     full_report_data = {
         "Results": {"Contrast": {"avg": actual_avg, "min": 850.0}}  # min always passes
     }
-    mock_yaml_data["main_tests"]["Contrast"] = {"min": 800.0, "typ": 1000.0}
+    mock_yaml_data["Contrast"] = {"min": 800.0, "typ": 1000.0}
 
     json_file = tmp_path / "full_report.json"
     with open(json_file, "w") as f:
@@ -284,7 +284,7 @@ def test_generate_comparison_report_tv_avg_skip_pass_on_min(
     key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
 
     full_report_data = {"Results": {key_in_json: actual_values}}
-    mock_yaml_data["main_tests"][skipped_key_yaml] = expected_values
+    mock_yaml_data[skipped_key_yaml] = expected_values
 
     json_file = tmp_path / "full_report.json"
     with open(json_file, "w") as f:
@@ -331,7 +331,7 @@ def test_generate_comparison_report_tv_avg_skip_fail_on_min(
     key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
 
     full_report_data = {"Results": {key_in_json: actual_values}}
-    mock_yaml_data["main_tests"][skipped_key_yaml] = expected_values
+    mock_yaml_data[skipped_key_yaml] = expected_values
 
     json_file = tmp_path / "full_report.json"
     with open(json_file, "w") as f:
@@ -380,7 +380,7 @@ def test_generate_comparison_report_corporate_dcip3_tolerance(
     key_in_json = report.YAML_TO_JSON_KEY_MAP.get(cg_yaml_key, cg_yaml_key)
 
     full_report_data = {"Results": {key_in_json: {"avg": actual_avg, "min": 80.0}}}
-    mock_yaml_data["main_tests"][cg_yaml_key] = {"min": 70.0, "typ": 100.0}
+    mock_yaml_data[cg_yaml_key] = {"min": 70.0, "typ": 100.0}
 
     json_file = tmp_path / "full_report.json"
     with open(json_file, "w") as f:
@@ -420,7 +420,7 @@ def test_generate_comparison_report_tv_temperature_max_check(tmp_path, mock_yaml
         }
     }
     # Only min/max are used for Temperature, typ should be ignored
-    mock_yaml_data["main_tests"]["Temperature"] = {"min": 6200.0, "max": 6600.0}
+    mock_yaml_data["Temperature"] = {"min": 6200.0, "max": 6600.0}
 
     json_file_fail = tmp_path / "full_report_fail.json"
     with open(json_file_fail, "w") as f:
@@ -516,12 +516,10 @@ def test_generate_comparison_report_temperature_ignores_typ(tmp_path):
 
     # YAML with typ value that is higher than avg (should be ignored)
     yaml_data = {
-        "main_tests": {
-            "Temperature": {
-                "min": 6200.0,
-                "typ": 6500.0,  # avg (6300) < typ, but this should NOT cause FAIL
-                "max": 6400.0
-            }
+        "Temperature": {
+            "min": 6200.0,
+            "typ": 6500.0,  # avg (6300) < typ, but this should NOT cause FAIL
+            "max": 6400.0
         }
     }
     yaml_file = tmp_path / "expected.yaml"
@@ -552,10 +550,8 @@ def test_analyze_json_files_for_min_fail(tmp_path, mock_yaml_data):
     # 1. Setup expected YAML
     expected_values_path = tmp_path / "expected.yaml"
     # We only care about Brightness and Red_x for this test
-    mock_yaml_data["main_tests"] = {
-        "Brightness": {"min": 100.0},
-        "Red_x": {"min": 0.60}
-    }
+    mock_yaml_data["Brightness"] = {"min": 100.0}
+    mock_yaml_data["Red_x"] = {"min": 0.60}
     with open(expected_values_path, "w") as f:
         yaml.safe_dump(mock_yaml_data, f)
 
@@ -656,7 +652,7 @@ def test_analyze_json_files_for_min_fail_returns_true_on_success(tmp_path):
     ]
 
     expected_yaml = tmp_path / "expected.yaml"
-    expected_yaml.write_text("main_tests:\n  Brightness:\n    min: 100.0")
+    expected_yaml.write_text("Brightness:\n  min: 100.0")
 
     output_path = tmp_path / "min_fail.json"
 
@@ -694,7 +690,7 @@ def test_analyze_json_files_for_min_fail_returns_false_on_write_error(tmp_path):
     device_reports = [{"SerialNumber": "SN1", "Results": {"Brightness": 80.0}}]
 
     expected_yaml = tmp_path / "expected.yaml"
-    expected_yaml.write_text("main_tests:\n  Brightness:\n    min: 100.0")
+    expected_yaml.write_text("Brightness:\n  min: 100.0")
 
     # Invalid output path
     invalid_output = tmp_path / "nonexistent_dir" / "min_fail.json"
@@ -722,7 +718,7 @@ def test_generate_comparison_report_returns_true_on_success(tmp_path):
 
     # Setup expected result file
     expected_file = tmp_path / "expected.yaml"
-    expected_file.write_text("main_tests:\n  Brightness:\n    min: 90.0\n    typ: 100.0\n    max: 110.0")
+    expected_file.write_text("Brightness:\n  min: 90.0\n  typ: 100.0\n  max: 110.0")
 
     output_file = tmp_path / "comparison.json"
 
@@ -743,7 +739,7 @@ def test_generate_comparison_report_returns_false_on_missing_actual_file(tmp_pat
     nonexistent_actual = tmp_path / "nonexistent.json"  # Does not exist
 
     expected_file = tmp_path / "expected.yaml"
-    expected_file.write_text("main_tests:\n  Brightness:\n    min: 90.0\n    typ: 100.0")
+    expected_file.write_text("Brightness:\n  min: 90.0\n  typ: 100.0")
 
     output_file = tmp_path / "comparison.json"
 
@@ -784,14 +780,14 @@ def test_generate_comparison_report_returns_false_on_missing_expected_file(tmp_p
 def test_expand_coordinates_tolerance_applies_tolerance():
     """Expands typ-only coordinate entries using coordinates_tolerance."""
     main_tests = {
-        "coordinates_tolerance": 0.030,
+        "Coordinates_tolerance": 0.030,
         "Red_x": {"typ": 0.638},
         "Red_y": {"typ": 0.335},
         "Brightness": {"min": 260, "typ": 280, "max": None},
     }
     result = report.expand_coordinates_tolerance(main_tests)
 
-    assert "coordinates_tolerance" not in result
+    assert "Coordinates_tolerance" not in result
     assert result["Red_x"] == {"min": round(0.638 - 0.030, 4), "typ": 0.638, "max": round(0.638 + 0.030, 4)}
     assert result["Red_y"] == {"min": round(0.335 - 0.030, 4), "typ": 0.335, "max": round(0.335 + 0.030, 4)}
     # Non-coordinate keys untouched
@@ -801,7 +797,7 @@ def test_expand_coordinates_tolerance_applies_tolerance():
 def test_expand_coordinates_tolerance_skips_entries_with_explicit_min_max():
     """Does not overwrite entries that already have min or max set."""
     main_tests = {
-        "coordinates_tolerance": 0.030,
+        "Coordinates_tolerance": 0.030,
         "Red_x": {"min": 0.608, "typ": 0.638, "max": 0.668},
     }
     result = report.expand_coordinates_tolerance(main_tests)
@@ -823,6 +819,6 @@ def test_expand_coordinates_tolerance_no_tolerance_key():
 
 def test_expand_coordinates_tolerance_removes_key_from_result():
     """coordinates_tolerance sentinel is never present in the output."""
-    main_tests = {"coordinates_tolerance": 0.020, "Brightness": {"min": 100, "typ": 120, "max": None}}
+    main_tests = {"Coordinates_tolerance": 0.020, "Brightness": {"min": 100, "typ": 120, "max": None}}
     result = report.expand_coordinates_tolerance(main_tests)
-    assert "coordinates_tolerance" not in result
+    assert "Coordinates_tolerance" not in result

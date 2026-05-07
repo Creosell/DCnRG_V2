@@ -4,10 +4,10 @@ import yaml
 from loguru import logger
 
 
-def parse_yaml(yaml_file, dictionary, key_name, k):
+def parse_yaml(yaml_file, key_name, k):
     with open(yaml_file, "r") as file:
         yaml_data = yaml.safe_load(file)
-    value = yaml_data[dictionary].get(key_name, {}).get(k, None)
+    value = (yaml_data or {}).get(key_name, {}).get(k, None)
     return value
 
 def coordinates_of_triangle(device_report):

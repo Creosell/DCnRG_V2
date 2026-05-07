@@ -46,7 +46,7 @@ def test_parse_yaml_success(tmp_path, mock_yaml_data):
     with open(yaml_file, "w") as f:
         yaml.safe_dump(mock_yaml_data, f)
 
-    value = parse.parse_yaml(str(yaml_file), "main_tests", "Brightness", "min")
+    value = parse.parse_yaml(str(yaml_file), "Brightness", "min")
     assert value == 80.0
 
 

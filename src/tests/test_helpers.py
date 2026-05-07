@@ -148,7 +148,7 @@ def test_create_html_report(mocker, tmp_path):
     input_file.write_text(json.dumps({"Results": {"Brightness": {"avg": 100}}}))
 
     expected_file = tmp_path / "expected_report.yaml"
-    expected_file.write_text("main_tests:\n  Brightness:\n    min: 80\n    typ: 100\n    max: 120")
+    expected_file.write_text("Brightness:\n  min: 80\n  typ: 100\n  max: 120")
 
     min_fail_file = tmp_path / "min_fail.json"
     min_fail_file.write_text("[]")
@@ -235,7 +235,7 @@ def test_create_html_report_returns_true_on_success(mocker, tmp_path):
     input_file.write_text(json.dumps({"Results": {"Brightness": {"avg": 100}}}))
 
     expected_file = tmp_path / "expected_report.yaml"
-    expected_file.write_text("main_tests:\n  Brightness:\n    min: 80\n    typ: 100\n    max: 120")
+    expected_file.write_text("Brightness:\n  min: 80\n  typ: 100\n  max: 120")
 
     min_fail_file = tmp_path / "min_fail.json"
     min_fail_file.write_text("[]")
@@ -280,7 +280,7 @@ def test_create_html_report_returns_false_on_missing_input_file(mocker, tmp_path
     view_config = tmp_path / "view.yaml"
     view_config.write_text("columns: {}")
     expected_file = tmp_path / "expected.yaml"
-    expected_file.write_text("main_tests: {}")
+    expected_file.write_text("{}")
 
     result = helpers.create_html_report(
         input_file=input_file,
@@ -333,7 +333,7 @@ def test_create_html_report_returns_false_on_template_load_error(mocker, tmp_pat
     input_file.write_text(json.dumps({"Results": {}}))
 
     expected_file = tmp_path / "expected.yaml"
-    expected_file.write_text("main_tests: {}")
+    expected_file.write_text("{}")
 
     min_fail_file = tmp_path / "min_fail.json"
     min_fail_file.write_text("[]")
@@ -689,10 +689,9 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
     # Scenario 1: sRGB + DCI-P3 have expected values, NTSC — all None
     expected_file = tmp_path / "expected.yaml"
     expected_file.write_text(
-        "main_tests:\n"
-        "  Cg_rgb_area:\n    min: 67\n    typ: 72\n    max: None\n"
-        "  Cg_ntsc_area:\n    min: None\n    typ: None\n    max: None\n"
-        "  Cg_dcip3_area:\n    min: 60\n    typ: 70\n    max: None\n"
+        "Cg_rgb_area:\n  min: 67\n  typ: 72\n  max: None\n"
+        "Cg_ntsc_area:\n  min: None\n  typ: None\n  max: None\n"
+        "Cg_dcip3_area:\n  min: 60\n  typ: 70\n  max: None\n"
     )
 
     helpers.create_html_report(
@@ -710,8 +709,7 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
     # Scenario 2: no CG keys in expected — все три False
     mock_template.render.reset_mock()
     expected_file.write_text(
-        "main_tests:\n"
-        "  Brightness:\n    min: 100\n    typ: 120\n    max: None\n"
+        "Brightness:\n  min: 100\n  typ: 120\n  max: None\n"
     )
 
     helpers.create_html_report(
@@ -729,9 +727,8 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
     # Scenario 3: DCI-P3 only in UV variant — dcip3 must still be True
     mock_template.render.reset_mock()
     expected_file.write_text(
-        "main_tests:\n"
-        "  Cg_dcip3_area:\n    min: None\n    typ: None\n    max: None\n"
-        "  Cg_dcip3_uv_area:\n    min: 88\n    typ: 93\n    max: None\n"
+        "Cg_dcip3_area:\n  min: None\n  typ: None\n  max: None\n"
+        "Cg_dcip3_uv_area:\n  min: 88\n  typ: 93\n  max: None\n"
     )
 
     helpers.create_html_report(

@@ -103,7 +103,7 @@ COORDINATE_TEST_KEYS = {
 }
 
 # YAML key for coordinate tolerance
-COORDINATES_TOLERANCE_KEY = "coordinates_tolerance"
+COORDINATES_TOLERANCE_KEY = "Coordinates_tolerance"
 
 # Metrics where lower values are better (inverted logic)
 LOWER_IS_BETTER_KEYS = {"Delta_e"}
@@ -448,7 +448,7 @@ def load_yaml_file(filepath):
         return None
 
 
-def expand_coordinates_tolerance(main_tests: dict) -> dict:
+def expand_coordinates_tolerance(config: dict) -> dict:
     """
     Expands coordinate entries that only have a ``typ`` value into full
     ``{min, typ, max}`` dicts using ``coordinates_tolerance`` from the same dict.
@@ -457,13 +457,13 @@ def expand_coordinates_tolerance(main_tests: dict) -> dict:
     code never sees it as a test metric.
 
     Args:
-        main_tests: Raw ``main_tests`` dict loaded from a device YAML config.
+        config: Raw dict loaded from a device YAML config.
 
     Returns:
-        dict: Copy of ``main_tests`` with coordinate entries expanded and the
+        dict: Copy of ``config`` with coordinate entries expanded and the
               ``coordinates_tolerance`` sentinel key removed.
     """
-    result = dict(main_tests)
+    result = dict(config)
     tolerance = result.pop(COORDINATES_TOLERANCE_KEY, None)
 
     if tolerance is None:
@@ -761,7 +761,7 @@ def generate_comparison_report(
 
     # --- 2. ROOT KEY CHECK ---
     actual_result_root = actual_result_data.get("Results", {})
-    expected_result_root = expand_coordinates_tolerance(expected_result_data.get("main_tests", {}))
+    expected_result_root = expand_coordinates_tolerance(expected_result_data or {})
 
     if not isinstance(actual_result_root, dict):
         logger.warning(
@@ -771,7 +771,7 @@ def generate_comparison_report(
 
     if not isinstance(expected_result_root, dict):
         error_report = {
-            "error": f"'main_tests' key missing or invalid in YAML: {expected_result_file}."
+            "error": f"Invalid or empty expected result YAML: {expected_result_file}."
         }
         write_error_report(output_json_file, error_report, "YAML parsing failure")
         return False
@@ -948,15 +948,12 @@ def analyze_json_files_for_min_fail(device_reports, expected_result_path, output
     try:
         with open(expected_result_path, "r") as yaml_file:
             expected_data = yaml.safe_load(yaml_file)
-            expected_values = expand_coordinates_tolerance(expected_data["main_tests"])
+            expected_values = expand_coordinates_tolerance(expected_data or {})
     except FileNotFoundError:
         logger.error(f"Expected result file not found at {expected_result_path}")
         return False
     except yaml.YAMLError as e:
         logger.error(f"Could not parse YAML file: {e}")
-        return False
-    except KeyError:
-        logger.error("'main_tests' key not found in the YAML file.")
         return False
 
     output_data = []

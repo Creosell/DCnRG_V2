@@ -268,15 +268,12 @@ def create_html_report(
     try:
         with open(expected_yaml, "r") as yaml_file:
             expected_data = yaml.safe_load(yaml_file)
-            expected_values = r.expand_coordinates_tolerance(expected_data["main_tests"])
+            expected_values = r.expand_coordinates_tolerance(expected_data or {})
     except FileNotFoundError:
         logger.error(f"Expected result file not found at {expected_yaml}")
         return False
     except yaml.YAMLError as e:
         logger.error(f"Could not parse YAML file: {e}")
-        return False
-    except KeyError:
-        logger.error("'main_tests' key not found in the YAML file.")
         return False
 
     # Collect tolerance legend before filtering

@@ -9,26 +9,26 @@
 #   if no requirements you can leave by default values for color accuracy
 
 Brightness: # Brightness range
-  min: 260
-  typ: 280
+  min: 350
+  typ: 400
   max: None
 Brightness_uniformity: # Brightness uniformity range
-  min: 65
-  typ: 68
+  min: 70
+  typ: 75
   max: None
 Contrast: # Contrast ratio range
-  min: 3000
-  typ: 4000
+  min: 4125
+  typ: 5500
   max: None
 
 # --- Color gamut: sRGB ---
 Cg_rgb_area: # sRGB gamut coverage, area ratio method
-  min: 67
-  typ: 72
+  min: None
+  typ: None
   max: None
 Cg_rgb: # sRGB gamut coverage, intersection method
-  min: 67
-  typ: 72
+  min: None
+  typ: None
   max: None
 Cg_rgb_uv_area: # sRGB gamut coverage, CIE 1976 u'v', area ratio method
   min: None
@@ -41,12 +41,12 @@ Cg_rgb_uv: # sRGB gamut coverage, CIE 1976 u'v', intersection method
 
 # --- Color gamut: NTSC ---
 Cg_ntsc_area: # NTSC gamut coverage, area ratio method
-  min: 67
-  typ: 72
+  min: None
+  typ: None
   max: None
 Cg_ntsc: # NTSC gamut coverage, intersection method
-  min: 67
-  typ: 72
+  min: None
+  typ: None
   max: None
 Cg_ntsc_uv_area: # NTSC gamut coverage, CIE 1976 u'v', area ratio method
   min: None
@@ -67,18 +67,18 @@ Cg_dcip3: # DCI-P3 gamut coverage, intersection method
   typ: None
   max: None
 Cg_dcip3_uv_area: # DCI-P3 gamut coverage, CIE 1976 u'v', area ratio method
-  min: 90
-  typ: 95
+  min: 88
+  typ: 93
   max: None
 Cg_dcip3_uv: # DCI-P3 gamut coverage, CIE 1976 u'v', intersection method
-  min: 90
-  typ: 95
+  min: 88
+  typ: 93
   max: None
 
 Temperature: # Color temperature range
-  min: 8835
-  typ: 9585
-  max: 10335
+  min: 7300
+  typ: 9300
+  max: 11300
 Delta_e: # Requirements for color accuracy
   min: None
   typ: None
@@ -86,20 +86,20 @@ Delta_e: # Requirements for color accuracy
 
 # --- Color coordinates ---
 # min/max are computed automatically as typ ± Coordinates_tolerance
-Coordinates_tolerance: 0.030
+Coordinates_tolerance: 0.060
 Red_x: # Requirements for color coordinates of Red
-  typ: 0.638
+  typ: 0.666
 Red_y:
-  typ: 0.335
+  typ: 0.314
 Green_x: # Requirements for color coordinates of Green
-  typ: 0.307
+  typ: 0.270
 Green_y:
-  typ: 0.597
+  typ: 0.649
 Blue_x: # Requirements for color coordinates of Blue
-  typ: 0.150
+  typ: 0.154
 Blue_y:
-  typ: 0.062
+  typ: 0.059
 White_x: # Requirements for color coordinates of White
-  typ: 0.283
+  typ: 0.280
 White_y:
   typ: 0.290

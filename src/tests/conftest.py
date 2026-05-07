@@ -88,12 +88,10 @@ def mock_yaml_data():
             "Green": {"x": 0.21, "y": 0.71},
             "Blue": {"x": 0.14, "y": 0.08},
         },
-        "main_tests": {
-            "Brightness": {"min": 80.0, "typ": 100.0, "max": 150.0},
-            "Temperature": {"max": 6800.0},
-            "Red_x": {"min": 0.62, "max": 0.66},
-            "White_x": {"max": 0.34},
-        }
+        "Brightness": {"min": 80.0, "typ": 100.0, "max": 150.0},
+        "Temperature": {"max": 6800.0},
+        "Red_x": {"min": 0.62, "max": 0.66},
+        "White_x": {"max": 0.34},
     }
 
 @pytest.fixture
