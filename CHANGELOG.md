@@ -46,6 +46,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.1.4] - 2026-01-30
+
+### Fixed
+- **Inverted comparison logic for DeltaE**: lower values are better — FAIL now triggers when value exceeds `max`, WARNING when value exceeds `typ`
+- Added `LOWER_IS_BETTER_KEYS` constant in `helpers.py` and `report.py` to control inverted evaluation logic
+- `_get_cell_status()` updated to apply inverted highlighting for DeltaE in Device reports
+- `check_general_test_status()` updated with dedicated DeltaE branch in comparison report
+
+---
+
+## [1.1.3] - 2025-11-25
+
+### Added
+- **Expected value triangles on CIE diagram**: specification color coordinates now rendered as a reference triangle on the chromaticity plot
+- `prepare_specification_plot_coordinates()` helper added to `helpers.py`
+- `expected_yaml` parameter added to `create_html_report()`
+
+### Changed
+- `COORD_HEADERS_UFN` renamed to `COORD_KEYS_INTERNAL` — now uses internal key names instead of display names for coordinate identification
+- Legacy snake_case YAML keys (`Brightness_uniformity`, `White_x`, etc.) restored to backward compatibility via `YAML_TO_JSON_KEY_MAP`
+
+### Removed
+- `manifests/report_generator_1.0.0.json` removed from repository
+
+---
+
 ## [1.1.2] - 2026-01-29
 
 ### Added
