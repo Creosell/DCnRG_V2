@@ -56,7 +56,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.1.3] - 2025-11-25
+## [1.1.3] - 2026-01-29
 
 ### Added
 - **Expected value triangles on CIE diagram**: specification color coordinates now rendered as a reference triangle on the chromaticity plot
