@@ -6,6 +6,7 @@
 #     "requests",
 #     "urllib3",
 #     "pyinstaller",
+#     "python-dotenv",
 # ]
 # ///
 
@@ -19,6 +20,7 @@ import zipfile
 import concurrent.futures
 from pathlib import Path
 from loguru import logger
+from dotenv import load_dotenv
 from nc_py_api import Nextcloud, NextcloudException
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -26,10 +28,12 @@ from urllib3.util.retry import Retry
 # Импортируем PyInstaller напрямую для вызова из кода
 import PyInstaller.__main__
 
+load_dotenv(Path(__file__).parent / ".env")
+
 # --- CONFIGURATION ---
-NC_URL = "https://next-qa.sdsz.dev"
-NC_USER = "pavel.sheshko"
-NC_PASS = "9wKet-2z4tc-pKqHA-TniPy-LQxDB"
+NC_URL = os.environ["NC_URL"]
+NC_USER = os.environ["NC_USER"]
+NC_PASS = os.environ["NC_PASS"]
 MAX_WORKERS = 20
 
 # --- LOGGING ---

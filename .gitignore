@@ -15,6 +15,7 @@
 /release_artifacts/
 /release.log
 /tools/release/release.log
+/tools/release/.env
 /LatesRelease_ReportGenerator.exe
 /config/color_space.yaml
 /config/main.yaml
