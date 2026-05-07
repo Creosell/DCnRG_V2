@@ -29,6 +29,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Coordinate entries in `configuration_example.yaml` simplified to `typ`-only using `Coordinates_tolerance: 0.030`
 - **CIE diagram color space triangles** now activate when either the CIE 1931 xy or CIE 1976 u'v' area metric has expected values (previously only xy was checked)
 
+### Fixed
+- **Min violation priority in comparison report**: when actual avg is below both `min` and `typ` thresholds, the FAIL reason now cites the min bound violation (more critical) instead of the typ check
+
 ### Removed
 - `REPORT_VIEW_CONFIG` constant and `report_view.yaml` from the processing pipeline (file preserved but no longer read)
 
