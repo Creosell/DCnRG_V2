@@ -720,3 +720,55 @@ def test_expand_coordinates_tolerance_removes_key_from_result():
     main_tests = {"Coordinates_tolerance": 0.020, "Brightness": {"min": 100, "typ": 120, "max": None}}
     result = report.expand_coordinates_tolerance(main_tests)
     assert "Coordinates_tolerance" not in result
+
+
+# --------------------------------------------------------------------------------
+# adjusted_typ rounding tests
+# --------------------------------------------------------------------------------
+
+def _corporate_adjusted(yaml_key, typ, tolerance):
+    """Expected adjusted_typ: applies safe_round with key's REPORT_PRECISION."""
+    json_key = report.YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key)
+    prec = report.REPORT_PRECISION.get(json_key, 2)
+    return report.safe_round(typ * (1 - tolerance), prec)
+
+
+@pytest.mark.parametrize("yaml_key,typ", [
+    # typ=83: raw 83*0.95 = 78.85000000000001 → floating-point artifact without rounding
+    ("Brightness", 83),           # precision 0 → int
+    ("Brightness_uniformity", 83),  # precision 1 → 1 decimal
+    ("Contrast", 750),            # precision 0 → int; 712.5 → banker's rounding
+])
+def test_corporate_typ_tolerance_adjusted_typ_is_rounded(yaml_key, typ):
+    """adjusted_typ is rounded per REPORT_PRECISION; no floating-point artifacts."""
+    raw = typ * (1 - report.CORPORATE_DEVICES_TYP_TOLERANCE)
+    actual = {"avg": typ * 2, "min": typ}
+    expected = {"min": 0.0, "typ": float(typ)}
+    _, _, tol = report.check_general_test_status(yaml_key, actual, expected, is_tv_flag=False, majority_check_data={})
+    assert tol is not None
+    assert tol["adjusted_typ"] == _corporate_adjusted(yaml_key, typ, report.CORPORATE_DEVICES_TYP_TOLERANCE)
+    # Verify rounding actually changed the value when there was a FP artifact
+    if raw != tol["adjusted_typ"]:
+        assert str(raw) != str(tol["adjusted_typ"])
+
+
+@pytest.mark.parametrize("yaml_key,typ", [
+    # 97*0.98 = 95.05999999999999 → floating-point artifact without rounding
+    ("Cg_rgb_area", 97),   # precision 1 → 95.1
+    ("Cg_dcip3", 97),      # precision 1 → 95.1
+])
+def test_corporate_cg_tolerance_adjusted_typ_is_rounded(yaml_key, typ):
+    """adjusted_typ for CG tolerance is rounded to 1 decimal, not raw float."""
+    actual = {"avg": typ * 2, "min": 0.0}
+    expected = {"min": 0.0, "typ": float(typ)}
+    _, _, tol = report.check_general_test_status(yaml_key, actual, expected, is_tv_flag=False, majority_check_data={})
+    assert tol is not None
+    assert tol["adjusted_typ"] == _corporate_adjusted(yaml_key, typ, report.CORPORATE_DEVICES_CG_TOLERANCE)
+
+
+def test_corporate_tolerance_not_applied_for_tv():
+    """Corporate tolerance must not be applied when is_tv_flag=True."""
+    actual = {"avg": 50.0, "min": 50.0}
+    expected = {"min": 0.0, "typ": 83.0}
+    _, _, tol = report.check_general_test_status("Brightness", actual, expected, is_tv_flag=True, majority_check_data={})
+    assert tol is None

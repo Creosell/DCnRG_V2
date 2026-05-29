@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.1] - 2026-05-29
+
+### Fixed
+- `adjusted_typ` in corporate device tolerance info was stored as a raw float with floating-point artifacts (e.g. `78.85000000000001`); now rounded via `safe_round` using `REPORT_PRECISION` for the corresponding metric
+
 ## [1.2.0] - 2026-05-06
 
 ### Added

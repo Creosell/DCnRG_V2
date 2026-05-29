@@ -696,21 +696,21 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     # Applying tolerance for values in confirmed list of variables
     if yaml_key in CORPORATE_DEVICES_TYP_TOLERANCE_LIST and not is_tv_flag:
         original_typ = expected_typ
-        value_with_tolerance = expected_typ * CORPORATE_DEVICES_TYP_TOLERANCE
-        expected_typ = expected_typ - value_with_tolerance
+        expected_typ = expected_typ * (1 - CORPORATE_DEVICES_TYP_TOLERANCE)
+        _prec = REPORT_PRECISION.get(YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key), 2)
         tolerance_info = {
             "percent": int(CORPORATE_DEVICES_TYP_TOLERANCE * 100),
             "original_typ": original_typ,
-            "adjusted_typ": expected_typ
+            "adjusted_typ": safe_round(expected_typ, _prec),
         }
     if yaml_key in CORPORATE_DEVICES_CG_TOLERANCE_LIST and not is_tv_flag:
         original_typ = expected_typ
-        value_with_tolerance = expected_typ * CORPORATE_DEVICES_CG_TOLERANCE
-        expected_typ = expected_typ - value_with_tolerance
+        expected_typ = expected_typ * (1 - CORPORATE_DEVICES_CG_TOLERANCE)
+        _prec = REPORT_PRECISION.get(YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key), 2)
         tolerance_info = {
             "percent": int(CORPORATE_DEVICES_CG_TOLERANCE * 100),
             "original_typ": original_typ,
-            "adjusted_typ": expected_typ
+            "adjusted_typ": safe_round(expected_typ, _prec),
         }
 
     if actual_min_val < expected_min:
