@@ -55,11 +55,12 @@ pytest -v src/tests/
 # Install UV if not already installed
 pip install uv
 
+# Version is taken from APP_VERSION in main.py
 # Build, zip, and upload release (includes config folder)
-uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build --upload
+uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator <APP_VERSION> --include config --build --upload
 
 # Build only (no upload)
-uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build
+uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator <APP_VERSION> --include config --build
 ```
 
 **Optional**: For smaller executables, place `upx.exe` in `.venv\Scripts\` for automatic compression during PyInstaller build.
@@ -106,6 +107,7 @@ report_archive/*.zip (Archive)
 - `generate_comparison_report() -> bool`: Compares measurements against YAML standards, returns `True` on success
 - Contains `REPORT_PRECISION` dict for metric rounding
 - TV-specific tolerances: `CONTRAST_TOLERANCE_FOR_TV`, `AVG_FAIL_SKIP_KEYS_FOR_TV`, `MAJORITY_TYP_CHECK_KEYS_FOR_TV`
+- Corporate device rules: `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` (skips TYP/avg check, only `min` evaluated), `CORPORATE_DEVICES_TYP_TOLERANCE_LIST`, `CORPORATE_DEVICES_CG_TOLERANCE_LIST`
 - Legacy YAML key mapping: `YAML_TO_JSON_KEY_MAP` (maintains backward compatibility)
 - `expand_coordinates_tolerance(config)`: expands `typ`-only coordinate entries using `Coordinates_tolerance` key; called at all YAML loading points
 - **All report generation functions return bool to enable proper error handling**
@@ -218,9 +220,9 @@ else:
 
 Tests use pytest with pytest-mock. Fixtures in `conftest.py` provide mock TV and monitor measurement data.
 
-**Test coverage** (104 tests total):
+**Test coverage** (107 tests total):
 - `test_calculate.py` (14 tests): Math validation, brightness, contrast, color gamut, delta E, temperature
-- `test_report.py` (54 tests): JSON report generation, comparison reports, return value validation, coordinate tolerance expansion
+- `test_report.py` (57 tests): JSON report generation, comparison reports, return value validation, coordinate tolerance expansion, corporate device skip logic
 - `test_parse.py` (10 tests): JSON parsing, device info extraction, coordinate extraction
 - `test_helpers.py` (26 tests): HTML generation, archiving, cleanup operations, return value validation, cell status logic, dynamic metric visibility, plot triangle visibility
 
@@ -264,6 +266,10 @@ These tests ensure that exit codes are correctly propagated based on actual succ
 - Controlled via `DYNAMIC_VISIBILITY_KEYS` in `helpers.py`
 - Prevents empty columns when certain color spaces aren't specified in device config
 - Checked by `should_display_metric()` function
+
+**Corporate Device Special Rules** (Added v1.2.2): Non-TV devices have two categories of overrides in `report.py`:
+- `CORPORATE_DEVICES_TYP_TOLERANCE_LIST` + `CORPORATE_DEVICES_CG_TOLERANCE_LIST`: reduce effective `typ` by a tolerance percentage before the avg check
+- `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` (`{"Contrast"}`): skip the avg/TYP check entirely — only `min` is evaluated (same pattern as `AVG_FAIL_SKIP_KEYS_FOR_TV`). These two mechanisms are mutually exclusive per key; a key in the skip set must not also be in the tolerance lists.
 
 **Coordinate Tests**: Metrics like `Red_x`, `Red_y`, `Green_x`, `Green_y`, `Blue_x`, `Blue_y`, `White_x`, `White_y` are validated against min/max bounds (not typ values). Listed in `report.py::COORDINATE_TEST_KEYS`. In YAML configs, specify only `typ` + `Coordinates_tolerance` — min/max are computed automatically by `expand_coordinates_tolerance()`.
 
