@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.2] - 2026-06-23
+
+### Added
+- `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` set in `report.py`: corporate (non-TV) devices now skip the TYP/avg check for `Contrast` — only the `min` bound is evaluated
+
+### Changed
+- `Contrast` removed from `CORPORATE_DEVICES_TYP_TOLERANCE_LIST`: TYP tolerance is irrelevant when the TYP check is skipped entirely
+
 ## [1.2.1] - 2026-05-29
 
 ### Fixed

@@ -80,7 +80,9 @@ CORPORATE_DEVICES_CG_TOLERANCE = 0.02
 CORPORATE_DEVICES_TYP_TOLERANCE_LIST = {
     "Brightness",
     "Brightness_uniformity",
-    "Contrast"
+}
+AVG_FAIL_SKIP_KEYS_FOR_CORPORATE = {  # Keys which we skip TYP check for corporate (non-TV) devices
+    "Contrast",
 }
 CORPORATE_DEVICES_CG_TOLERANCE_LIST = {
     "Cg_rgb_area",
@@ -691,6 +693,13 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
             return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})", None
         else:
             return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min})", None
+
+    # Skipping TYP checks for certain keys on corporate (non-TV) devices
+    if not is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_CORPORATE:
+        if actual_min_val < expected_min:
+            return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})", None
+        else:
+            return "PASS", f"(Corporate) Actual min ({actual_min_val}) >= Expected min ({expected_min})", None
 
     # Special rules for corporate devices
     # Applying tolerance for values in confirmed list of variables
