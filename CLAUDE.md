@@ -107,7 +107,8 @@ report_archive/*.zip (Archive)
 - `generate_comparison_report() -> bool`: Compares measurements against YAML standards, returns `True` on success
 - Contains `REPORT_PRECISION` dict for metric rounding
 - TV-specific tolerances: `CONTRAST_TOLERANCE_FOR_TV`, `AVG_FAIL_SKIP_KEYS_FOR_TV`, `MAJORITY_TYP_CHECK_KEYS_FOR_TV`
-- Corporate device rules: `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` (skips TYP/avg check, only `min` evaluated), `CORPORATE_DEVICES_TYP_TOLERANCE_LIST`, `CORPORATE_DEVICES_CG_TOLERANCE_LIST`
+- Corporate device rules: `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` + `CONTRAST_TYP_SKIP_CONFIGS` (skip TYP/avg for specific device configs), `CORPORATE_DEVICES_TYP_TOLERANCE_LIST`, `CORPORATE_DEVICES_CG_TOLERANCE_LIST`
+- `generate_comparison_report()` accepts `device_config_name` and threads it into `check_general_test_status()` for device-specific rule dispatch
 - Legacy YAML key mapping: `YAML_TO_JSON_KEY_MAP` (maintains backward compatibility)
 - `expand_coordinates_tolerance(config)`: expands `typ`-only coordinate entries using `Coordinates_tolerance` key; called at all YAML loading points
 - **All report generation functions return bool to enable proper error handling**
@@ -268,8 +269,8 @@ These tests ensure that exit codes are correctly propagated based on actual succ
 - Checked by `should_display_metric()` function
 
 **Corporate Device Special Rules** (Added v1.2.2): Non-TV devices have two categories of overrides in `report.py`:
-- `CORPORATE_DEVICES_TYP_TOLERANCE_LIST` + `CORPORATE_DEVICES_CG_TOLERANCE_LIST`: reduce effective `typ` by a tolerance percentage before the avg check
-- `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` (`{"Contrast"}`): skip the avg/TYP check entirely — only `min` is evaluated (same pattern as `AVG_FAIL_SKIP_KEYS_FOR_TV`). These two mechanisms are mutually exclusive per key; a key in the skip set must not also be in the tolerance lists.
+- `CORPORATE_DEVICES_TYP_TOLERANCE_LIST` + `CORPORATE_DEVICES_CG_TOLERANCE_LIST`: reduce effective `typ` by a tolerance percentage before the avg check (applies to all non-TV devices)
+- `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` (`{"Contrast"}`) + `CONTRAST_TYP_SKIP_CONFIGS` (`{"SDNB-16iA", "SDNB-M16iA"}`): skip the avg/TYP check entirely for Contrast — only `min` is evaluated. Applies only to device configs matching `CONTRAST_TYP_SKIP_CONFIGS` via `startswith` (factory suffixes like `SDNB-16iA_CH19` are matched). All other non-TV devices still get the TYP tolerance for Contrast.
 
 **Coordinate Tests**: Metrics like `Red_x`, `Red_y`, `Green_x`, `Green_y`, `Blue_x`, `Blue_y`, `White_x`, `White_y` are validated against min/max bounds (not typ values). Listed in `report.py::COORDINATE_TEST_KEYS`. In YAML configs, specify only `typ` + `Coordinates_tolerance` — min/max are computed automatically by `expand_coordinates_tolerance()`.
 
