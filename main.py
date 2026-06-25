@@ -217,7 +217,7 @@ def main() -> int:
                 logger.error(f"Failed to calculate full report for {dev_name}")
                 continue
 
-            if not r.generate_comparison_report(f_full_report, expected_yaml, f_final_json, group_is_tv, device_reports):
+            if not r.generate_comparison_report(f_full_report, expected_yaml, f_final_json, group_is_tv, device_reports, device_config_name=dev_name):
                 logger.error(f"Failed to generate comparison report for {dev_name}")
                 continue
 
