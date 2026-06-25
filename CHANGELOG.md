@@ -4,13 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.2.2] - 2026-06-23
+## [1.2.2] - 2026-06-25
 
 ### Added
-- `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` set in `report.py`: corporate (non-TV) devices now skip the TYP/avg check for `Contrast` — only the `min` bound is evaluated
-
-### Changed
-- `Contrast` removed from `CORPORATE_DEVICES_TYP_TOLERANCE_LIST`: TYP tolerance is irrelevant when the TYP check is skipped entirely
+- `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` (`{"Contrast"}`) and `CONTRAST_TYP_SKIP_CONFIGS` (`{"SDNB-16iA", "SDNB-M16iA"}`) in `report.py`: for these specific device configs (including factory-suffix variants), the TYP/avg check for Contrast is skipped — only `min` is evaluated
+- `device_config_name` parameter added to `generate_comparison_report` and `check_general_test_status` for device-specific rule dispatch
 
 ## [1.2.1] - 2026-05-29
 

@@ -737,6 +737,7 @@ def _corporate_adjusted(yaml_key, typ, tolerance):
     # typ=83: raw 83*0.95 = 78.85000000000001 → floating-point artifact without rounding
     ("Brightness", 83),           # precision 0 → int
     ("Brightness_uniformity", 83),  # precision 1 → 1 decimal
+    ("Contrast", 750),            # precision 0 → int; 712.5 → banker's rounding
 ])
 def test_corporate_typ_tolerance_adjusted_typ_is_rounded(yaml_key, typ):
     """adjusted_typ is rounded per REPORT_PRECISION; no floating-point artifacts."""
@@ -773,24 +774,36 @@ def test_corporate_tolerance_not_applied_for_tv():
     assert tol is None
 
 
-def test_corporate_contrast_skip_typ_pass_on_min():
-    """Corporate Contrast: PASS when min is ok, even if avg is below expected typ."""
+@pytest.mark.parametrize("device_name", [
+    *report.CONTRAST_TYP_SKIP_CONFIGS,
+    "SDNB-16iA_CH19",
+    "SDNB-M16iA_FOX5",
+])
+def test_corporate_contrast_skip_typ_pass_on_min(device_name):
+    """Contrast TYP skip: PASS when min is ok, even if avg is below expected typ."""
     actual = {"avg": 500.0, "min": 850.0}  # avg below typ, min above threshold
     expected = {"min": 800.0, "typ": 1000.0}
     status, reason, tol = report.check_general_test_status(
-        "Contrast", actual, expected, is_tv_flag=False, majority_check_data={}
+        "Contrast", actual, expected, is_tv_flag=False, majority_check_data={},
+        device_config_name=device_name
     )
     assert status == "PASS"
     assert "(Corporate) Actual min (850.0) >= Expected min (800.0)" in reason
     assert tol is None
 
 
-def test_corporate_contrast_skip_typ_fail_on_min():
-    """Corporate Contrast: FAIL when min is below expected min."""
+@pytest.mark.parametrize("device_name", [
+    *report.CONTRAST_TYP_SKIP_CONFIGS,
+    "SDNB-16iA_CH19",
+    "SDNB-M16iA_FOX5",
+])
+def test_corporate_contrast_skip_typ_fail_on_min(device_name):
+    """Contrast TYP skip: FAIL when min is below expected min."""
     actual = {"avg": 1200.0, "min": 700.0}  # avg passes but min fails
     expected = {"min": 800.0, "typ": 1000.0}
     status, reason, tol = report.check_general_test_status(
-        "Contrast", actual, expected, is_tv_flag=False, majority_check_data={}
+        "Contrast", actual, expected, is_tv_flag=False, majority_check_data={},
+        device_config_name=device_name
     )
     assert status == "FAIL"
     assert "Actual min (700.0) < Expected min (800.0)" in reason
@@ -798,12 +811,26 @@ def test_corporate_contrast_skip_typ_fail_on_min():
 
 
 def test_corporate_contrast_skip_not_applied_for_tv():
-    """Corporate Contrast skip must not apply when is_tv_flag=True (TV has its own contrast tolerance)."""
+    """Contrast TYP skip must not apply when is_tv_flag=True (TV has its own contrast tolerance)."""
     actual = {"avg": 950.0, "min": 850.0}  # avg passes TV-adjusted typ (1000 * 0.935 = 935)
     expected = {"min": 800.0, "typ": 1000.0}
     status, reason, tol = report.check_general_test_status(
-        "Contrast", actual, expected, is_tv_flag=True, majority_check_data={}
+        "Contrast", actual, expected, is_tv_flag=True, majority_check_data={},
+        device_config_name="SDNB-16iA"
     )
     # TV contrast tolerance applies: adjusted typ = 935.0; avg=950 passes
     assert status == "PASS"
+    assert "(Corporate)" not in reason
+
+
+def test_corporate_contrast_skip_not_applied_for_other_devices():
+    """Contrast TYP skip must not apply to devices not in CONTRAST_TYP_SKIP_CONFIGS."""
+    actual = {"avg": 500.0, "min": 850.0}  # avg below typ — FAIL without skip, PASS with skip
+    expected = {"min": 800.0, "typ": 1000.0}
+    status, reason, tol = report.check_general_test_status(
+        "Contrast", actual, expected, is_tv_flag=False, majority_check_data={},
+        device_config_name="SomeOtherDevice"
+    )
+    assert status == "FAIL"
+    assert "Actual avg" in reason
     assert "(Corporate)" not in reason

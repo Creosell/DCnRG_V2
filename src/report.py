@@ -80,9 +80,14 @@ CORPORATE_DEVICES_CG_TOLERANCE = 0.02
 CORPORATE_DEVICES_TYP_TOLERANCE_LIST = {
     "Brightness",
     "Brightness_uniformity",
-}
-AVG_FAIL_SKIP_KEYS_FOR_CORPORATE = {  # Keys which we skip TYP check for corporate (non-TV) devices
     "Contrast",
+}
+AVG_FAIL_SKIP_KEYS_FOR_CORPORATE = {  # Keys which we skip TYP check for specific corporate (non-TV) devices
+    "Contrast",
+}
+CONTRAST_TYP_SKIP_CONFIGS = {  # Device configs where AVG_FAIL_SKIP_KEYS_FOR_CORPORATE applies
+    "SDNB-16iA",
+    "SDNB-M16iA",
 }
 CORPORATE_DEVICES_CG_TOLERANCE_LIST = {
     "Cg_rgb_area",
@@ -542,7 +547,7 @@ def check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max):
 
 # Helper function for general test checks
 def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_values_dict, is_tv_flag,
-                              majority_check_data):
+                              majority_check_data, device_config_name=None):
     """
     Checks general tests (avg/typ/min-threshold) for rule compliance.
     Returns (status, reason, tolerance_info).
@@ -553,6 +558,7 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         expected_values_dict (dict): Expected test data.
         is_tv_flag (bool): Whether the device under test is TV or not.
         majority_check_data (dict): Data for the new "majority" logic.
+        device_config_name (str | None): DeviceConfiguration name; used to apply device-specific rules.
 
     Returns:
         tuple: (status, reason, tolerance_info) where tolerance_info is None or dict with "percent" key
@@ -694,8 +700,8 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         else:
             return "PASS", f"(TV) Actual min ({actual_min_val}) >= Expected min ({expected_min})", None
 
-    # Skipping TYP checks for certain keys on corporate (non-TV) devices
-    if not is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_CORPORATE:
+    # Skipping TYP checks for certain keys on specific corporate (non-TV) devices
+    if not is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_CORPORATE and device_config_name and any(device_config_name.startswith(cfg) for cfg in CONTRAST_TYP_SKIP_CONFIGS):
         if actual_min_val < expected_min:
             return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})", None
         else:
@@ -740,7 +746,8 @@ def generate_comparison_report(
         expected_result_file,
         output_json_file,
         is_tv_flag,
-        device_reports
+        device_reports,
+        device_config_name=None
 ) -> bool:
     """
     Compares data from a JSON results file with expected values from a YAML file,
@@ -752,6 +759,7 @@ def generate_comparison_report(
         output_json_file (Path): Path to the output JSON file containing the report.
         is_tv_flag (bool): Whether the report from TV or not.
         device_reports (list): List of individual JSON reports.
+        device_config_name (str | None): DeviceConfiguration name; used to apply device-specific rules.
 
     Returns:
         bool: True if comparison report was successfully generated, False otherwise.
@@ -898,7 +906,8 @@ def generate_comparison_report(
                 actual_test_details,
                 expected_test_data,
                 is_tv_flag,
-                majority_check_data
+                majority_check_data,
+                device_config_name=device_config_name
             )
 
         # D. SINGLE REPORT UPDATE
