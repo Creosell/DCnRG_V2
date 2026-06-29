@@ -694,7 +694,8 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         tolerance_for_contract = expected_typ * CONTRAST_TOLERANCE_FOR_TV
         expected_typ = expected_typ - tolerance_for_contract
     # Skipping checks for typical values according to a TV quality standard
-    if is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_TV:
+    json_key_for_skip = YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key)
+    if is_tv_flag and json_key_for_skip in AVG_FAIL_SKIP_KEYS_FOR_TV:
         if actual_min_val < expected_min:
             return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})", None
         else:
@@ -889,16 +890,13 @@ def generate_comparison_report(
             # Helper function: check_coordinate_bounds(...)
             status, reason, tolerance_info = check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max)
         else:
-            use_majority_logic = (
-                    is_tv_majority_report
-                    and test_name in MAJORITY_TYP_CHECK_KEYS_FOR_TV
-            )
-
-            majority_check_data = {
-                "active": use_majority_logic,
-                "devices_values": devices_values_map.get(test_name, []),
-                "majority_needed": majority_needed
-            }
+            # --- TV MAJORITY LOGIC PREPARATION ---
+            majority_check_data = {"active": False}
+            json_key_for_majority = YAML_TO_JSON_KEY_MAP.get(test_name, test_name)
+            if is_tv_majority_report and json_key_for_majority in MAJORITY_TYP_CHECK_KEYS_FOR_TV:
+                majority_check_data["active"] = True
+                majority_check_data["devices_values"] = devices_values_map.get(json_key_for_majority, [])
+                majority_check_data["majority_needed"] = majority_needed
 
             # Helper function: check_general_test_status(...)
             status, reason, tolerance_info = check_general_test_status(
