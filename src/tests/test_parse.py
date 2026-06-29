@@ -108,13 +108,9 @@ def test_get_coordinates_tv_logic(mock_tv_data):
 
     assert coords["Red_x"] == 0.648
 
-    # --- FIX IS HERE ---
-    # Check 'Center' keys, which come from the 'WhiteColor' location
-    assert coords["Center_y"] == 0.348  # From 'WhiteColor'
-    assert coords["Center_x"] == 0.339  # From 'WhiteColor'
-    # The key "White_x" is never created, so this assertion is removed
-    # assert coords["White_x"] is None
-    # --- END OF FIX ---
+    # Check 'White' keys, which come from the 'WhiteColor' location
+    assert coords["White_y"] == 0.348  # From 'WhiteColor'
+    assert coords["White_x"] == 0.339  # From 'WhiteColor'
 
 
 def test_find_closest_to_target(mock_display_data):

@@ -11,20 +11,20 @@ REPORT_PRECISION = {
     "Contrast": 0,
     "Temperature": 0,
 
-    "BrightnessUniformity": 1,
-    "CgByAreaRGB": 1,
-    "CgByAreaNTSC": 1,
-    "CgByAreaDCI-P3": 1,
-    "CgRGB": 1,
-    "CgNTSC": 1,
-    "CgDCI-P3": 1,
-    "CgByAreaUVRGB": 1,
-    "CgByAreaUVNTSC": 1,
-    "CgByAreaUVDCI-P3": 1,
-    "CgUVRGB": 1,
-    "CgUVNTSC": 1,
-    "CgUVDCI-P3": 1,
-    "DeltaE": 1,
+    "Brightness_uniformity": 1,
+    "Cg_rgb_area": 1,
+    "Cg_ntsc_area": 1,
+    "Cg_dcip3_area": 1,
+    "Cg_rgb": 1,
+    "Cg_ntsc": 1,
+    "Cg_dcip3": 1,
+    "Cg_rgb_uv_area": 1,
+    "Cg_ntsc_uv_area": 1,
+    "Cg_dcip3_uv_area": 1,
+    "Cg_rgb_uv": 1,
+    "Cg_ntsc_uv": 1,
+    "Cg_dcip3_uv": 1,
+    "Delta_e": 1,
 
     "Red_x": 3,
     "Red_y": 3,
@@ -41,37 +41,25 @@ REPORT_PRECISION = {
 # Special requirements for TV's
 CONTRAST_TOLERANCE_FOR_TV = 0.065  # Tolerance 6.5% for some TV checks
 AVG_FAIL_SKIP_KEYS_FOR_TV = {  # Keys which we skip while checking for FAIL by avg
-    "BrightnessUniformity",
-    "CgByAreaRGB",
-    "CgByAreaNTSC",
-    "CgByAreaDCI-P3",
-    "CgRGB",
-    "CgNTSC",
-    "CgDCI-P3",
-    "CgByAreaUVRGB",
-    "CgByAreaUVNTSC",
-    "CgByAreaUVDCI-P3",
-    "CgUVRGB",
-    "CgUVNTSC",
-    "CgUVDCI-P3",
+    "Brightness_uniformity",
     "Temperature"
 }
 
 MAJORITY_TYP_CHECK_KEYS_FOR_TV = {
     "Brightness",
-    "BrightnessUniformity",
-    "CgByAreaRGB",
-    "CgByAreaNTSC",
-    "CgByAreaDCI-P3",
-    "CgRGB",
-    "CgNTSC",
-    "CgDCI-P3",
-    "CgByAreaUVRGB",
-    "CgByAreaUVNTSC",
-    "CgByAreaUVDCI-P3",
-    "CgUVRGB",
-    "CgUVNTSC",
-    "CgUVDCI-P3",
+    "Brightness_uniformity",
+    "Cg_rgb_area",
+    "Cg_ntsc_area",
+    "Cg_dcip3_area",
+    "Cg_rgb",
+    "Cg_ntsc",
+    "Cg_dcip3",
+    "Cg_rgb_uv_area",
+    "Cg_ntsc_uv_area",
+    "Cg_dcip3_uv_area",
+    "Cg_rgb_uv",
+    "Cg_ntsc_uv",
+    "Cg_dcip3_uv",
 }
 MAJORITY_TYP_TOLERANCE = 0.01
 
@@ -115,28 +103,7 @@ COORDINATES_TOLERANCE_KEY = "Coordinates_tolerance"
 # Metrics where lower values are better (inverted logic)
 LOWER_IS_BETTER_KEYS = {"Delta_e"}
 
-# Mapping from YAML keys to JSON keys
-YAML_TO_JSON_KEY_MAP = {
-    # Mapping legacy names (snake_case) to internal names (CamelCase)
-    "Brightness_uniformity": "BrightnessUniformity",
-    "Cg_rgb_area": "CgByAreaRGB",
-    "Cg_ntsc_area": "CgByAreaNTSC",
-    "Cg_dcip3_area": "CgByAreaDCI-P3",
-    "Cg_rgb": "CgRGB",
-    "Cg_ntsc": "CgNTSC",
-    "Cg_dcip3": "CgDCI-P3",
-    "Cg_rgb_uv_area": "CgByAreaUVRGB",
-    "Cg_ntsc_uv_area": "CgByAreaUVNTSC",
-    "Cg_dcip3_uv_area": "CgByAreaUVDCI-P3",
-    "Cg_rgb_uv": "CgUVRGB",
-    "Cg_ntsc_uv": "CgUVNTSC",
-    "Cg_dcip3_uv": "CgUVDCI-P3",
-    "Delta_e": "DeltaE",
-
-    # Special case: 'White_x' and 'White_y' are used for Center_x/y in JSON
-    "White_x": "Center_x",
-    "White_y": "Center_y",
-}
+# No longer needed, removed YAML_TO_JSON_KEY_MAP
 
 
 def json_report(
@@ -175,22 +142,22 @@ def json_report(
         "IsTV": is_tv,
         "Results": {
             "Brightness": brightness,
-            "BrightnessUniformity": brightness_uniformity,
-            "CgByAreaRGB": cg_by_area_rgb,
-            "CgByAreaNTSC": cg_by_area_ntsc,
-            "CgByAreaDCI-P3": cg_by_area_dcip3,
-            "CgRGB": cg_rgb,
-            "CgNTSC": cg_ntsc,
-            "CgDCI-P3": cg_dcip3,
-            "CgByAreaUVRGB": cg_by_area_uv_rgb,
-            "CgByAreaUVNTSC": cg_by_area_uv_ntsc,
-            "CgByAreaUVDCI-P3": cg_by_area_uv_dcip3,
-            "CgUVRGB": cg_uv_rgb,
-            "CgUVNTSC": cg_uv_ntsc,
-            "CgUVDCI-P3": cg_uv_dcip3,
+            "Brightness_uniformity": brightness_uniformity,
+            "Cg_rgb_area": cg_by_area_rgb,
+            "Cg_ntsc_area": cg_by_area_ntsc,
+            "Cg_dcip3_area": cg_by_area_dcip3,
+            "Cg_rgb": cg_rgb,
+            "Cg_ntsc": cg_ntsc,
+            "Cg_dcip3": cg_dcip3,
+            "Cg_rgb_uv_area": cg_by_area_uv_rgb,
+            "Cg_ntsc_uv_area": cg_by_area_uv_ntsc,
+            "Cg_dcip3_uv_area": cg_by_area_uv_dcip3,
+            "Cg_rgb_uv": cg_uv_rgb,
+            "Cg_ntsc_uv": cg_uv_ntsc,
+            "Cg_dcip3_uv": cg_uv_dcip3,
             "Contrast": contrast,
             "Temperature": temperature,
-            "DeltaE": delta_e,
+            "Delta_e": delta_e,
             "Coordinates": coordinates,
         },
     }
@@ -694,8 +661,7 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         tolerance_for_contract = expected_typ * CONTRAST_TOLERANCE_FOR_TV
         expected_typ = expected_typ - tolerance_for_contract
     # Skipping checks for typical values according to a TV quality standard
-    json_key_for_skip = YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key)
-    if is_tv_flag and json_key_for_skip in AVG_FAIL_SKIP_KEYS_FOR_TV:
+    if is_tv_flag and yaml_key in AVG_FAIL_SKIP_KEYS_FOR_TV:
         if actual_min_val < expected_min:
             return "FAIL", f"Actual min ({actual_min_val}) < Expected min ({expected_min})", None
         else:
@@ -713,7 +679,7 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     if yaml_key in CORPORATE_DEVICES_TYP_TOLERANCE_LIST and not is_tv_flag:
         original_typ = expected_typ
         expected_typ = expected_typ * (1 - CORPORATE_DEVICES_TYP_TOLERANCE)
-        _prec = REPORT_PRECISION.get(YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key), 2)
+        _prec = REPORT_PRECISION.get(yaml_key, 2)
         tolerance_info = {
             "percent": int(CORPORATE_DEVICES_TYP_TOLERANCE * 100),
             "original_typ": original_typ,
@@ -722,7 +688,7 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     if yaml_key in CORPORATE_DEVICES_CG_TOLERANCE_LIST and not is_tv_flag:
         original_typ = expected_typ
         expected_typ = expected_typ * (1 - CORPORATE_DEVICES_CG_TOLERANCE)
-        _prec = REPORT_PRECISION.get(YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key), 2)
+        _prec = REPORT_PRECISION.get(yaml_key, 2)
         tolerance_info = {
             "percent": int(CORPORATE_DEVICES_CG_TOLERANCE * 100),
             "original_typ": original_typ,
@@ -819,9 +785,7 @@ def generate_comparison_report(
                 current_device_results = data.get("Results", {})
 
                 for yaml_key in MAJORITY_TYP_CHECK_KEYS_FOR_TV:
-                    json_key = YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key)
-
-                    value = current_device_results.get(json_key)
+                    value = current_device_results.get(yaml_key)
                     if isinstance(value, (int, float)):
                         devices_values_map[yaml_key].append(value)
                     else:
@@ -847,7 +811,12 @@ def generate_comparison_report(
             continue
 
         is_coordinate_test = test_name in COORDINATE_TEST_KEYS
-        actual_data_key = YAML_TO_JSON_KEY_MAP.get(test_name,test_name)
+        actual_data_key = test_name
+        
+        # Corporate fallback: if YAML says White_x/y, use Center_x/y in JSON
+        if not is_tv_flag and test_name in ("White_x", "White_y"):
+            actual_data_key = "Center_x" if test_name == "White_x" else "Center_y"
+            
         actual_test_details = None
 
         # A. GET ACTUAL DATA (from aggregate file)
@@ -892,10 +861,9 @@ def generate_comparison_report(
         else:
             # --- TV MAJORITY LOGIC PREPARATION ---
             majority_check_data = {"active": False}
-            json_key_for_majority = YAML_TO_JSON_KEY_MAP.get(test_name, test_name)
-            if is_tv_majority_report and json_key_for_majority in MAJORITY_TYP_CHECK_KEYS_FOR_TV:
+            if is_tv_majority_report and test_name in MAJORITY_TYP_CHECK_KEYS_FOR_TV:
                 majority_check_data["active"] = True
-                majority_check_data["devices_values"] = devices_values_map.get(json_key_for_majority, [])
+                majority_check_data["devices_values"] = devices_values_map.get(test_name, [])
                 majority_check_data["majority_needed"] = majority_needed
 
             # Helper function: check_general_test_status(...)

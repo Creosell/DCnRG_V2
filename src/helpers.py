@@ -22,20 +22,20 @@ UFN_MAPPING = {
     "Contrast": "Contrast Ratio",
     "Temperature": "Color Temperature (K)",
 
-    "BrightnessUniformity": "Brightness Uniformity (%)",
-    "CgByAreaRGB": "sRGB Gamut Area (%)",
-    "CgByAreaNTSC": "NTSC Gamut Area (%)",
-    "CgByAreaDCI-P3": "DCI-P3 Gamut Area (%)",
-    "CgRGB": "sRGB Gamut Coverage (%)",
-    "CgNTSC": "NTSC Gamut Coverage (%)",
-    "CgDCI-P3": "DCI-P3 Gamut Coverage (%)",
-    "CgByAreaUVRGB": "sRGB Gamut Area 1976 (%)",
-    "CgByAreaUVNTSC": "NTSC Gamut Area 1976 (%)",
-    "CgByAreaUVDCI-P3": "DCI-P3 Gamut Area 1976 (%)",
-    "CgUVRGB": "sRGB Gamut Coverage 1976 (%)",
-    "CgUVNTSC": "NTSC Gamut Coverage 1976 (%)",
-    "CgUVDCI-P3": "DCI-P3 Gamut Coverage 1976 (%)",
-    "DeltaE": "ΔE",
+    "Brightness_uniformity": "Brightness Uniformity (%)",
+    "Cg_rgb_area": "sRGB Gamut Area (%)",
+    "Cg_ntsc_area": "NTSC Gamut Area (%)",
+    "Cg_dcip3_area": "DCI-P3 Gamut Area (%)",
+    "Cg_rgb": "sRGB Gamut Coverage (%)",
+    "Cg_ntsc": "NTSC Gamut Coverage (%)",
+    "Cg_dcip3": "DCI-P3 Gamut Coverage (%)",
+    "Cg_rgb_uv_area": "sRGB Gamut Area 1976 (%)",
+    "Cg_ntsc_uv_area": "NTSC Gamut Area 1976 (%)",
+    "Cg_dcip3_uv_area": "DCI-P3 Gamut Area 1976 (%)",
+    "Cg_rgb_uv": "sRGB Gamut Coverage 1976 (%)",
+    "Cg_ntsc_uv": "NTSC Gamut Coverage 1976 (%)",
+    "Cg_dcip3_uv": "DCI-P3 Gamut Coverage 1976 (%)",
+    "Delta_e": "ΔE",
 
     # Coordinates (flattened)
     "Red_x": "Red (x)",
@@ -56,47 +56,29 @@ COORD_KEYS_INTERNAL = {
 }
 
 GAMUT_KEYS_XY = {
-    "CgByAreaRGB", "CgByAreaNTSC", "CgByAreaDCI-P3",
-    "CgRGB", "CgNTSC", "CgDCI-P3",
+    "Cg_rgb_area", "Cg_ntsc_area", "Cg_dcip3_area",
+    "Cg_rgb", "Cg_ntsc", "Cg_dcip3",
 }
 
 GAMUT_KEYS_UV = {
-    "CgByAreaUVRGB", "CgByAreaUVNTSC", "CgByAreaUVDCI-P3",
-    "CgUVRGB", "CgUVNTSC", "CgUVDCI-P3",
+    "Cg_rgb_uv_area", "Cg_ntsc_uv_area", "Cg_dcip3_uv_area",
+    "Cg_rgb_uv", "Cg_ntsc_uv", "Cg_dcip3_uv",
 }
 
 GAMUT_KEYS_INTERNAL = GAMUT_KEYS_XY | GAMUT_KEYS_UV
 
-# Reverse mapping: JSON keys → YAML keys
-JSON_TO_YAML_KEY_MAP = {
-    "BrightnessUniformity": "Brightness_uniformity",
-    "CgByAreaRGB": "Cg_rgb_area",
-    "CgByAreaNTSC": "Cg_ntsc_area",
-    "CgByAreaDCI-P3": "Cg_dcip3_area",
-    "CgRGB": "Cg_rgb",
-    "CgNTSC": "Cg_ntsc",
-    "CgDCI-P3": "Cg_dcip3",
-    "CgByAreaUVRGB": "Cg_rgb_uv_area",
-    "CgByAreaUVNTSC": "Cg_ntsc_uv_area",
-    "CgByAreaUVDCI-P3": "Cg_dcip3_uv_area",
-    "CgUVRGB": "Cg_rgb_uv",
-    "CgUVNTSC": "Cg_ntsc_uv",
-    "CgUVDCI-P3": "Cg_dcip3_uv",
-    "DeltaE": "Delta_e",
-    "Center_x": "White_x",
-    "Center_y": "White_y",
-}
+# No longer needed, removed JSON_TO_YAML_KEY_MAP
 
 # Metrics with dynamic visibility based on expected values presence
 DYNAMIC_VISIBILITY_KEYS = {
-    "CgByAreaRGB", "CgByAreaNTSC", "CgByAreaDCI-P3",
-    "CgRGB", "CgNTSC", "CgDCI-P3",
-    "CgByAreaUVRGB", "CgByAreaUVNTSC", "CgByAreaUVDCI-P3",
-    "CgUVRGB", "CgUVNTSC", "CgUVDCI-P3", "DeltaE"
+    "Cg_rgb_area", "Cg_ntsc_area", "Cg_dcip3_area",
+    "Cg_rgb", "Cg_ntsc", "Cg_dcip3",
+    "Cg_rgb_uv_area", "Cg_ntsc_uv_area", "Cg_dcip3_uv_area",
+    "Cg_rgb_uv", "Cg_ntsc_uv", "Cg_dcip3_uv", "Delta_e"
 }
 
 # Metrics where lower values are better (inverted logic)
-LOWER_IS_BETTER_KEYS = {"DeltaE"}
+LOWER_IS_BETTER_KEYS = {"Delta_e"}
 
 
 def _get_cell_status(key: str, value: float, expected_values: dict, is_coordinate: bool = False):
@@ -115,9 +97,8 @@ def _get_cell_status(key: str, value: float, expected_values: dict, is_coordinat
     if value is None:
         return None
 
-    # Map internal key to YAML key
-    yaml_key = JSON_TO_YAML_KEY_MAP.get(key, key)
-    expected = expected_values.get(yaml_key, {})
+    # No mapping needed, keys are same as YAML keys
+    expected = expected_values.get(key, {})
 
     min_val = expected.get("min")
     max_val = expected.get("max")
@@ -183,11 +164,7 @@ def _should_display_metric(key: str, expected_values: dict) -> bool:
     if key not in DYNAMIC_VISIBILITY_KEYS:
         return True
 
-    yaml_key = JSON_TO_YAML_KEY_MAP.get(key)
-    if not yaml_key:
-        return True
-
-    expected = expected_values.get(yaml_key, {})
+    expected = expected_values.get(key, {})
 
     def _is_valid_value(v):
         """Checks if value is not None and not string 'None'"""
@@ -318,9 +295,9 @@ def create_html_report(
     }
 
     plot_triangles_checked = {
-        "srgb": _should_display_metric("CgByAreaRGB", expected_values) or _should_display_metric("CgByAreaUVRGB", expected_values),
-        "ntsc": _should_display_metric("CgByAreaNTSC", expected_values) or _should_display_metric("CgByAreaUVNTSC", expected_values),
-        "dcip3": _should_display_metric("CgByAreaDCI-P3", expected_values) or _should_display_metric("CgByAreaUVDCI-P3", expected_values),
+        "srgb": _should_display_metric("Cg_rgb_area", expected_values) or _should_display_metric("Cg_rgb_uv_area", expected_values),
+        "ntsc": _should_display_metric("Cg_ntsc_area", expected_values) or _should_display_metric("Cg_ntsc_uv_area", expected_values),
+        "dcip3": _should_display_metric("Cg_dcip3_area", expected_values) or _should_display_metric("Cg_dcip3_uv_area", expected_values),
     }
 
     # --- 3. Set up Jinja2 Environment ---

@@ -47,16 +47,15 @@ def get_coordinates(device_report, is_tv_flag):
     if not device_report:
         return {}
 
-    coordinates = {f"{color}_{axis}": None for color in ["Red", "Green", "Blue", "Center"] for axis in ["x", "y"]}
+    coordinates = {f"{color}_{axis}": None for color in ["Red", "Green", "Blue", "Center", "White"] for axis in ["x", "y"]}
 
     # Define mapping based on is_tv_flag
     location_map = {
         "RedColor": "Red",
         "GreenColor": "Green",
         "BlueColor": "Blue",
-        # Conditional mapping for the Center point
-        "WhiteColor": "Center" if is_tv_flag else None,
-        "Center": "Center" if not is_tv_flag else None
+        "WhiteColor": "White",
+        "Center": "Center"
     }
 
     # Filter out None values in the map for efficiency

@@ -77,7 +77,7 @@ def test_json_report_returns_dict():
     assert report_data["SerialNumber"] == "SN001"
     assert report_data["Results"]["Brightness"] == 100.5
     assert report_data["Results"]["Contrast"] == 1000
-    assert report_data["Results"]["DeltaE"] is None  # Not provided keys are None
+    assert report_data["Results"]["Delta_e"] is None  # Not provided keys are None
 
 
 def test_calculate_full_report_aggregator_logic(tmp_path):
@@ -302,8 +302,8 @@ def test_generate_comparison_report_tv_avg_skip_pass_on_min(
     actual_values = {"avg": 90.0, "min": 85.0}
     expected_values = {"min": 80.0, "typ": 100.0}
 
-    # Map YAML key (e.g., Cg_rgb_area) to JSON key (e.g., CgByAreaRGB)
-    key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
+    # Map YAML key (e.g., Cg_rgb_area) to JSON key
+    key_in_json = skipped_key_yaml
 
     full_report_data = {"Results": {key_in_json: actual_values}}
     mock_yaml_data[skipped_key_yaml] = expected_values
@@ -350,7 +350,7 @@ def test_generate_comparison_report_tv_avg_skip_fail_on_min(
     actual_values = {"avg": 90.0, "min": 75.0}
     expected_values = {"min": 80.0, "typ": 100.0}
 
-    key_in_json = report.YAML_TO_JSON_KEY_MAP.get(skipped_key_yaml, skipped_key_yaml)
+    key_in_json = skipped_key_yaml
 
     full_report_data = {"Results": {key_in_json: actual_values}}
     mock_yaml_data[skipped_key_yaml] = expected_values
@@ -399,7 +399,7 @@ def test_generate_comparison_report_corporate_dcip3_tolerance(
     Tests that non-TV devices get 2% CG tolerance for DCI-P3 metrics.
     typ=100 → adjusted_typ=98. Boundary PASS at 98.0, boundary FAIL at 97.9.
     """
-    key_in_json = report.YAML_TO_JSON_KEY_MAP.get(cg_yaml_key, cg_yaml_key)
+    key_in_json = cg_yaml_key
 
     full_report_data = {"Results": {key_in_json: {"avg": actual_avg, "min": 80.0}}}
     mock_yaml_data[cg_yaml_key] = {"min": 70.0, "typ": 100.0}
@@ -728,7 +728,7 @@ def test_expand_coordinates_tolerance_removes_key_from_result():
 
 def _corporate_adjusted(yaml_key, typ, tolerance):
     """Expected adjusted_typ: applies safe_round with key's REPORT_PRECISION."""
-    json_key = report.YAML_TO_JSON_KEY_MAP.get(yaml_key, yaml_key)
+    json_key = yaml_key
     prec = report.REPORT_PRECISION.get(json_key, 2)
     return report.safe_round(typ * (1 - tolerance), prec)
 

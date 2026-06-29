@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.3] - 2026-06-29
+
+### Changed
+- Converted dictionary keys to standard `snake_case` format across all configuration and parsing files
+- Corporate devices now dynamically fallback to `White_x/White_y` if `Center_x/Center_y` is missing from the configuration file
+
+### Fixed
+- Fixed a bug where TV devices were incorrectly skipping Color Gamut validation checks due to key mismatches
+- Removed Color Gamut parameters from `AVG_FAIL_SKIP_KEYS_FOR_TV` to enforce strict validation against the `typ` value for TVs
+- Restored original mapping `Center_x,y` and `White_x,y` coordinates for their respective device types
+
 ## [1.2.2] - 2026-06-25
 
 ### Added

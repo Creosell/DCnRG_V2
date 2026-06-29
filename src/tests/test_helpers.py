@@ -31,8 +31,8 @@ def test_process_device_reports(mocker):
         "Results": {
             "Brightness": 159.7,
             "Contrast": 1000,
-            "CgByAreaRGB": 95.5,
-            "CgRGB": 88.2,
+            "Cg_rgb_area": 95.5,
+            "Cg_rgb": 88.2,
             "Coordinates": {
                 "Red_x": 0.648123,
                 "Red_y": 0.336
@@ -44,16 +44,16 @@ def test_process_device_reports(mocker):
     # 2. Define UFN mapping
     ufn_mapping = {
         "Brightness": "Peak Brightness",
-        "CgByAreaRGB": "sRGB Area (%)",
-        "CgRGB": "sRGB Coverage (%)",
+        "Cg_rgb_area": "sRGB Area (%)",
+        "Cg_rgb": "sRGB Coverage (%)",
         "Red_x": "Red (x)"
     }
 
     # Mock precision constants
     mocker.patch.object(report, 'REPORT_PRECISION', {
         "Brightness": 0,
-        "CgByAreaRGB": 1,
-        "CgRGB": 1,
+        "Cg_rgb_area": 1,
+        "Cg_rgb": 1,
         "Red_x": 3
     })
 
@@ -358,18 +358,18 @@ def test_process_main_report_dynamic_cg_filter(tmp_path):
     # Mock data with all 4 CG metrics
     raw_data = {
         "Brightness": {"actual_values": {"avg": 100}},
-        "CgByAreaRGB": {"actual_values": {"avg": 72}},
-        "CgByAreaNTSC": {"actual_values": {"avg": 68}},
-        "CgRGB": {"actual_values": {"avg": 71}},
-        "CgNTSC": {"actual_values": {"avg": 69}},
+        "Cg_rgb_area": {"actual_values": {"avg": 72}},
+        "Cg_ntsc_area": {"actual_values": {"avg": 68}},
+        "Cg_rgb": {"actual_values": {"avg": 71}},
+        "Cg_ntsc": {"actual_values": {"avg": 69}},
     }
 
     ufn_mapping = {
         "Brightness": "Brightness (cd/m²)",
-        "CgByAreaRGB": "sRGB Gamut Area (%)",
-        "CgByAreaNTSC": "NTSC Gamut Area (%)",
-        "CgRGB": "sRGB Gamut Coverage (%)",
-        "CgNTSC": "NTSC Gamut Coverage (%)",
+        "Cg_rgb_area": "sRGB Gamut Area (%)",
+        "Cg_ntsc_area": "NTSC Gamut Area (%)",
+        "Cg_rgb": "sRGB Gamut Coverage (%)",
+        "Cg_ntsc": "NTSC Gamut Coverage (%)",
     }
 
     # Expected values: only Cg_rgb_area and Cg_rgb have values
@@ -402,28 +402,28 @@ def test_should_display_metric():
 
     # CG metric with at least one expected value
     expected_with_min = {"Cg_rgb_area": {"min": 67, "typ": None, "max": None}}
-    assert helpers._should_display_metric("CgByAreaRGB", expected_with_min) is True
+    assert helpers._should_display_metric("Cg_rgb_area", expected_with_min) is True
 
     expected_with_typ = {"Cg_ntsc": {"min": None, "typ": 72, "max": None}}
-    assert helpers._should_display_metric("CgNTSC", expected_with_typ) is True
+    assert helpers._should_display_metric("Cg_ntsc", expected_with_typ) is True
 
     expected_with_max = {"Cg_rgb": {"min": None, "typ": None, "max": 100}}
-    assert helpers._should_display_metric("CgRGB", expected_with_max) is True
+    assert helpers._should_display_metric("Cg_rgb", expected_with_max) is True
 
     # CG metric with all None expected values - hide
     expected_all_none = {"Cg_ntsc_area": {"min": None, "typ": None, "max": None}}
-    assert helpers._should_display_metric("CgByAreaNTSC", expected_all_none) is False
+    assert helpers._should_display_metric("Cg_ntsc_area", expected_all_none) is False
 
     # CG metric with string 'None' values (YAML parsing edge case) - hide
     expected_string_none = {"Cg_ntsc_area": {"min": 'None', "typ": 'None', "max": 'None'}}
-    assert helpers._should_display_metric("CgByAreaNTSC", expected_string_none) is False
+    assert helpers._should_display_metric("Cg_ntsc_area", expected_string_none) is False
 
     # CG metric with mixed None types and valid value - display
     expected_mixed = {"Cg_rgb": {"min": 'None', "typ": 72, "max": None}}
-    assert helpers._should_display_metric("CgRGB", expected_mixed) is True
+    assert helpers._should_display_metric("Cg_rgb", expected_mixed) is True
 
     # CG metric not in expected_values dict - hide
-    assert helpers._should_display_metric("CgByAreaRGB", {}) is False
+    assert helpers._should_display_metric("Cg_rgb_area", {}) is False
 
 
 def test_get_cell_status():
@@ -479,8 +479,8 @@ def test_process_device_reports_with_cell_status(mocker):
             "Brightness": 110,      # Below typ (120), above min (100) - warning
             "Contrast": 90,         # Below min (100) - fail
             "Temperature": 9500,    # Normal
-            "CgByAreaRGB": 65,      # Below typ (70), above min (60) - warning
-            "CgRGB": 55,            # Below min (60) - fail
+            "Cg_rgb_area": 65,      # Below typ (70), above min (60) - warning
+            "Cg_rgb": 55,            # Below min (60) - fail
             "Coordinates": {
                 "Red_x": 0.59,      # Below min (0.60) - fail
                 "Red_y": 0.335      # Normal
@@ -492,8 +492,8 @@ def test_process_device_reports_with_cell_status(mocker):
         "Brightness": "Brightness (cd/m²)",
         "Contrast": "Contrast Ratio",
         "Temperature": "Color Temperature (K)",
-        "CgByAreaRGB": "sRGB Area (%)",
-        "CgRGB": "sRGB Coverage (%)",
+        "Cg_rgb_area": "sRGB Area (%)",
+        "Cg_rgb": "sRGB Coverage (%)",
         "Red_x": "Red (x)",
         "Red_y": "Red (y)"
     }
@@ -512,8 +512,8 @@ def test_process_device_reports_with_cell_status(mocker):
         "Brightness": 0,
         "Contrast": 0,
         "Temperature": 0,
-        "CgByAreaRGB": 1,
-        "CgRGB": 1,
+        "Cg_rgb_area": 1,
+        "Cg_rgb": 1,
         "Red_x": 3,
         "Red_y": 3
     })
@@ -539,27 +539,27 @@ def test_process_device_reports_with_cell_status(mocker):
 def test_should_display_metric_uv():
     """Tests _should_display_metric for CIE 1976 u'v' keys."""
     # Valid expected values — display
-    assert helpers._should_display_metric("CgByAreaUVDCI-P3", {"Cg_dcip3_uv_area": {"min": 90, "typ": 95, "max": None}}) is True
-    assert helpers._should_display_metric("CgUVDCI-P3", {"Cg_dcip3_uv": {"min": None, "typ": 93, "max": None}}) is True
+    assert helpers._should_display_metric("Cg_dcip3_uv_area", {"Cg_dcip3_uv_area": {"min": 90, "typ": 95, "max": None}}) is True
+    assert helpers._should_display_metric("Cg_dcip3_uv", {"Cg_dcip3_uv": {"min": None, "typ": 93, "max": None}}) is True
 
     # All None — hide
-    assert helpers._should_display_metric("CgByAreaUVRGB", {"Cg_rgb_uv_area": {"min": None, "typ": None, "max": None}}) is False
-    assert helpers._should_display_metric("CgUVNTSC", {"Cg_ntsc_uv": {"min": "None", "typ": "None", "max": "None"}}) is False
+    assert helpers._should_display_metric("Cg_rgb_uv_area", {"Cg_rgb_uv_area": {"min": None, "typ": None, "max": None}}) is False
+    assert helpers._should_display_metric("Cg_ntsc_uv", {"Cg_ntsc_uv": {"min": "None", "typ": "None", "max": "None"}}) is False
 
     # Key missing entirely — hide
-    assert helpers._should_display_metric("CgByAreaUVDCI-P3", {}) is False
+    assert helpers._should_display_metric("Cg_dcip3_uv_area", {}) is False
 
 
 def test_should_display_metric_delta_e():
     """Tests that DeltaE is now dynamically gated by expected values."""
     # Has expected value — display
-    assert helpers._should_display_metric("DeltaE", {"Delta_e": {"min": None, "typ": 5, "max": 7}}) is True
+    assert helpers._should_display_metric("Delta_e", {"Delta_e": {"min": None, "typ": 5, "max": 7}}) is True
 
     # All None — hide
-    assert helpers._should_display_metric("DeltaE", {"Delta_e": {"min": None, "typ": None, "max": None}}) is False
+    assert helpers._should_display_metric("Delta_e", {"Delta_e": {"min": None, "typ": None, "max": None}}) is False
 
     # Key absent — hide
-    assert helpers._should_display_metric("DeltaE", {}) is False
+    assert helpers._should_display_metric("Delta_e", {}) is False
 
 
 def test_should_display_metric_dcip3():
@@ -567,16 +567,16 @@ def test_should_display_metric_dcip3():
     Tests _should_display_metric for DCI-P3 specific keys.
     """
     # Valid expected values — display
-    assert helpers._should_display_metric("CgByAreaDCI-P3", {"Cg_dcip3_area": {"min": 60, "typ": 70, "max": None}}) is True
-    assert helpers._should_display_metric("CgDCI-P3", {"Cg_dcip3": {"min": None, "typ": 72, "max": None}}) is True
+    assert helpers._should_display_metric("Cg_dcip3_area", {"Cg_dcip3_area": {"min": 60, "typ": 70, "max": None}}) is True
+    assert helpers._should_display_metric("Cg_dcip3", {"Cg_dcip3": {"min": None, "typ": 72, "max": None}}) is True
 
     # All None — hide
-    assert helpers._should_display_metric("CgByAreaDCI-P3", {"Cg_dcip3_area": {"min": None, "typ": None, "max": None}}) is False
-    assert helpers._should_display_metric("CgDCI-P3", {"Cg_dcip3": {"min": "None", "typ": "None", "max": "None"}}) is False
+    assert helpers._should_display_metric("Cg_dcip3_area", {"Cg_dcip3_area": {"min": None, "typ": None, "max": None}}) is False
+    assert helpers._should_display_metric("Cg_dcip3", {"Cg_dcip3": {"min": "None", "typ": "None", "max": "None"}}) is False
 
     # Key missing from expected_values entirely — hide
-    assert helpers._should_display_metric("CgByAreaDCI-P3", {}) is False
-    assert helpers._should_display_metric("CgDCI-P3", {}) is False
+    assert helpers._should_display_metric("Cg_dcip3_area", {}) is False
+    assert helpers._should_display_metric("Cg_dcip3", {}) is False
 
 
 def test_get_cell_status_dcip3():
@@ -589,18 +589,18 @@ def test_get_cell_status_dcip3():
     }
 
     # CgByAreaDCI-P3: above typ — normal
-    assert helpers._get_cell_status("CgByAreaDCI-P3", 75, expected_values) is None
+    assert helpers._get_cell_status("Cg_dcip3_area", 75, expected_values) is None
     # CgByAreaDCI-P3: below typ, above min — warning
-    assert helpers._get_cell_status("CgByAreaDCI-P3", 65, expected_values) == "warning"
+    assert helpers._get_cell_status("Cg_dcip3_area", 65, expected_values) == "warning"
     # CgByAreaDCI-P3: below min — fail
-    assert helpers._get_cell_status("CgByAreaDCI-P3", 55, expected_values) == "fail"
+    assert helpers._get_cell_status("Cg_dcip3_area", 55, expected_values) == "fail"
 
     # CgDCI-P3: above typ — normal
-    assert helpers._get_cell_status("CgDCI-P3", 70, expected_values) is None
+    assert helpers._get_cell_status("Cg_dcip3", 70, expected_values) is None
     # CgDCI-P3: below typ, above min — warning
-    assert helpers._get_cell_status("CgDCI-P3", 60, expected_values) == "warning"
+    assert helpers._get_cell_status("Cg_dcip3", 60, expected_values) == "warning"
     # CgDCI-P3: below min — fail
-    assert helpers._get_cell_status("CgDCI-P3", 50, expected_values) == "fail"
+    assert helpers._get_cell_status("Cg_dcip3", 50, expected_values) == "fail"
 
 
 def test_process_main_report_dynamic_dcip3_filter(tmp_path):
@@ -609,16 +609,16 @@ def test_process_main_report_dynamic_dcip3_filter(tmp_path):
     """
     raw_data = {
         "Brightness": {"actual_values": {"avg": 100}},
-        "CgByAreaRGB": {"actual_values": {"avg": 72}},
-        "CgByAreaDCI-P3": {"actual_values": {"avg": 75}},
-        "CgDCI-P3": {"actual_values": {"avg": 68}},
+        "Cg_rgb_area": {"actual_values": {"avg": 72}},
+        "Cg_dcip3_area": {"actual_values": {"avg": 75}},
+        "Cg_dcip3": {"actual_values": {"avg": 68}},
     }
 
     ufn_mapping = {
         "Brightness": "Brightness (cd/m²)",
-        "CgByAreaRGB": "sRGB Gamut Area (%)",
-        "CgByAreaDCI-P3": "DCI-P3 Gamut Area (%)",
-        "CgDCI-P3": "DCI-P3 Gamut Coverage (%)",
+        "Cg_rgb_area": "sRGB Gamut Area (%)",
+        "Cg_dcip3_area": "DCI-P3 Gamut Area (%)",
+        "Cg_dcip3": "DCI-P3 Gamut Coverage (%)",
     }
 
     # Scenario 1: DCI-P3 expected values present — columns visible
@@ -734,7 +734,7 @@ def test_collect_tolerance_legend():
     ufn_mapping = {
         "Brightness": "Brightness (cd/m²)",
         "Contrast": "Contrast Ratio",
-        "CgByAreaRGB": "sRGB Gamut Area (%)",
+        "Cg_rgb_area": "sRGB Gamut Area (%)",
         "Temperature": "Color Temperature (K)"
     }
 
@@ -747,7 +747,7 @@ def test_collect_tolerance_legend():
             "status": "PASS",
             "tolerance_applied": {"percent": 5, "original_typ": 1000, "adjusted_typ": 950}
         },
-        "CgByAreaRGB": {
+        "Cg_rgb_area": {
             "status": "PASS",
             "tolerance_applied": {"percent": 2, "original_typ": 100, "adjusted_typ": 98}
         },
