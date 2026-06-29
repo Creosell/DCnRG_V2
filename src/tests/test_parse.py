@@ -88,7 +88,7 @@ def test_coordinates_of_triangle_missing_color(mock_display_data):
 def test_get_coordinates_logic(mock_display_data):
     """Tests get_coordinates for a non-TV device."""
     # REFACTORED: Pass dict
-    coords = parse.get_coordinates(mock_display_data, is_tv_flag=False)
+    coords = parse.get_coordinates(mock_display_data)
 
     assert coords["Red_x"] == 0.648
 
@@ -104,7 +104,7 @@ def test_get_coordinates_logic(mock_display_data):
 def test_get_coordinates_tv_logic(mock_tv_data):
     """Tests get_coordinates for a TV device."""
     # REFACTORED: Pass dict
-    coords = parse.get_coordinates(mock_tv_data, is_tv_flag=True)
+    coords = parse.get_coordinates(mock_tv_data)
 
     assert coords["Red_x"] == 0.648
 

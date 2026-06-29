@@ -128,7 +128,6 @@ def json_report(
         temperature=None,
         delta_e=None,
         coordinates=None,
-        output_folder=Path("device_reports"),
         device_name=None
 ):
     # Define the JSON file name
@@ -161,11 +160,6 @@ def json_report(
             "Coordinates": coordinates,
         },
     }
-    # # Save the JSON file in the output folder
-    # output_path = output_folder / json_filename
-    # with open(output_path, "w") as json_file:
-    #     json.dump(json_data, json_file, indent=4)
-
     return json_data
 
 

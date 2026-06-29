@@ -35,21 +35,20 @@ def coordinates_of_triangle(device_report):
     return result
 
 
-def get_coordinates(device_report, is_tv_flag):
+def get_coordinates(device_report):
     """
-    Extracts the x and y coordinates for RedColor, GreenColor, BlueColor, and Center
-    from the given JSON file.
-
-    Args:
-        file (string): Path to the JSON file.
-        is_tv_flag (bool): True if the coordinates should be calculated for TV.
+    <summary>
+    Extracts the x and y chromaticity coordinates for Red, Green, Blue, Center, and White from the JSON device report.
+    It unconditionally collects all available coordinate points mapping them to their snake_case variant keys.
+    </summary>
+    <param name="device_report">The dictionary containing device measurement data from the parsed JSON report.</param>
+    <returns>A dictionary of parsed coordinates mapped to their respective keys, e.g., 'Red_x', 'Center_y'.</returns>
     """
     if not device_report:
         return {}
 
     coordinates = {f"{color}_{axis}": None for color in ["Red", "Green", "Blue", "Center", "White"] for axis in ["x", "y"]}
 
-    # Define mapping based on is_tv_flag
     location_map = {
         "RedColor": "Red",
         "GreenColor": "Green",
@@ -57,9 +56,6 @@ def get_coordinates(device_report, is_tv_flag):
         "WhiteColor": "White",
         "Center": "Center"
     }
-
-    # Filter out None values in the map for efficiency
-    location_map = {k: v for k, v in location_map.items() if v}
 
     for measurement in device_report["Measurements"]:
         location = measurement["Location"]

@@ -441,7 +441,7 @@ def run_calculations(device_report, is_tv):
         results["delta_e"] = None
 
     try:
-        results["coordinates"] = parse.get_coordinates(device_report, is_tv)
+        results["coordinates"] = parse.get_coordinates(device_report)
     except Exception as e:
         logger.error(f"Failed 'get_coordinates': {e}")
         results["coordinates"] = None
