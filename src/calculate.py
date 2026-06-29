@@ -382,7 +382,7 @@ def run_calculations(device_report, is_tv):
     Dictionary keys must match the arguments for r.json_report.
     """
     results = {}
-    logger.debug(f"Running calculations...")
+    logger.debug("Running calculations...")
 
     try:
         brightness_values = brightness(device_report, is_tv)

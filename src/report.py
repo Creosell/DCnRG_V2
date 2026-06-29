@@ -789,7 +789,7 @@ def generate_comparison_report(
                     if isinstance(value, (int, float)):
                         devices_values_map[yaml_key].append(value)
                     else:
-                        logger.debug(f"Value for {json_key} in {data.get('SerialNumber')} is missing or not numeric.")
+                        logger.debug(f"Value for {yaml_key} in {data.get('SerialNumber')} is missing or not numeric.")
 
         else:
             logger.warning("TV 'majority' logic active, but no individual reports found matching pattern")
