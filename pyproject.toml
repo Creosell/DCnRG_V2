@@ -1,0 +1,26 @@
+[project]
+name = "report-generator"
+version = "1.2.3"
+description = "Report Generator"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "colormath2==3.0.3",
+    "numpy==2.3.3",
+    "PyYAML==6.0.3",
+    "shapely==2.1.2",
+    "loguru==0.7.3",
+    "Jinja2~=3.1.6",
+    "nc_py_api",
+    "requests",
+    "urllib3"
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pyinstaller",
+    "pytest~=8.4.1",
+    "pytest-mock~=3.14.1",
+    "flake8",
+    "pylint"
+]
