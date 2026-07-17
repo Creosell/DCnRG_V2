@@ -449,6 +449,9 @@ def expand_coordinates_tolerance(config: dict) -> dict:
             continue
         if entry.get("min") is None and entry.get("max") is None and entry.get("typ") is not None:
             typ = entry["typ"]
+            if isinstance(typ, str) and typ == "None":
+                # "None" sentinel: no requirement for this coordinate, skip expansion.
+                continue
             result[key] = {"min": round(typ - tolerance, 4), "typ": typ, "max": round(typ + tolerance, 4)}
 
     return result
