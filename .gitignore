@@ -22,5 +22,6 @@
 /config/space.png
 /config/expected_result.yaml
 /.claude/settings.local.json
-/config/device_configs/
+/config/device_configs/*
+!/config/device_configs/.gitkeep
 /docs/
