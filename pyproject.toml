@@ -1,6 +1,6 @@
 [project]
 name = "report-generator"
-version = "1.2.3"
+version = "1.2.4"
 description = "Report Generator"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -13,7 +13,8 @@ dependencies = [
     "Jinja2~=3.1.6",
     "nc_py_api",
     "requests",
-    "urllib3"
+    "urllib3",
+    "openpyxl>=3.1.5",
 ]
 
 [tool.uv]

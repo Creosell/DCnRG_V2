@@ -5,7 +5,7 @@ from loguru import logger
 
 
 def parse_yaml(yaml_file, key_name, k):
-    with open(yaml_file, "r") as file:
+    with open(yaml_file, "r", encoding="utf-8") as file:
         yaml_data = yaml.safe_load(file)
     value = (yaml_data or {}).get(key_name, {}).get(k, None)
     return value
@@ -65,8 +65,8 @@ def get_coordinates(device_report):
             try:
                 coordinates[f"{target_key}_x"] = float(measurement["x"])
                 coordinates[f"{target_key}_y"] = float(measurement["y"])
-            except ValueError:
-                # Handle cases where 'x' or 'y' are not valid floats
+            except (KeyError, ValueError, TypeError):
+                # Handle cases where 'x'/'y' are missing or not valid floats
                 pass
 
     return coordinates
@@ -135,9 +135,9 @@ def get_device_info(file_path):
 def parse_one_file(file_path):
     """Loads and returns data from a single JSON file."""
     try:
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             data = json.load(file)
         return data
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+    except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError) as e:
         logger.error(f"Error reading/parsing file {file_path}: {e}")
         return None

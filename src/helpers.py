@@ -227,20 +227,20 @@ def create_html_report(
 
     # --- 1. Load Data ---
     try:
-        with open(input_file, "r") as f:
+        with open(input_file, "r", encoding="utf-8") as f:
             main_report_data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+    except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError) as e:
         logger.error(f"Error reading/parsing main report file {input_file}: {e}")
         return False
 
     try:
-        with open(expected_yaml, "r") as yaml_file:
+        with open(expected_yaml, "r", encoding="utf-8") as yaml_file:
             expected_data = yaml.safe_load(yaml_file)
             expected_values = r.expand_coordinates_tolerance(expected_data or {})
     except FileNotFoundError:
         logger.error(f"Expected result file not found at {expected_yaml}")
         return False
-    except yaml.YAMLError as e:
+    except (yaml.YAMLError, UnicodeDecodeError) as e:
         logger.error(f"Could not parse YAML file: {e}")
         return False
 
