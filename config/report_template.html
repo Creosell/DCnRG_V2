@@ -286,6 +286,7 @@
     </div>
     {% endif %}
 
+    {% if main_report.data.values() | selectattr('status', 'equalto', 'FAIL') | list %}
     <h4>Fails description</h4>
     <table>
         <thead>
@@ -304,6 +305,7 @@
             {% endfor %}
         </tbody>
     </table>
+    {% endif %}
 
     <h2>Color Coordinates</h2>
     <table>
@@ -340,6 +342,7 @@
         </tbody>
     </table>
 
+    {% if main_report.coordinates.values() | selectattr('status', 'equalto', 'FAIL') | list %}
     <h4>Fails description</h4>
     <table>
         <thead>
@@ -358,6 +361,7 @@
             {% endfor %}
         </tbody>
     </table>
+    {% endif %}
 
     <h2>Color Gamut Plot</h2>
     <div class="plot-container">
@@ -643,7 +647,8 @@
             // Store current sort direction (now an object for multiple tables)
             let sortDirections = {
                 'main': {},
-                'gamut': {},
+                'gamut_xy': {},
+                'gamut_uv': {},
                 'coords': {}
             };
 
