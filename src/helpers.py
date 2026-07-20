@@ -285,6 +285,15 @@ def create_html_report(
     dcip3_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.DCI_P3))
     debug_points = json.loads(coord_mapper.get_debug_grid_points())
 
+    plot_calibration_json = json.dumps({
+        "x_pixel_start": coord_mapper.X_PIXEL_START_CIE_0_0,
+        "y_pixel_end": coord_mapper.Y_PIXEL_END_CIE_0_0,
+        "pixels_per_cie_x": coord_mapper.PIXELS_PER_CIE_X,
+        "pixels_per_cie_y": coord_mapper.PIXELS_PER_CIE_Y,
+        "x_cie_min": coord_mapper.X_CIE_MIN,
+        "y_cie_min": coord_mapper.Y_CIE_MIN,
+    })
+
     summary_plot_points = {
         "device": device_points,
         "srgb": srgb_points,
@@ -345,6 +354,7 @@ def create_html_report(
         "raw_svg_background": raw_svg_background,
         "summary_plot_points": summary_plot_points,
         "plot_triangles_checked": plot_triangles_checked,
+        "plot_calibration_json": plot_calibration_json,
         'device_reports': device_reports_filtered,
         'current_device_name': current_device_name,
         'inspection_date': inspection_date,

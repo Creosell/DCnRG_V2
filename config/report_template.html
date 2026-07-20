@@ -138,6 +138,22 @@
         }
         /* === END CSS FOR ZOOM === */
 
+        /* Cursor CIE coordinate readout badge */
+        #plot-coord-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #333;
+            pointer-events: none;
+            display: none;
+        }
+
         /* SVG Plot Elements */
         .triangle { fill-opacity: 0.15; stroke-width: 1; }
         #srgb_triangle { fill: #007bff; stroke: #007bff; }
@@ -393,6 +409,7 @@
                     <circle class="debug-grid-point" cx="{{ summary_plot_points.debug.top_right[0] }}" cy="{{ summary_plot_points.debug.top_right[1] }}" r="5" />
                 </g>
             </svg>
+            <div id="plot-coord-badge"></div>
         </div>
     </div>
 
@@ -588,6 +605,9 @@
 
 
     <script>
+        // CIE xy <-> pixel calibration, mirrors SvgCoordinator in src/graphics_helper.py
+        const PLOT_CALIBRATION = {{ plot_calibration_json | safe }};
+
         // Toggles the visibility of a specified triangle (sRGB, NTSC, DCI-P3, Device)
         function toggleTriangle(id) {
             const el = document.getElementById(id);
@@ -610,6 +630,35 @@
             const svg = document.getElementById('plot-svg');
             if (!wrapper || !svg) return; // Safety check
 
+            // Smooth panning state: the origin eases toward the mouse position
+            // each animation frame instead of snapping to it on every mousemove,
+            // which is what made panning at 5x zoom look jerky.
+            let panTargetX = null, panTargetY = null;
+            let panCurrentX = null, panCurrentY = null;
+            let panRafId = null;
+            const PAN_SMOOTHING = 0.5; // 0..1, lower = smoother/slower to catch up
+
+            function panStep() {
+                panRafId = null;
+                if (panTargetX === null || panCurrentX === null) return;
+
+                panCurrentX += (panTargetX - panCurrentX) * PAN_SMOOTHING;
+                panCurrentY += (panTargetY - panCurrentY) * PAN_SMOOTHING;
+                svg.style.transformOrigin = `${panCurrentX}px ${panCurrentY}px`;
+
+                if (Math.abs(panTargetX - panCurrentX) > 0.1 || Math.abs(panTargetY - panCurrentY) > 0.1) {
+                    panRafId = requestAnimationFrame(panStep);
+                }
+            }
+
+            function resetPan() {
+                panTargetX = panTargetY = panCurrentX = panCurrentY = null;
+                if (panRafId) {
+                    cancelAnimationFrame(panRafId);
+                    panRafId = null;
+                }
+            }
+
             // 1. Click: Toggle zoom and set origin
             wrapper.addEventListener('click', (e) => {
                 svg.classList.toggle('zoomed');
@@ -620,8 +669,11 @@
                     const x = e.clientX - rect.left;
                     const y = e.clientY - rect.top;
                     svg.style.transformOrigin = `${x}px ${y}px`;
+                    panCurrentX = panTargetX = x;
+                    panCurrentY = panTargetY = y;
                 } else {
                     svg.style.transformOrigin = 'center center';
+                    resetPan();
                 }
             });
 
@@ -630,17 +682,49 @@
                 svg.classList.remove('zoomed');
                 wrapper.classList.remove('is-zoomed');
                 svg.style.transformOrigin = 'center center';
+                resetPan();
             });
 
-            // 3. Mouse move: Update the zoom origin (panning)
+            // 3. Mouse move: Update the pan target; panStep() eases toward it
             wrapper.addEventListener('mousemove', (e) => {
                 if (svg.classList.contains('zoomed')) {
                     const rect = wrapper.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    svg.style.transformOrigin = `${x}px ${y}px`;
+                    panTargetX = e.clientX - rect.left;
+                    panTargetY = e.clientY - rect.top;
+                    if (panCurrentX === null) {
+                        panCurrentX = panTargetX;
+                        panCurrentY = panTargetY;
+                    }
+                    if (!panRafId) {
+                        panRafId = requestAnimationFrame(panStep);
+                    }
                 }
             });
+
+            // === JAVASCRIPT FOR CURSOR CIE COORDINATE READOUT ===
+            const coordBadge = document.getElementById('plot-coord-badge');
+            if (coordBadge) {
+                wrapper.addEventListener('mousemove', (e) => {
+                    const ctm = svg.getScreenCTM();
+                    if (!ctm) return;
+
+                    // Map screen coords to the SVG's own viewBox coords (accounts for zoom/scale)
+                    const pt = svg.createSVGPoint();
+                    pt.x = e.clientX;
+                    pt.y = e.clientY;
+                    const svgPoint = pt.matrixTransform(ctm.inverse());
+
+                    const cieX = (svgPoint.x - PLOT_CALIBRATION.x_pixel_start) / PLOT_CALIBRATION.pixels_per_cie_x + PLOT_CALIBRATION.x_cie_min;
+                    const cieY = (PLOT_CALIBRATION.y_pixel_end - svgPoint.y) / PLOT_CALIBRATION.pixels_per_cie_y + PLOT_CALIBRATION.y_cie_min;
+
+                    coordBadge.textContent = `x: ${cieX.toFixed(3)}, y: ${cieY.toFixed(3)}`;
+                    coordBadge.style.display = 'block';
+                });
+
+                wrapper.addEventListener('mouseleave', () => {
+                    coordBadge.style.display = 'none';
+                });
+            }
 
             // === JAVASCRIPT MODIFICATION: Table Sorting Logic ===
 
