@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.5] - 2026-07-22
+
+### Added
+- Cursor CIE xy coordinate readout badge on the Color Gamut Plot, backed by calibration constants exported from `SvgCoordinator`
+
+### Changed
+- Panning on the zoomed Color Gamut Plot now eases toward the cursor via `requestAnimationFrame` instead of snapping the transform origin on every `mousemove`
+
+### Fixed
+- Column sorting was broken for the Gamut Data tables (CIE 1931 xy / CIE 1976 u'v') because `sortDirections` was missing their keys, throwing a `TypeError` on click
+- "Fails description" table under Main Test Results and Color Coordinates no longer renders when every entry has status `PASS`
+
+## [1.2.4] - 2026-07-17
+
+### Fixed
+- UTF-8 decoding for reports on non-default Windows locales
+- `NameError` in TV majority logic
+
+### Changed
+- Refactored `get_coordinates`: removed unused `is_tv_flag`, added docstrings
+- Migrated project tooling to `pyproject.toml` and `uv.lock`
+
 ## [1.2.3] - 2026-06-29
 
 ### Changed
