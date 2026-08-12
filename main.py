@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -13,7 +14,7 @@ import src.parse as parse
 import src.report as r
 
 # --- Constants & Configuration ---
-APP_VERSION = "1.2.5"
+APP_VERSION = "1.3.0"
 
 
 class ExitCode(IntEnum):
@@ -33,6 +34,41 @@ CONFIG_DIR = Path("config")
 
 CIE_BG_SVG = CONFIG_DIR / "CIExy1931.svg"
 DEFAULT_EXPECTED_YAML = CONFIG_DIR / "configuration_example.yaml"
+
+# Characters forbidden in Windows filenames, plus control characters
+_INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+
+def sanitize_filename(name: str) -> str:
+    """
+    Flattens a device name into a filesystem-safe filename component.
+
+    `DeviceConfiguration` may encode a device_configs subfolder path
+    (e.g. "EL29\\SDX-65U8133_EL29"). Path separators and other characters
+    invalid in Windows filenames are replaced with "_" so the value can be
+    used directly to build output file/archive names without requiring
+    matching subdirectories to exist.
+    """
+    return _INVALID_FILENAME_CHARS.sub("_", name).strip(" .") or "UnknownDevice"
+
+
+def resolve_expected_yaml(dev_name: str) -> Path | None:
+    """
+    Resolves the device-specific expected-values YAML path.
+
+    `dev_name` may contain "/" or "\\" separators to reference a
+    device_configs subfolder. Path components are normalized and ".." /
+    empty segments are dropped to prevent path traversal outside
+    config/device_configs.
+
+    Returns:
+        Path to the YAML file if it exists, otherwise None.
+    """
+    parts = [p for p in re.split(r"[\\/]+", dev_name) if p not in ("", ".", "..")]
+    if not parts:
+        return None
+    candidate = CONFIG_DIR.joinpath("device_configs", *parts[:-1], f"{parts[-1]}.yaml")
+    return candidate if candidate.exists() else None
 
 
 def parse_args():
@@ -169,21 +205,25 @@ def main() -> int:
 
             logger.debug(f"Processing group: {dev_name} ({len(files)} files)")
 
-            # Path setup
-            expected_yaml = CONFIG_DIR / "device_configs" / f"{dev_name}.yaml"
-            if not expected_yaml.exists():
+            # Path setup. dev_name may encode a device_configs subfolder
+            # (e.g. "EL29\SDX-65U8133_EL29"), so config lookup and output
+            # filenames are resolved separately.
+            expected_yaml = resolve_expected_yaml(dev_name)
+            if expected_yaml is None:
                 logger.warning(f"Config for {dev_name} not found. Using default.")
                 expected_yaml = DEFAULT_EXPECTED_YAML
 
+            safe_name = sanitize_filename(dev_name)
+
             # Output file paths (with or without timestamp)
-            f_full_report = REPORT_DIR / f"full_report_{dev_name}.json"
+            f_full_report = REPORT_DIR / f"full_report_{safe_name}.json"
 
             if timestamp:
-                f_final_json = REPORT_DIR / f"final_report_{dev_name}_{timestamp}.json"
-                f_html_result = RESULT_DIR / f"{dev_name}_{timestamp}.html"
+                f_final_json = REPORT_DIR / f"final_report_{safe_name}_{timestamp}.json"
+                f_html_result = RESULT_DIR / f"{safe_name}_{timestamp}.html"
             else:
-                f_final_json = REPORT_DIR / f"final_report_{dev_name}.json"
-                f_html_result = RESULT_DIR / f"{dev_name}.html"
+                f_final_json = REPORT_DIR / f"final_report_{safe_name}.json"
+                f_html_result = RESULT_DIR / f"{safe_name}.html"
 
             device_reports = []
             source_files_to_archive = []
@@ -242,9 +282,9 @@ def main() -> int:
                 all_files = source_files_to_archive + generated_files
 
                 if timestamp:
-                    zip_path = ARCHIVE_DIR / f"{dev_name}_{timestamp}.zip"
+                    zip_path = ARCHIVE_DIR / f"{safe_name}_{timestamp}.zip"
                 else:
-                    zip_path = ARCHIVE_DIR / f"{dev_name}.zip"
+                    zip_path = ARCHIVE_DIR / f"{safe_name}.zip"
 
                 archive_result = h.archive_specific_files(zip_path, all_files, Path.cwd())
                 if archive_result:

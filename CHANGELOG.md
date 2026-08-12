@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.0] - 2026-08-12
+
+### Fixed
+- Report generation crashed with `FileNotFoundError` when `DeviceConfiguration` encoded a `device_configs` subfolder path (e.g. `EL29\SDX-65U8133_EL29`), since output file/archive names were built directly from the raw value
+
+### Added
+- `resolve_expected_yaml()` in `main.py` resolves device YAML configs located in `device_configs` subfolders, with path-traversal protection
+- `sanitize_filename()` in `main.py` flattens path separators and strips characters invalid in Windows filenames before building output file/archive names
+
 ## [1.2.5] - 2026-07-22
 
 ### Added
