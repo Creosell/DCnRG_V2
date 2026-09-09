@@ -14,7 +14,11 @@ import src.parse as parse
 import src.report as r
 
 # --- Constants & Configuration ---
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.4.0"
+
+# TODO
+# Выровнять кнопку сортировки по высоте для таблиц индивидуальных отчётов, чтобы она располагалась всегда на первой строке
+# Подбить экспорт HTML -> PDF, с сохранением цветовой разметки и окрашивания ячеек таблиц
 
 
 class ExitCode(IntEnum):

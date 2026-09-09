@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.0] - 2026-09-09
+
+### Added
+- **Rec.2020 color gamut support**: full pipeline coverage for a 4th color space alongside sRGB/NTSC/DCI-P3 — `Cg_rec2020_area`, `Cg_rec2020`, `Cg_rec2020_uv_area`, `Cg_rec2020_uv` metrics, `configuration_example.yaml` block, Device Reports table columns, and a Rec.2020 triangle overlay (with toggle checkbox) on the Color Gamut Plot
+- `tools/validate_device_configs.py::OPTIONAL_KEYS`: reference keys a device config may omit without a "missing key" validation error, so introducing a new metric (starting with the Rec.2020 block) no longer requires touching every existing `config/device_configs/*.yaml` file
+
+### Changed
+- Color space handling in `calculate.py` refactored to a single registry (`ColorSpace`, `COLOR_STANDARDS`, `COLOR_SPACE_KEY_SUFFIX`, `COLOR_SPACE_DISPLAY_NAME`) driving `cg()`/`cg_by_area()`/`cg_uv()`/`cg_by_area_uv()`/`run_calculations()`, instead of per-space copy-pasted code
+- `report.py` (`REPORT_PRECISION`, `MAJORITY_TYP_CHECK_KEYS_FOR_TV`, `CORPORATE_DEVICES_CG_TOLERANCE_LIST`) and `helpers.py` (`UFN_MAPPING`, `GAMUT_KEYS_XY`/`GAMUT_KEYS_UV`, `DYNAMIC_VISIBILITY_KEYS`) now derive their color-gamut metric keys from the same registry, so adding a future color space no longer means editing key lists in multiple files
+
 ## [1.3.0] - 2026-08-12
 
 ### Fixed

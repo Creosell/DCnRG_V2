@@ -111,7 +111,7 @@ Brightness:
 | Show a metric in Main Test Results | Set at least one of `min`/`typ`/`max` to a number |
 | Hide a metric in Main Test Results | Leave all of `min`/`typ`/`max` as `None` |
 
-This applies to all `Cg_rgb*`, `Cg_ntsc*`, `Cg_dcip3*` variants (both CIE 1931 xy and CIE 1976 u'v') and `Delta_e`.
+This applies to all `Cg_rgb*`, `Cg_ntsc*`, `Cg_dcip3*`, `Cg_rec2020*` variants (both CIE 1931 xy and CIE 1976 u'v') and `Delta_e`.
 
 ### Color coordinate tolerance
 
