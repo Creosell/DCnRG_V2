@@ -80,6 +80,36 @@ def test_json_report_returns_dict():
     assert report_data["Results"]["Delta_e"] is None  # Not provided keys are None
 
 
+def test_json_report_includes_rec2020():
+    """Tests that json_report accepts and stores Rec.2020 gamut values."""
+    report_data = report.json_report(
+        sn="SN001",
+        t="Time001",
+        is_tv=False,
+        cg_by_area_rec2020=55.5,
+        cg_rec2020=54.0,
+        cg_by_area_uv_rec2020=60.0,
+        cg_uv_rec2020=59.0,
+        device_name="TestDevice"
+    )
+
+    assert report_data["Results"]["Cg_rec2020_area"] == 55.5
+    assert report_data["Results"]["Cg_rec2020"] == 54.0
+    assert report_data["Results"]["Cg_rec2020_uv_area"] == 60.0
+    assert report_data["Results"]["Cg_rec2020_uv"] == 59.0
+
+
+def test_cg_metric_keys_include_all_registered_color_spaces():
+    """Tests that the generated CG_METRIC_KEYS registry covers Rec.2020
+    and feeds REPORT_PRECISION / MAJORITY_TYP_CHECK_KEYS_FOR_TV / CORPORATE_DEVICES_CG_TOLERANCE_LIST."""
+    rec2020_keys = {"Cg_rec2020_area", "Cg_rec2020", "Cg_rec2020_uv_area", "Cg_rec2020_uv"}
+
+    assert rec2020_keys.issubset(report.CG_METRIC_KEYS)
+    assert rec2020_keys.issubset(report.REPORT_PRECISION.keys())
+    assert rec2020_keys.issubset(report.MAJORITY_TYP_CHECK_KEYS_FOR_TV)
+    assert rec2020_keys.issubset(report.CORPORATE_DEVICES_CG_TOLERANCE_LIST)
+
+
 def test_calculate_full_report_aggregator_logic(tmp_path):
     """
     REFACTORED: Tests the aggregator logic of calculate_full_report

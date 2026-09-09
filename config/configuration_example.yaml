@@ -21,6 +21,11 @@
 # --- Color coordinates ---
 #   Specify only typ per coordinate and set Coordinates_tolerance.
 #   min/max are computed automatically as typ ± Coordinates_tolerance.
+#
+# --- Optional keys ---
+#   Keys listed in tools/validate_device_configs.py::OPTIONAL_KEYS (currently the Rec.2020
+#   Cg_rec2020_* block) may be omitted entirely from a device config without a validation
+#   error. This lets new metrics be introduced without touching every existing config.
 
 Brightness: # Brightness range
   min: 260
@@ -87,6 +92,25 @@ Cg_dcip3_uv_area: # DCI-P3 gamut coverage, CIE 1976 u'v', area ratio method
 Cg_dcip3_uv: # DCI-P3 gamut coverage, CIE 1976 u'v', intersection method
   min: 90
   typ: 95
+  max: None
+
+# --- Color gamut: Rec.2020 ---
+# Optional: safe to omit entirely from older device configs, see tools/validate_device_configs.py.
+Cg_rec2020_area: # Rec.2020 gamut coverage, area ratio method
+  min: None
+  typ: None
+  max: None
+Cg_rec2020: # Rec.2020 gamut coverage, intersection method
+  min: None
+  typ: None
+  max: None
+Cg_rec2020_uv_area: # Rec.2020 gamut coverage, CIE 1976 u'v', area ratio method
+  min: None
+  typ: None
+  max: None
+Cg_rec2020_uv: # Rec.2020 gamut coverage, CIE 1976 u'v', intersection method
+  min: None
+  typ: None
   max: None
 
 Temperature: # Color temperature range

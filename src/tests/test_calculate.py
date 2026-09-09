@@ -139,6 +139,7 @@ def test_cg_by_area_logic(mocker, mock_display_data):
     assert result_map[ColorSpace.SRGB] == pytest.approx(101.86, 0.01)
     assert result_map[ColorSpace.NTSC] == pytest.approx(72.24, 0.01)
     assert result_map[ColorSpace.DCI_P3] == pytest.approx(75.09, 0.01)
+    assert result_map[ColorSpace.REC2020] > 0
 
 
 def test_cg_overlap_dcip3_value(mocker, mock_display_data):
@@ -156,11 +157,12 @@ def test_cg_returns_none_on_dci_p3_overlap_error(mocker, mock_display_data):
     mock_coords = [0.636, 0.329, 0.311, 0.615, 0.156, 0.049]
     mocker.patch('src.parse.coordinates_of_triangle', return_value=mock_coords)
 
-    # Call order in cg(): ntsc, rgb, dci_p3
+    # Call order in cg(): ntsc, rgb, dci_p3, rec2020 (COLOR_STANDARDS insertion order)
     mocker.patch('src.calculate.calculate_overlap_percentage', side_effect=[
         50.0,
         60.0,
         "Error: the input data does not form valid triangles.",
+        70.0,
     ])
 
     result = calculate.cg(mock_display_data)
@@ -194,10 +196,10 @@ def test_run_calculations_fulltest(mock_display_data):
     # Check that all keys are present
     expected_keys = [
         "brightness", "brightness_uniformity", "contrast",
-        "cg_by_area_rgb", "cg_by_area_ntsc", "cg_by_area_dcip3",
-        "cg_rgb", "cg_ntsc", "cg_dcip3",
-        "cg_by_area_uv_rgb", "cg_by_area_uv_ntsc", "cg_by_area_uv_dcip3",
-        "cg_uv_rgb", "cg_uv_ntsc", "cg_uv_dcip3",
+        "cg_by_area_rgb", "cg_by_area_ntsc", "cg_by_area_dcip3", "cg_by_area_rec2020",
+        "cg_rgb", "cg_ntsc", "cg_dcip3", "cg_rec2020",
+        "cg_by_area_uv_rgb", "cg_by_area_uv_ntsc", "cg_by_area_uv_dcip3", "cg_by_area_uv_rec2020",
+        "cg_uv_rgb", "cg_uv_ntsc", "cg_uv_dcip3", "cg_uv_rec2020",
         "temperature", "delta_e", "coordinates"
     ]
     assert all(key in results for key in expected_keys)
@@ -255,6 +257,7 @@ def test_cg_by_area_uv_returns_values(mocker, mock_display_data):
     assert isinstance(result[ColorSpace.SRGB], float)
     assert isinstance(result[ColorSpace.NTSC], float)
     assert isinstance(result[ColorSpace.DCI_P3], float)
+    assert isinstance(result[ColorSpace.REC2020], float)
     # u'v' DCI-P3 coverage is consistently higher than xy by ~4–5 pp
     xy_result = calculate.cg_by_area(mock_display_data)
     assert result[ColorSpace.DCI_P3] > xy_result[ColorSpace.DCI_P3]
@@ -271,6 +274,7 @@ def test_cg_uv_returns_values(mocker, mock_display_data):
     assert isinstance(result[ColorSpace.SRGB], float)
     assert isinstance(result[ColorSpace.NTSC], float)
     assert isinstance(result[ColorSpace.DCI_P3], float)
+    assert isinstance(result[ColorSpace.REC2020], float)
 
 
 def test_run_calculations_handles_error(mock_display_data):

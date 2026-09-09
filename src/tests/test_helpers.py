@@ -16,6 +16,17 @@ from src import report  # Import for precision constants
 # NEW TESTS for HTML Reporting Logic
 # --------------------------------------------------------------------------------
 
+def test_rec2020_registered_in_gamut_key_sets():
+    """Tests that Rec.2020 is wired into UFN_MAPPING/GAMUT_KEYS/DYNAMIC_VISIBILITY_KEYS
+    via the calculate.COLOR_SPACE_KEY_SUFFIX registry."""
+    rec2020_keys = {"Cg_rec2020_area", "Cg_rec2020", "Cg_rec2020_uv_area", "Cg_rec2020_uv"}
+
+    assert rec2020_keys.issubset(helpers.UFN_MAPPING.keys())
+    assert helpers.UFN_MAPPING["Cg_rec2020_area"] == "Rec.2020 Gamut Area (%)"
+    assert rec2020_keys.issubset(helpers.GAMUT_KEYS_INTERNAL)
+    assert rec2020_keys.issubset(helpers.DYNAMIC_VISIBILITY_KEYS)
+
+
 def test_process_device_reports(mocker):
     """
     Tests 'process_device_reports'.

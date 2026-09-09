@@ -23,18 +23,6 @@ UFN_MAPPING = {
     "Temperature": "Color Temperature (K)",
 
     "Brightness_uniformity": "Brightness Uniformity (%)",
-    "Cg_rgb_area": "sRGB Gamut Area (%)",
-    "Cg_ntsc_area": "NTSC Gamut Area (%)",
-    "Cg_dcip3_area": "DCI-P3 Gamut Area (%)",
-    "Cg_rgb": "sRGB Gamut Coverage (%)",
-    "Cg_ntsc": "NTSC Gamut Coverage (%)",
-    "Cg_dcip3": "DCI-P3 Gamut Coverage (%)",
-    "Cg_rgb_uv_area": "sRGB Gamut Area 1976 (%)",
-    "Cg_ntsc_uv_area": "NTSC Gamut Area 1976 (%)",
-    "Cg_dcip3_uv_area": "DCI-P3 Gamut Area 1976 (%)",
-    "Cg_rgb_uv": "sRGB Gamut Coverage 1976 (%)",
-    "Cg_ntsc_uv": "NTSC Gamut Coverage 1976 (%)",
-    "Cg_dcip3_uv": "DCI-P3 Gamut Coverage 1976 (%)",
     "Delta_e": "ΔE",
 
     # Coordinates (flattened)
@@ -50,19 +38,31 @@ UFN_MAPPING = {
     "Center_y": "Center (y)",
 }
 
+# Color gamut labels are generated per registered color space (calc.COLOR_SPACE_KEY_SUFFIX) so a
+# new color space only needs an entry in calculate.py to show up here automatically.
+for _color_space, _suffix in calc.COLOR_SPACE_KEY_SUFFIX.items():
+    _display_name = calc.COLOR_SPACE_DISPLAY_NAME[_color_space]
+    UFN_MAPPING[f"Cg_{_suffix}_area"] = f"{_display_name} Gamut Area (%)"
+    UFN_MAPPING[f"Cg_{_suffix}"] = f"{_display_name} Gamut Coverage (%)"
+    UFN_MAPPING[f"Cg_{_suffix}_uv_area"] = f"{_display_name} Gamut Area 1976 (%)"
+    UFN_MAPPING[f"Cg_{_suffix}_uv"] = f"{_display_name} Gamut Coverage 1976 (%)"
+del _color_space, _suffix, _display_name
+
 COORD_KEYS_INTERNAL = {
     "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y",
     "White_x", "White_y", "Center_x", "Center_y"
 }
 
 GAMUT_KEYS_XY = {
-    "Cg_rgb_area", "Cg_ntsc_area", "Cg_dcip3_area",
-    "Cg_rgb", "Cg_ntsc", "Cg_dcip3",
+    key
+    for suffix in calc.COLOR_SPACE_KEY_SUFFIX.values()
+    for key in (f"Cg_{suffix}_area", f"Cg_{suffix}")
 }
 
 GAMUT_KEYS_UV = {
-    "Cg_rgb_uv_area", "Cg_ntsc_uv_area", "Cg_dcip3_uv_area",
-    "Cg_rgb_uv", "Cg_ntsc_uv", "Cg_dcip3_uv",
+    key
+    for suffix in calc.COLOR_SPACE_KEY_SUFFIX.values()
+    for key in (f"Cg_{suffix}_uv_area", f"Cg_{suffix}_uv")
 }
 
 GAMUT_KEYS_INTERNAL = GAMUT_KEYS_XY | GAMUT_KEYS_UV
@@ -70,12 +70,7 @@ GAMUT_KEYS_INTERNAL = GAMUT_KEYS_XY | GAMUT_KEYS_UV
 # No longer needed, removed JSON_TO_YAML_KEY_MAP
 
 # Metrics with dynamic visibility based on expected values presence
-DYNAMIC_VISIBILITY_KEYS = {
-    "Cg_rgb_area", "Cg_ntsc_area", "Cg_dcip3_area",
-    "Cg_rgb", "Cg_ntsc", "Cg_dcip3",
-    "Cg_rgb_uv_area", "Cg_ntsc_uv_area", "Cg_dcip3_uv_area",
-    "Cg_rgb_uv", "Cg_ntsc_uv", "Cg_dcip3_uv", "Delta_e"
-}
+DYNAMIC_VISIBILITY_KEYS = GAMUT_KEYS_INTERNAL | {"Delta_e"}
 
 # Metrics where lower values are better (inverted logic)
 LOWER_IS_BETTER_KEYS = {"Delta_e"}
@@ -283,6 +278,7 @@ def create_html_report(
     srgb_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.SRGB))
     ntsc_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.NTSC))
     dcip3_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.DCI_P3))
+    rec2020_points = coord_mapper.get_triangle_pixel_points(calc.COLOR_STANDARDS.get(calc.ColorSpace.REC2020))
     debug_points = json.loads(coord_mapper.get_debug_grid_points())
 
     plot_calibration_json = json.dumps({
@@ -299,6 +295,7 @@ def create_html_report(
         "srgb": srgb_points,
         "ntsc": ntsc_points,
         "dcip3": dcip3_points,
+        "rec2020": rec2020_points,
         "specification": specification_points,
         "debug": debug_points,
     }
@@ -307,6 +304,7 @@ def create_html_report(
         "srgb": _should_display_metric("Cg_rgb_area", expected_values) or _should_display_metric("Cg_rgb_uv_area", expected_values),
         "ntsc": _should_display_metric("Cg_ntsc_area", expected_values) or _should_display_metric("Cg_ntsc_uv_area", expected_values),
         "dcip3": _should_display_metric("Cg_dcip3_area", expected_values) or _should_display_metric("Cg_dcip3_uv_area", expected_values),
+        "rec2020": _should_display_metric("Cg_rec2020_area", expected_values) or _should_display_metric("Cg_rec2020_uv_area", expected_values),
     }
 
     # --- 3. Set up Jinja2 Environment ---

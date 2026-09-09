@@ -6,7 +6,8 @@ Checks performed per file:
       encoding="utf-8", so a non-ASCII DeviceConfiguration name silently
       fails to match on Windows - see mojibake bug with Cyrillic look-alikes).
     - YAML parses without errors and has a mapping at the root.
-    - Top-level keys match the reference exactly (catches typos, missing
+    - Top-level keys match the reference exactly, except keys listed in
+      OPTIONAL_KEYS which a config may omit (catches typos, missing
       metrics, and keys copy-pasted from an older schema).
     - Each metric is a {min, typ, max} mapping with numeric or "None" values.
     - Coordinate entries (Red_x, Red_y, ...) require a numeric "typ" and
@@ -15,6 +16,8 @@ Checks performed per file:
 
 Run after dropping new/edited device config files into config/device_configs/:
     uv run python tools/validate_device_configs.py
+    uv run python tools/validate_device_configs.py path/to/one.yaml
+    uv run python tools/validate_device_configs.py path/to/one.yaml path/to/dir
 """
 
 import argparse
@@ -32,6 +35,14 @@ COORDINATE_TEST_KEYS = {
     "Red_x", "Red_y", "Green_x", "Green_y", "Blue_x", "Blue_y", "White_x", "White_y",
 }
 COORDINATES_TOLERANCE_KEY = "Coordinates_tolerance"
+
+# Reference keys that a device config is allowed to omit without a "missing key" error.
+# A metric added here (or in the reference YAML) after devices are already in the field must be
+# listed here too, so existing device_configs/*.yaml files keep validating without edits.
+# When present, the key is still fully validated like any other (format/typo checks still apply).
+OPTIONAL_KEYS = {
+    "Cg_rec2020_area", "Cg_rec2020", "Cg_rec2020_uv_area", "Cg_rec2020_uv",
+}
 
 
 def load_yaml(path: Path):
@@ -96,6 +107,28 @@ def check_coordinate_entry(key: str, value, errors: list) -> None:
             errors.append(f"'{key}.{field}': value {value[field]!r} is neither a number nor 'None'")
 
 
+def collect_config_files(paths: list[Path]) -> tuple[list[Path], list[str]]:
+    """Resolves a mix of file and directory paths into a sorted, deduplicated
+    list of *.yaml files. Directories are scanned non-recursively for *.yaml.
+    Returns (files, errors) where errors describe unresolvable inputs.
+    """
+    files: set[Path] = set()
+    errors: list[str] = []
+    for path in paths:
+        if not path.exists():
+            errors.append(f"path not found: {path}")
+        elif path.is_dir():
+            found = list(path.glob("*.yaml"))
+            if not found:
+                errors.append(f"no .yaml files found in {path}")
+            files.update(found)
+        elif path.is_file():
+            files.add(path)
+        else:
+            errors.append(f"not a file or directory: {path}")
+    return sorted(files), errors
+
+
 def validate_config(path: Path, reference_keys: set) -> tuple[list, list]:
     errors: list = []
     warnings: list = []
@@ -113,7 +146,7 @@ def validate_config(path: Path, reference_keys: set) -> tuple[list, list]:
         return errors, warnings
 
     actual_keys = set(data.keys())
-    missing_keys = reference_keys - actual_keys
+    missing_keys = reference_keys - actual_keys - OPTIONAL_KEYS
     unknown_keys = actual_keys - reference_keys
 
     if missing_keys:
@@ -143,8 +176,8 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
-        "--dir", type=Path, default=DEVICE_CONFIGS_DIR,
-        help=f"directory with device config YAML files (default: {DEVICE_CONFIGS_DIR})",
+        "paths", type=Path, nargs="*", default=[DEVICE_CONFIGS_DIR],
+        help=f"YAML file(s) and/or directory(ies) to validate (default: {DEVICE_CONFIGS_DIR})",
     )
     parser.add_argument(
         "--reference", type=Path, default=REFERENCE_YAML,
@@ -159,12 +192,14 @@ def main() -> int:
     reference_data = load_yaml(args.reference)
     reference_keys = set(reference_data.keys())
 
-    config_files = sorted(args.dir.glob("*.yaml"))
+    config_files, path_errors = collect_config_files(args.paths)
+    for e in path_errors:
+        print(f"ERROR: {e}")
     if not config_files:
-        print(f"No .yaml files found in {args.dir}")
+        print("No .yaml files to validate.")
         return 1
 
-    had_errors = False
+    had_errors = bool(path_errors)
     for path in config_files:
         errors, warnings = validate_config(path, reference_keys)
         status = "OK" if not errors else "FAIL"

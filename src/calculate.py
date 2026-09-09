@@ -14,6 +14,7 @@ class ColorSpace(Enum):
     NTSC = "NTSC"
     SRGB = "sRGB"
     DCI_P3 = "DCI-P3"
+    REC2020 = "Rec.2020"
 
 # Format: (Standard Name, [[Red_x, Red_y], [Green_x, Green_y], [Blue_x, Blue_y]])
 COLOR_STANDARDS = {
@@ -31,7 +32,31 @@ COLOR_STANDARDS = {
         [0.680, 0.320],
         [0.265, 0.690],
         [0.150, 0.060]
+    ],
+    ColorSpace.REC2020: [
+        [0.708, 0.292],
+        [0.170, 0.797],
+        [0.131, 0.046]
     ]
+}
+
+# Suffix used to build JSON/YAML metric keys for each color space, e.g. "Cg_<suffix>_area".
+# "rgb" is a legacy alias for sRGB kept for backward compatibility with existing reports/configs.
+# Adding a new color space: add it to ColorSpace + COLOR_STANDARDS above and give it a suffix here -
+# cg()/cg_by_area()/cg_uv()/cg_by_area_uv()/run_calculations() pick it up automatically.
+COLOR_SPACE_KEY_SUFFIX = {
+    ColorSpace.SRGB: "rgb",
+    ColorSpace.NTSC: "ntsc",
+    ColorSpace.DCI_P3: "dcip3",
+    ColorSpace.REC2020: "rec2020",
+}
+
+# Human-readable display name for each color space, used in UI labels (UFN_MAPPING, legends).
+COLOR_SPACE_DISPLAY_NAME = {
+    ColorSpace.SRGB: "sRGB",
+    ColorSpace.NTSC: "NTSC",
+    ColorSpace.DCI_P3: "DCI-P3",
+    ColorSpace.REC2020: "Rec.2020",
 }
 
 def area(p):
@@ -149,25 +174,10 @@ def cg_by_area(device_report):
     if dut_triangle_area == 0:
         return None
 
-    srgb_triangle = np.array(COLOR_STANDARDS.get(ColorSpace.SRGB))
-    ntsc_triangle = np.array(COLOR_STANDARDS.get(ColorSpace.NTSC))
-    dci_p3_triangle = np.array(COLOR_STANDARDS.get(ColorSpace.DCI_P3))
-    srgb_triangle_area = area(srgb_triangle)
-    ntsc_triangle_area = area(ntsc_triangle)
-    dci_p3_triangle_area = area(dci_p3_triangle)
-
-    color_gamut_srgb = (dut_triangle_area / srgb_triangle_area) * 100
-    color_gamut_ntsc = (dut_triangle_area / ntsc_triangle_area) * 100
-    color_gamut_dci_p3 = (dut_triangle_area / dci_p3_triangle_area) * 100
-
-    # Use a dictionary for concise return
-    return_map = {
-        ColorSpace.SRGB: color_gamut_srgb,
-        ColorSpace.NTSC: color_gamut_ntsc,
-        ColorSpace.DCI_P3: color_gamut_dci_p3
+    return {
+        color_space: (dut_triangle_area / area(np.array(standard_triangle))) * 100
+        for color_space, standard_triangle in COLOR_STANDARDS.items()
     }
-
-    return return_map
 
 
 def _std_to_uv_flat(color_space):
@@ -195,9 +205,8 @@ def cg_by_area_uv(device_report):
         return None
 
     return {
-        ColorSpace.SRGB: (dut_triangle_area / area(_std_to_uv_triangle(ColorSpace.SRGB))) * 100,
-        ColorSpace.NTSC: (dut_triangle_area / area(_std_to_uv_triangle(ColorSpace.NTSC))) * 100,
-        ColorSpace.DCI_P3: (dut_triangle_area / area(_std_to_uv_triangle(ColorSpace.DCI_P3))) * 100,
+        color_space: (dut_triangle_area / area(_std_to_uv_triangle(color_space))) * 100
+        for color_space in COLOR_STANDARDS
     }
 
 
@@ -209,18 +218,15 @@ def cg_uv(device_report):
 
     u1, v1, u2, v2, u3, v3 = coords_xy_to_uv(dut_coordinates)
 
-    ntsc_overlap = calculate_overlap_percentage(*_std_to_uv_flat(ColorSpace.NTSC), u1, v1, u2, v2, u3, v3)
-    rgb_overlap = calculate_overlap_percentage(*_std_to_uv_flat(ColorSpace.SRGB), u1, v1, u2, v2, u3, v3)
-    dci_p3_overlap = calculate_overlap_percentage(*_std_to_uv_flat(ColorSpace.DCI_P3), u1, v1, u2, v2, u3, v3)
+    overlaps = {
+        color_space: calculate_overlap_percentage(*_std_to_uv_flat(color_space), u1, v1, u2, v2, u3, v3)
+        for color_space in COLOR_STANDARDS
+    }
 
-    if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str) or isinstance(dci_p3_overlap, str):
+    if any(isinstance(value, str) for value in overlaps.values()):
         return None
 
-    return {
-        ColorSpace.SRGB: rgb_overlap,
-        ColorSpace.NTSC: ntsc_overlap,
-        ColorSpace.DCI_P3: dci_p3_overlap,
-    }
+    return overlaps
 
 
 def cg(device_report):
@@ -229,28 +235,18 @@ def cg(device_report):
         return None
 
     x1, y1, x2, y2, x3, y3 = dut_coordinates
-    ntsc = [coord for point in COLOR_STANDARDS.get(ColorSpace.NTSC) for coord in point]
-    srgb = [coord for point in COLOR_STANDARDS.get(ColorSpace.SRGB) for coord in point]
-    dci_p3 = [coord for point in COLOR_STANDARDS.get(ColorSpace.DCI_P3) for coord in point]
 
-    # Calculate overlap percentage once
-    ntsc_overlap = calculate_overlap_percentage(*ntsc, x1, y1, x2, y2, x3, y3)
-    rgb_overlap = calculate_overlap_percentage(*srgb, x1, y1, x2, y2, x3, y3)
-    dci_p3_overlap = calculate_overlap_percentage(*dci_p3, x1, y1, x2, y2, x3, y3)
+    overlaps = {}
+    for color_space, standard_triangle in COLOR_STANDARDS.items():
+        flat_standard = [coord for point in standard_triangle for coord in point]
+        overlaps[color_space] = calculate_overlap_percentage(*flat_standard, x1, y1, x2, y2, x3, y3)
 
     # Error handling if area is 0
-    if isinstance(ntsc_overlap, str) or isinstance(rgb_overlap, str) or isinstance(dci_p3_overlap, str):
-        # If there is an error (e.g., area is 0), return None, None
+    if any(isinstance(value, str) for value in overlaps.values()):
+        # If there is an error (e.g., area is 0), return None
         return None
 
-    # Use a dictionary for concise return
-    return_map = {
-        ColorSpace.SRGB: rgb_overlap,
-        ColorSpace.NTSC: ntsc_overlap,
-        ColorSpace.DCI_P3: dci_p3_overlap
-    }
-
-    return return_map
+    return overlaps
 
 
 def contrast(device_report, is_tv):
@@ -402,31 +398,24 @@ def run_calculations(device_report, is_tv):
     try:
         cg_by_area_val = cg_by_area(device_report)
         cg_val = cg(device_report)
-        # Ensure we safely access tuple elements
-        results["cg_by_area_rgb"] = cg_by_area_val.get(ColorSpace.SRGB) if cg_by_area_val else None
-        results["cg_by_area_ntsc"] = cg_by_area_val.get(ColorSpace.NTSC) if cg_by_area_val else None
-        results["cg_by_area_dcip3"] = cg_by_area_val.get(ColorSpace.DCI_P3) if cg_by_area_val else None
-        results["cg_rgb"] = cg_val.get(ColorSpace.SRGB) if cg_val else None
-        results["cg_ntsc"] = cg_val.get(ColorSpace.NTSC) if cg_val else None
-        results["cg_dcip3"] = cg_val.get(ColorSpace.DCI_P3) if cg_val else None
-
         cg_by_area_uv_val = cg_by_area_uv(device_report)
         cg_uv_val = cg_uv(device_report)
-        results["cg_by_area_uv_rgb"] = cg_by_area_uv_val.get(ColorSpace.SRGB) if cg_by_area_uv_val else None
-        results["cg_by_area_uv_ntsc"] = cg_by_area_uv_val.get(ColorSpace.NTSC) if cg_by_area_uv_val else None
-        results["cg_by_area_uv_dcip3"] = cg_by_area_uv_val.get(ColorSpace.DCI_P3) if cg_by_area_uv_val else None
-        results["cg_uv_rgb"] = cg_uv_val.get(ColorSpace.SRGB) if cg_uv_val else None
-        results["cg_uv_ntsc"] = cg_uv_val.get(ColorSpace.NTSC) if cg_uv_val else None
-        results["cg_uv_dcip3"] = cg_uv_val.get(ColorSpace.DCI_P3) if cg_uv_val else None
+
+        # Build "cg_by_area_<suffix>" / "cg_<suffix>" / "cg_by_area_uv_<suffix>" / "cg_uv_<suffix>"
+        # for every registered color space (see COLOR_SPACE_KEY_SUFFIX).
+        for color_space, suffix in COLOR_SPACE_KEY_SUFFIX.items():
+            results[f"cg_by_area_{suffix}"] = cg_by_area_val.get(color_space) if cg_by_area_val else None
+            results[f"cg_{suffix}"] = cg_val.get(color_space) if cg_val else None
+            results[f"cg_by_area_uv_{suffix}"] = cg_by_area_uv_val.get(color_space) if cg_by_area_uv_val else None
+            results[f"cg_uv_{suffix}"] = cg_uv_val.get(color_space) if cg_uv_val else None
 
     except Exception as e:
         logger.error(f"Failed 'Color Gamut' calculation: {e}")
-        results.update({
-            "cg_by_area_rgb": None, "cg_by_area_ntsc": None, "cg_by_area_dcip3": None,
-            "cg_rgb": None, "cg_ntsc": None, "cg_dcip3": None,
-            "cg_by_area_uv_rgb": None, "cg_by_area_uv_ntsc": None, "cg_by_area_uv_dcip3": None,
-            "cg_uv_rgb": None, "cg_uv_ntsc": None, "cg_uv_dcip3": None,
-        })
+        for suffix in COLOR_SPACE_KEY_SUFFIX.values():
+            results[f"cg_by_area_{suffix}"] = None
+            results[f"cg_{suffix}"] = None
+            results[f"cg_by_area_uv_{suffix}"] = None
+            results[f"cg_uv_{suffix}"] = None
 
     try:
         results["temperature"] = temperature(device_report)

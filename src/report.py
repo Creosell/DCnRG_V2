@@ -6,24 +6,25 @@ from pathlib import Path
 import yaml
 from loguru import logger
 
+from src.calculate import COLOR_SPACE_KEY_SUFFIX
+
+# JSON/YAML metric key families for color gamut: "Cg_<suffix>_area", "Cg_<suffix>",
+# "Cg_<suffix>_uv_area", "Cg_<suffix>_uv" - one set per registered color space
+# (see calculate.COLOR_SPACE_KEY_SUFFIX). Adding a color space there automatically
+# extends REPORT_PRECISION / MAJORITY_TYP_CHECK_KEYS_FOR_TV / CORPORATE_DEVICES_CG_TOLERANCE_LIST below.
+CG_METRIC_KEYS = {
+    key
+    for suffix in COLOR_SPACE_KEY_SUFFIX.values()
+    for key in (f"Cg_{suffix}_area", f"Cg_{suffix}", f"Cg_{suffix}_uv_area", f"Cg_{suffix}_uv")
+}
+
 REPORT_PRECISION = {
     "Brightness": 0,
     "Contrast": 0,
     "Temperature": 0,
 
     "Brightness_uniformity": 1,
-    "Cg_rgb_area": 1,
-    "Cg_ntsc_area": 1,
-    "Cg_dcip3_area": 1,
-    "Cg_rgb": 1,
-    "Cg_ntsc": 1,
-    "Cg_dcip3": 1,
-    "Cg_rgb_uv_area": 1,
-    "Cg_ntsc_uv_area": 1,
-    "Cg_dcip3_uv_area": 1,
-    "Cg_rgb_uv": 1,
-    "Cg_ntsc_uv": 1,
-    "Cg_dcip3_uv": 1,
+    **{key: 1 for key in CG_METRIC_KEYS},
     "Delta_e": 1,
 
     "Red_x": 3,
@@ -48,19 +49,7 @@ AVG_FAIL_SKIP_KEYS_FOR_TV = {  # Keys which we skip while checking for FAIL by a
 MAJORITY_TYP_CHECK_KEYS_FOR_TV = {
     "Brightness",
     "Brightness_uniformity",
-    "Cg_rgb_area",
-    "Cg_ntsc_area",
-    "Cg_dcip3_area",
-    "Cg_rgb",
-    "Cg_ntsc",
-    "Cg_dcip3",
-    "Cg_rgb_uv_area",
-    "Cg_ntsc_uv_area",
-    "Cg_dcip3_uv_area",
-    "Cg_rgb_uv",
-    "Cg_ntsc_uv",
-    "Cg_dcip3_uv",
-}
+} | CG_METRIC_KEYS
 MAJORITY_TYP_TOLERANCE = 0.01
 
 CORPORATE_DEVICES_TYP_TOLERANCE = 0.05
@@ -77,20 +66,7 @@ CONTRAST_TYP_SKIP_CONFIGS = {  # Device configs where AVG_FAIL_SKIP_KEYS_FOR_COR
     "SDNB-16iA",
     "SDNB-M16iA",
 }
-CORPORATE_DEVICES_CG_TOLERANCE_LIST = {
-    "Cg_rgb_area",
-    "Cg_ntsc_area",
-    "Cg_dcip3_area",
-    "Cg_rgb",
-    "Cg_ntsc",
-    "Cg_dcip3",
-    "Cg_rgb_uv_area",
-    "Cg_ntsc_uv_area",
-    "Cg_dcip3_uv_area",
-    "Cg_rgb_uv",
-    "Cg_ntsc_uv",
-    "Cg_dcip3_uv",
-}
+CORPORATE_DEVICES_CG_TOLERANCE_LIST = set(CG_METRIC_KEYS)
 
 # Keys that are considered coordinate tests (using min/max bounds)
 COORDINATE_TEST_KEYS = {
@@ -115,15 +91,19 @@ def json_report(
         cg_by_area_rgb=None,
         cg_by_area_ntsc=None,
         cg_by_area_dcip3=None,
+        cg_by_area_rec2020=None,
         cg_rgb=None,
         cg_ntsc=None,
         cg_dcip3=None,
+        cg_rec2020=None,
         cg_by_area_uv_rgb=None,
         cg_by_area_uv_ntsc=None,
         cg_by_area_uv_dcip3=None,
+        cg_by_area_uv_rec2020=None,
         cg_uv_rgb=None,
         cg_uv_ntsc=None,
         cg_uv_dcip3=None,
+        cg_uv_rec2020=None,
         contrast=None,
         temperature=None,
         delta_e=None,
@@ -145,15 +125,19 @@ def json_report(
             "Cg_rgb_area": cg_by_area_rgb,
             "Cg_ntsc_area": cg_by_area_ntsc,
             "Cg_dcip3_area": cg_by_area_dcip3,
+            "Cg_rec2020_area": cg_by_area_rec2020,
             "Cg_rgb": cg_rgb,
             "Cg_ntsc": cg_ntsc,
             "Cg_dcip3": cg_dcip3,
+            "Cg_rec2020": cg_rec2020,
             "Cg_rgb_uv_area": cg_by_area_uv_rgb,
             "Cg_ntsc_uv_area": cg_by_area_uv_ntsc,
             "Cg_dcip3_uv_area": cg_by_area_uv_dcip3,
+            "Cg_rec2020_uv_area": cg_by_area_uv_rec2020,
             "Cg_rgb_uv": cg_uv_rgb,
             "Cg_ntsc_uv": cg_uv_ntsc,
             "Cg_dcip3_uv": cg_uv_dcip3,
+            "Cg_rec2020_uv": cg_uv_rec2020,
             "Contrast": contrast,
             "Temperature": temperature,
             "Delta_e": delta_e,
