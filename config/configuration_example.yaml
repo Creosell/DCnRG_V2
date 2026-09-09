@@ -95,7 +95,6 @@ Cg_dcip3_uv: # DCI-P3 gamut coverage, CIE 1976 u'v', intersection method
   max: None
 
 # --- Color gamut: Rec.2020 ---
-# Optional: safe to omit entirely from older device configs, see tools/validate_device_configs.py.
 Cg_rec2020_area: # Rec.2020 gamut coverage, area ratio method
   min: None
   typ: None
