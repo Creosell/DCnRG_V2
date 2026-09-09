@@ -48,11 +48,19 @@ def sanitize_filename(name: str) -> str:
     Flattens a device name into a filesystem-safe filename component.
 
     `DeviceConfiguration` may encode a device_configs subfolder path
-    (e.g. "EL29\\SDX-65U8133_EL29"). Path separators and other characters
-    invalid in Windows filenames are replaced with "_" so the value can be
-    used directly to build output file/archive names without requiring
-    matching subdirectories to exist.
+    (e.g. "CH30\\SDF-65RGB9000MGAW_CH30"). The subfolder is normally just the
+    factory/order suffix the device's own name already ends with, so a
+    folder segment is dropped when keeping it would duplicate that suffix
+    (avoids "CH30_SDF-65RGB9000MGAW_CH30"). Any remaining path separators
+    and other characters invalid in Windows filenames are replaced with "_"
+    so the value can be used directly to build output file/archive names
+    without requiring matching subdirectories to exist.
     """
+    parts = [p for p in re.split(r"[\\/]+", name) if p != ""]
+    if len(parts) > 1:
+        *folders, basename = parts
+        folders = [f for f in folders if not basename.endswith(f"_{f}")]
+        name = "_".join([*folders, basename])
     return _INVALID_FILENAME_CHARS.sub("_", name).strip(" .") or "UnknownDevice"
 
 

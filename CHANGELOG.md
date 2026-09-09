@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Color space handling in `calculate.py` refactored to a single registry (`ColorSpace`, `COLOR_STANDARDS`, `COLOR_SPACE_KEY_SUFFIX`, `COLOR_SPACE_DISPLAY_NAME`) driving `cg()`/`cg_by_area()`/`cg_uv()`/`cg_by_area_uv()`/`run_calculations()`, instead of per-space copy-pasted code
 - `report.py` (`REPORT_PRECISION`, `MAJORITY_TYP_CHECK_KEYS_FOR_TV`, `CORPORATE_DEVICES_CG_TOLERANCE_LIST`) and `helpers.py` (`UFN_MAPPING`, `GAMUT_KEYS_XY`/`GAMUT_KEYS_UV`, `DYNAMIC_VISIBILITY_KEYS`) now derive their color-gamut metric keys from the same registry, so adding a future color space no longer means editing key lists in multiple files
 
+### Fixed
+- `sanitize_filename()` duplicated the factory/order suffix in output file and archive names when `DeviceConfiguration` encoded a `device_configs` subfolder matching that suffix (e.g. `CH30\SDF-65RGB9000MGAW_CH30` produced `CH30_SDF-65RGB9000MGAW_CH30.html`) — the subfolder segment is now dropped when the device's own name already ends with it
+
 ## [1.3.0] - 2026-08-12
 
 ### Fixed
