@@ -14,6 +14,10 @@ Sheet layout (per 9-row block, two samples side by side, columns offset by +6):
 import argparse
 import json
 import re
+import shutil
+import subprocess
+import sys
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
@@ -22,6 +26,7 @@ import openpyxl
 SHEET_NAME = "9 points"
 BLOCK_ROWS = 9
 SAMPLE_COL_OFFSETS = (0, 6)  # left sample starts at column A, right sample at column G
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _device_name_from_filename(xlsx_path: Path) -> str:
@@ -99,10 +104,14 @@ def _build_report(sample: dict, device_config: str, is_tv: bool, measurement_dt:
     }
 
 
-def convert(xlsx_path: Path, output_dir: Path, is_tv: bool = True) -> list[Path]:
+def convert(xlsx_path: Path, output_dir: Path, is_tv: bool = True, device_config: str | None = None) -> list[Path]:
+    """Converts the "9 points" sheet into per-sample JSON files.
+
+    `device_config` overrides the DeviceConfiguration derived from the file name.
+    """
     wb = openpyxl.load_workbook(xlsx_path, data_only=True)
     ws = wb[SHEET_NAME]
-    device_config = _device_name_from_filename(xlsx_path)
+    device_config = device_config or _device_name_from_filename(xlsx_path)
     measurement_dt = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -123,17 +132,64 @@ def convert(xlsx_path: Path, output_dir: Path, is_tv: bool = True) -> list[Path]
     return written
 
 
+def _resolve_config(device_config: str) -> tuple[str, Path]:
+    """Resolves `--device-config` (YAML path or config name) to (name, yaml path)."""
+    candidate = Path(device_config)
+    if candidate.suffix.lower() in (".yaml", ".yml"):
+        if not candidate.is_file():
+            sys.exit(f"Config file not found: {candidate}")
+        return candidate.stem, candidate
+
+    yaml_path = PROJECT_ROOT / "config" / "device_configs" / f"{device_config}.yaml"
+    if not yaml_path.is_file():
+        sys.exit(f"Config '{device_config}' not found in {yaml_path.parent}. Pass a path to the .yaml instead.")
+    return device_config, yaml_path
+
+
+def generate_report(json_files: list[Path], name: str, yaml_path: Path, output_dir: Path) -> Path:
+    """Runs main.py in an isolated temp workspace and copies the resulting HTML into `output_dir`."""
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp)
+        shutil.copytree(PROJECT_ROOT / "config", work / "config", dirs_exist_ok=True)
+        (work / "config" / "device_configs").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(yaml_path, work / "config" / "device_configs" / f"{name}.yaml")
+        (work / "data").mkdir()
+        for f in json_files:
+            shutil.copy2(f, work / "data" / f.name)
+
+        subprocess.run(
+            [sys.executable, str(PROJECT_ROOT / "main.py"), "--no-timestamp", "--noclean"],
+            cwd=work, check=True,
+        )
+        html = work / "results" / f"{name}.html"
+        if not html.is_file():
+            sys.exit("Report was not generated.")
+        target = output_dir / html.name
+        shutil.copy2(html, target)
+        return target
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("xlsx_file", type=Path, help="Path to the manually filled Excel file")
     parser.add_argument("--output-dir", type=Path, default=Path("data"), help="Directory for generated JSON files")
+    parser.add_argument(
+        "--device-config",
+        help="Config name (from config/device_configs) or path to a .yaml. "
+             "Sets DeviceConfiguration in the JSON files and also generates the HTML report next to them.",
+    )
     parser.add_argument("--monitor", action="store_true", help="Mark device as monitor instead of TV")
     args = parser.parse_args()
 
-    written = convert(args.xlsx_file, args.output_dir, is_tv=not args.monitor)
+    name, yaml_path = _resolve_config(args.device_config) if args.device_config else (None, None)
+
+    written = convert(args.xlsx_file, args.output_dir, is_tv=not args.monitor, device_config=name)
     print(f"Written {len(written)} file(s) to {args.output_dir}")
     for path in written:
         print(f"  {path}")
+
+    if yaml_path:
+        print(f"Report: {generate_report(written, name, yaml_path, args.output_dir)}")
 
 
 if __name__ == "__main__":
