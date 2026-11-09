@@ -478,6 +478,22 @@ def test_get_cell_status():
     assert helpers._get_cell_status("Brightness", None, expected_values, False) is None
 
 
+def test_get_cell_status_uses_report_precision():
+    """
+    Tests that _get_cell_status compares the value rounded to REPORT_PRECISION (as displayed and as used by
+    the verdict), so a cell is not highlighted when its displayed value meets the bound.
+    """
+    expected_values = {
+        "Brightness": {"min": 320, "typ": 360},
+        "Green_x": {"min": 0.212, "typ": 0.242, "max": 0.272},
+    }
+    assert helpers._get_cell_status("Brightness", 359.58, expected_values) is None  # displayed 360 >= typ
+    assert helpers._get_cell_status("Brightness", 359.4, expected_values) == "warning"  # displayed 359
+    assert helpers._get_cell_status("Brightness", 319.5, expected_values) == "warning"  # half up to 320 >= min
+    assert helpers._get_cell_status("Green_x", 0.2723, expected_values, True) is None  # displayed 0.272 <= max
+    assert helpers._get_cell_status("Green_x", 0.2725, expected_values, True) == "fail"  # displayed 0.273
+
+
 def test_process_device_reports_with_cell_status(mocker):
     """
     Tests process_device_reports with cell status highlighting across all three groups.

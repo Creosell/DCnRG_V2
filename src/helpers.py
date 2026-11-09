@@ -92,6 +92,11 @@ def _get_cell_status(key: str, value: float, expected_values: dict, is_coordinat
     if value is None:
         return None
 
+    # Compare the value as displayed and as used by the verdict (rounded to REPORT_PRECISION)
+    precision = r.REPORT_PRECISION.get(key)
+    if precision is not None:
+        value = r.safe_round(value, precision)
+
     # No mapping needed, keys are same as YAML keys
     expected = expected_values.get(key, {})
 
