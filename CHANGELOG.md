@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.5.0] - 2026-11-09
+
+### Added
+- `tools/excel_converter.py` (renamed from `excel_import.py`): `--device-config` option (config name or YAML path) sets `DeviceConfiguration` in the generated JSON files and builds the HTML report next to them
+
+### Fixed
+- `safe_round()` rounded report statistics with built-in `round()`, which works on the binary float and rounds integers half to even: exact 4th-decimal halves of instrument readings went either way (`0.1515` -> `0.151`, `0.0525` -> `0.052`, `380.5` -> `380`), flipping PASS/FAIL at spec bounds and disagreeing with the Excel QC template. Statistics are now rounded half up in decimal notation (`Decimal` + `ROUND_HALF_UP`), same as Excel `ROUND`
+
 ## [1.4.0] - 2026-09-09
 
 ### Added
