@@ -1,6 +1,7 @@
 import json
 import math
 from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
 import yaml
@@ -148,13 +149,23 @@ def json_report(
 
 
 def safe_round(value, decimals=0):
-    """Rounds the value only if it is an int or float. Otherwise, returns the original value (e.g., None)."""
-    if isinstance(value, (int, float)):
-        if decimals == 0:
-            value = int(round(value))
-        else:
-            value = round(value, decimals)
-    return value
+    """
+    Rounds a numeric value half up in decimal notation (0.1515 -> 0.152, 380.5 -> 381), as Excel ROUND does.
+
+    Built-in round() is not used: it rounds the binary float (0.1515 is stored as 0.15149999...) and
+    rounds integers half to even, so exact halves of instrument readings went either way.
+
+    Args:
+        value: Value to round; non-numeric values (e.g., None) are returned unchanged.
+        decimals (int): Number of decimal places; 0 returns an int.
+
+    Returns:
+        int | float | Any: Rounded value, or the original value if it is not numeric.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        return value
+    rounded = Decimal(str(float(value))).quantize(Decimal(1).scaleb(-decimals), rounding=ROUND_HALF_UP)
+    return int(rounded) if decimals == 0 else float(rounded)
 
 
 def set_nested_value(d, path_str, value):

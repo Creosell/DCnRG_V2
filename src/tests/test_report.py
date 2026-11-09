@@ -28,6 +28,39 @@ def test_set_nested_value_merge_dict():
     assert d["Results"]["Brightness"] == {"min": 90.0, "avg": 100.0, "max": 110.0}
 
 
+@pytest.mark.parametrize("value, decimals, expected", [
+    (0.1515, 3, 0.152),  # binary float 0.15149999... must still round up
+    (0.0525, 3, 0.053),
+    (0.2725, 3, 0.273),
+    (0.1514, 3, 0.151),
+    (-0.0525, 3, -0.053),
+    (77.65, 1, 77.7),
+    (380.5, 0, 381),  # not half to even
+    (381.5, 0, 382),
+    (4568.8, 0, 4569),
+    (12, 0, 12),
+])
+def test_safe_round_half_up(value, decimals, expected):
+    """Tests decimal half-up rounding (same as Excel ROUND) for exact halves of instrument readings."""
+    result = report.safe_round(value, decimals)
+    assert result == expected
+    assert isinstance(result, int) == (decimals == 0)
+
+
+def test_safe_round_numpy_float():
+    """Tests that numpy floats (aggregated statistics) are rounded half up as well."""
+    import numpy as np
+    assert report.safe_round(np.float64(0.1515), 3) == 0.152
+    assert report.safe_round(np.float64(380.5), 0) == 381
+
+
+@pytest.mark.parametrize("value", [None, "0..2760", True, float("nan")])
+def test_safe_round_non_numeric_unchanged(value):
+    """Tests that non-numeric values are returned unchanged."""
+    result = report.safe_round(value, 3)
+    assert result is value or (result != result and value != value)
+
+
 def test_is_effectively_all_null_stat_package():
     """Tests the check for an 'empty' statistics package."""
     # All None (should be True)
