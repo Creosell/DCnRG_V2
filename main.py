@@ -14,7 +14,7 @@ import src.parse as parse
 import src.report as r
 
 # --- Constants & Configuration ---
-APP_VERSION = "1.4.2"
+APP_VERSION = "1.4.1"
 
 # TODO
 # Выровнять кнопку сортировки по высоте для таблиц индивидуальных отчётов, чтобы она располагалась всегда на первой строке

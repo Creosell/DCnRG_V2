@@ -4,11 +4,6 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.4.2] - 2026-11-09
-
-### Fixed
-- Device Reports cell highlighting (`_get_cell_status()`) compared the raw value while the cell shows it rounded to `REPORT_PRECISION` and the verdict uses the rounded value: e.g. brightness `359.58` displayed as `360` was marked below TYP `360`, coordinate `0.2723` displayed as `0.272` was marked above MAX `0.272`. The value is now rounded half up to `REPORT_PRECISION` before comparison
-
 ## [1.4.1] - 2026-11-09
 
 ### Added
@@ -16,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - `safe_round()` rounded report statistics with built-in `round()`, which works on the binary float and rounds integers half to even: exact 4th-decimal halves of instrument readings went either way (`0.1515` -> `0.151`, `0.0525` -> `0.052`, `380.5` -> `380`), flipping PASS/FAIL at spec bounds and disagreeing with the Excel QC template. Statistics are now rounded half up in decimal notation (`Decimal` + `ROUND_HALF_UP`), same as Excel `ROUND`
+- Device Reports cell highlighting (`_get_cell_status()`) compared the raw value while the cell shows it rounded to `REPORT_PRECISION` and the verdict uses the rounded value: e.g. brightness `359.58` displayed as `360` was marked below TYP `360`, coordinate `0.2723` displayed as `0.272` was marked above MAX `0.272`. The value is now rounded half up to `REPORT_PRECISION` before comparison
 
 ## [1.4.0] - 2026-09-09
 
