@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.5.0] - 2026-11-09
+## [1.4.1] - 2026-11-09
 
 ### Added
 - `tools/excel_converter.py` (renamed from `excel_import.py`): `--device-config` option (config name or YAML path) sets `DeviceConfiguration` in the generated JSON files and builds the HTML report next to them
