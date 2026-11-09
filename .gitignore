@@ -25,3 +25,4 @@
 /config/device_configs/*
 !/config/device_configs/.gitkeep
 /docs/
+graphify-out/cache/
