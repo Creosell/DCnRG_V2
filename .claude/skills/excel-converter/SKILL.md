@@ -29,6 +29,22 @@ description: Converts manually filled "9 points" Excel measurement sheets (workb
    `data/` и `results/` репозитория не затрагиваются. Суффикс фабрики/заказа
    (`_CH32` и т.п.) всегда уточнять у пользователя.
 
+   **Ожидаемые значения из самого Excel.** Если на листе `Statistics` есть
+   таблица Spec MIN/TYP/MAX (колонки G:I, строки Brightness / Brightness
+   uniformity / Contrast / Color gamut, ... / Color temperature / Red X ... White Y;
+   допуск координат в `O1`, подпись в `M1`), конвертер собирает device-YAML сам:
+   ```bash
+   python tools/excel_converter.py "<путь к .xlsx>" <DeviceConfiguration> --spec-from-xlsx --output-dir <папка>
+   ```
+   Без второго позиционного аргумента (и без `--device-config`) этот режим
+   включается **автоматически**, а имя берётся из имени файла (до слова
+   `ORDER`, иначе весь stem) — обычно его лучше задать явно.
+   YAML сохраняется как `<папка>\<имя>.yaml`; доли переводятся в проценты
+   (uniformity, gamut), gamut `X 1976 u'v'` -> `Cg_<x>_uv_area`, `1931 xy` ->
+   `Cg_<x>_area`; остальные Cg_* и Delta_e = None. Допуск координат берётся
+   из Excel как есть (в заказе CH29 он 0.05, а в `Optical_configs` вручную был
+   0.060) — расхождение с существующим конфигом заказа сообщать пользователю.
+
    Флаг `--monitor` — если устройство НЕ TV (по умолчанию скрипт всегда
    ставит `IsTV=True`; для мониторов уточнить у пользователя явно, автоматика
    этого определить не может).
