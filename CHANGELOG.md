@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.2] - 2026-11-16
+
+### Fixed
+- Release build produced an `ReportGenerator.exe` without project dependencies (`ModuleNotFoundError: No module named 'colormath2'` at start; `numpy`, `PyYAML`, `shapely`, `Jinja2` were missing too). `release_manager.py` runs under `uv run`, which builds its own environment from the `# /// script` header, and that header listed only the release script's own dependencies; the build was complete only when run from an activated `.venv`. The header now declares the project dependencies
+
 ## [1.4.1] - 2026-11-09
 
 ### Added

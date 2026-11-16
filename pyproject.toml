@@ -1,6 +1,6 @@
 [project]
 name = "report-generator"
-version = "1.4.1"
+version = "1.4.2"
 description = "Report Generator"
 readme = "README.md"
 requires-python = ">=3.11"
