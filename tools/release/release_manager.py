@@ -7,6 +7,12 @@
 #     "urllib3",
 #     "pyinstaller",
 #     "python-dotenv",
+#     "colormath2==3.0.3",
+#     "numpy==2.3.3",
+#     "PyYAML==6.0.3",
+#     "shapely==2.1.2",
+#     "Jinja2~=3.1.6",
+#     "openpyxl>=3.1.5",
 # ]
 # ///
 
