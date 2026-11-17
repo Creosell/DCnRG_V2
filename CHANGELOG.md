@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Device verdict in the HTML report: the Serial Number cell of every device row is highlighted red (a failing cell) or yellow (a cell below typ) according to the worst cell status of the device, with the verdict in the tooltip
 
 ### Changed
+- Color Temperature is no longer highlighted yellow when it is below `typ`: it is checked against `min`/`max` only (as in the verdict rules), so a value inside the window is not flagged
 - The cell status rules moved from `helpers.py` to `src/evaluate.py`; `helpers._get_cell_status` stays as an alias, report output is unchanged
 
 ## [1.4.3] - 2026-11-16

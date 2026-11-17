@@ -32,6 +32,9 @@ UNIFORMITY_LOCATIONS = (
 )
 GAMUT_LOCATIONS = ("RedColor", "GreenColor", "BlueColor")
 
+# Metrics checked only against min/max: the verdict rules do not compare them with typ, so they get no warning
+TYP_NOT_COMPARED_KEYS = {"Temperature"}
+
 # Coordinate metric key -> measurement location it is taken from
 COORDINATE_LOCATIONS = {
     "Red": "RedColor",
@@ -88,7 +91,7 @@ def get_cell_status(key: str, value: float, expected_values: dict, is_coordinate
         return STATUS_FAIL
     if max_val is not None and value > max_val:
         return STATUS_FAIL
-    if is_coordinate:
+    if is_coordinate or key in TYP_NOT_COMPARED_KEYS:
         return None
     if typ_val is not None and value < typ_val:
         return STATUS_WARNING

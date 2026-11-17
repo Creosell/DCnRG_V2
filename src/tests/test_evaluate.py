@@ -272,3 +272,11 @@ def test_report_marks_the_device_verdict(mock_tv_data):
 
     assert main_data["SN"]["verdict"] == ev.VERDICT_WARN  # brightness 200 is below typ 250
     assert coord_data["SN"]["verdict"] == ev.VERDICT_WARN  # the verdict is the same in every table
+
+
+def test_temperature_is_checked_against_min_and_max_only():
+    spec = {"Temperature": {"min": 7300, "typ": 9300, "max": 11300}}
+
+    assert ev.get_cell_status("Temperature", 8833, spec) is None  # below typ, inside the window
+    assert ev.get_cell_status("Temperature", 7000, spec) == ev.STATUS_FAIL
+    assert ev.get_cell_status("Temperature", 11500, spec) == ev.STATUS_FAIL
