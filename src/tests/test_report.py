@@ -897,3 +897,24 @@ def test_corporate_contrast_skip_not_applied_for_other_devices():
     assert status == "FAIL"
     assert "Actual avg" in reason
     assert "(Corporate)" not in reason
+
+
+def test_json_report_main_table_column_order():
+    """Main table columns follow Results order: Brightness, Black_luminance, Contrast, Brightness_uniformity."""
+    data = report.json_report(sn="SN1", is_tv=True, t="20260101_000000", brightness=130, black_luminance=0.0643,
+                              contrast=2015, brightness_uniformity=99.8, device_name="Dev")
+    keys = list(data["Results"])
+    assert data["Results"]["Black_luminance"] == 0.0643
+    assert keys.index("Brightness") + 1 == keys.index("Black_luminance")
+    assert keys.index("Black_luminance") + 1 == keys.index("Contrast")
+    assert keys.index("Contrast") + 1 == keys.index("Brightness_uniformity")
+
+
+def test_json_report_includes_colorimeter_only_when_present():
+    """Colorimeter is copied to the report header when provided and omitted otherwise."""
+    colorimeter = {"Model": "CA-410", "ProbeSN": "81026182", "Channel": 2}
+    with_colorimeter = report.json_report(sn="SN1", t="20260101_000000", device_name="Dev", colorimeter=colorimeter)
+    without_colorimeter = report.json_report(sn="SN1", t="20260101_000000", device_name="Dev")
+
+    assert with_colorimeter["Colorimeter"] == colorimeter
+    assert "Colorimeter" not in without_colorimeter

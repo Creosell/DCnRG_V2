@@ -16,10 +16,6 @@ import src.report as r
 # --- Constants & Configuration ---
 APP_VERSION = "1.4.2"
 
-# TODO
-# Выровнять кнопку сортировки по высоте для таблиц индивидуальных отчётов, чтобы она располагалась всегда на первой строке
-# Подбить экспорт HTML -> PDF, с сохранением цветовой разметки и окрашивания ячеек таблиц
-
 
 class ExitCode(IntEnum):
     SUCCESS = 0
@@ -253,6 +249,7 @@ def main() -> int:
                         t=data.get("MeasurementDateTime"),
                         is_tv=is_tv,
                         device_name=dev_name,
+                        colorimeter=data.get("Colorimeter"),
                         **calc_res
                     )
                     device_reports.append(report_entry)

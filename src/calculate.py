@@ -249,6 +249,25 @@ def cg(device_report):
     return overlaps
 
 
+def black_luminance(device_report):
+    """
+    Returns the luminance (Lv, cd/m²) measured at the BlackColor point.
+
+    Returns:
+        float | None: Luminance of the black screen, or None when the report has no valid BlackColor measurement.
+    """
+    if device_report is None:
+        raise ValueError("Report is empty or could not be parsed.")
+
+    for m in device_report.get("Measurements", []):
+        if m.get("Location") == "BlackColor":
+            try:
+                return float(m["Lv"])
+            except (ValueError, TypeError, KeyError):
+                return None
+    return None
+
+
 def contrast(device_report, is_tv):
     """
     Calculates a contrast ratio.
@@ -388,6 +407,12 @@ def run_calculations(device_report, is_tv):
         logger.error(f"Failed 'brightness' calculation: {e}")
         results["brightness"] = None
         results["brightness_uniformity"] = None
+
+    try:
+        results["black_luminance"] = black_luminance(device_report)
+    except Exception as e:
+        logger.error(f"Failed 'black_luminance' calculation: {e}")
+        results["black_luminance"] = None
 
     try:
         results["contrast"] = contrast(device_report, is_tv)

@@ -210,6 +210,8 @@
             content: ' \2195'; /* Up/Down Arrow */
             opacity: 0.3;
             position: absolute;
+            top: 50%; /* Center vertically in the header cell regardless of how many lines the title wraps to */
+            transform: translateY(-50%);
             right: 3px;
             padding-left: 10px;
         }
@@ -245,6 +247,80 @@
         /* Page Break for printing/PDF generation */
         .page-break {
             page-break-before: always;
+            break-before: page;
+        }
+
+        /* === PRINT / PDF EXPORT ===
+           Applied by browsers ("Save as PDF") and HTML-to-PDF converters; the on-screen view is unchanged. */
+        @page {
+            size: A4 portrait;
+            /* Top/bottom margins are kept below ~10mm on purpose: Chromium-based browsers then do not
+               print their own header (date, title) and footer (file path) on every page */
+            margin: 6mm 10mm;
+        }
+
+        @media print {
+            /* Keep cell status colors, header backgrounds and plot fills in the PDF */
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            body { background-color: #fff; }
+
+            /* Let Device reports follow the plot on the same page; table headers repeat when a table continues */
+            .page-break {
+                page-break-before: auto;
+                break-before: auto;
+            }
+
+            /* Use the full sheet width instead of the centered on-screen card */
+            .report-wrapper {
+                max-width: none;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            /* Interactive controls make no sense on paper */
+            .filter-cell,
+            .sortable-header::after {
+                display: none;
+            }
+
+            /* Plot checkboxes double as the legend of the drawn triangles: print only the ticked ones.
+               Converters without :has() support simply print all of them. */
+            .plot-controls label:has(input:not(:checked)) { display: none; }
+
+            /* Never clip content to a scroll/zoom viewport */
+            .table-with-legend { overflow: visible; }
+            .fail-report { max-height: none; overflow: visible; }
+            #plot-wrapper { cursor: default; }
+
+            /* Do not split rows, boxes or the plot; keep headings with their content */
+            tr, .plot-container, .fail-report, .tolerance-legend, .cell-status-legend, .report-footer,
+            table:not(.individual-reports-table) {
+                break-inside: avoid;
+            }
+            h1, h2, h3, h4 { break-after: avoid; }
+
+            /* Repeat table headers on every page */
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+
+            /* Compact summary tables so that results and coordinates share the first page */
+            table:not(.individual-reports-table) { margin-bottom: 14px; font-size: 12px; }
+            table:not(.individual-reports-table) th,
+            table:not(.individual-reports-table) td { padding: 5px 7px; }
+            .plot-container { margin-bottom: 0; }
+
+            /* Fit the wide Device reports tables into portrait width */
+            .individual-reports-table { font-size: 8px; }
+            .individual-reports-table th,
+            .individual-reports-table td {
+                padding: 3px 4px;
+            }
         }
     </style>
 </head>
@@ -254,6 +330,9 @@
     <div class="report-header-info">
         <span><strong>Device configuration:</strong> {{ current_device_name }}</span>
         <span><strong>Inspection date:</strong> {{ inspection_date }}</span>
+        {% if colorimeter %}
+        <span><strong>Colorimeter:</strong> {{ colorimeter }}</span>
+        {% endif %}
     </div>
     <h2>Main Test Results</h2>
     <table>

@@ -753,6 +753,28 @@ def test_create_html_report_plot_triangles_checked(mocker, tmp_path):
     assert context["plot_triangles_checked"]["ntsc"] is False
     assert context["plot_triangles_checked"]["dcip3"] is True
 
+    # Scenario 4: only coverage metrics are specified (no area at all) — their triangles must be ticked too
+    mock_template.render.reset_mock()
+    expected_file.write_text(
+        "Cg_ntsc:\n  min: 70\n  typ: 72\n  max: None\n"
+        "Cg_rec2020_uv:\n  min: None\n  typ: 60\n  max: None\n"
+        "Cg_rgb_area:\n  min: None\n  typ: None\n  max: None\n"
+        "Cg_rgb:\n  min: None\n  typ: None\n  max: None\n"
+    )
+
+    helpers.create_html_report(
+        input_file=input_file, output_file=output_file,
+        cie_background_svg=svg_file,
+        device_reports=device_reports, current_device_name="TestDevice",
+        app_version="1.0.0", expected_yaml=expected_file,
+    )
+
+    context = mock_template.render.call_args[0][0]
+    assert context["plot_triangles_checked"]["ntsc"] is True
+    assert context["plot_triangles_checked"]["rec2020"] is True
+    assert context["plot_triangles_checked"]["srgb"] is False
+    assert context["plot_triangles_checked"]["dcip3"] is False
+
 
 def test_collect_tolerance_legend():
     """
@@ -819,3 +841,54 @@ def test_collect_tolerance_legend_empty():
     legend = helpers.collect_tolerance_legend(main_report_data, ufn_mapping)
 
     assert len(legend) == 0
+
+
+def _report_with(sn, colorimeter=None, black_luminance=0.067174):
+    data = {
+        "SerialNumber": sn,
+        "MeasurementDateTime": "20260101_120000",
+        "IsTV": True,
+        "Results": {"Brightness": 130.4, "Black_luminance": black_luminance, "Brightness_uniformity": 99.8},
+    }
+    if colorimeter:
+        data["Colorimeter"] = colorimeter
+    return data
+
+
+def test_black_luminance_column_follows_brightness():
+    """The main table lists Black Luminance with 4 decimals right after Brightness."""
+    main_data, *_ = helpers.process_device_reports([_report_with("SN1")], helpers.UFN_MAPPING, {})
+
+    assert list(main_data["SN1"]["results"]) == [
+        "Brightness (cd/m²)", "Black Luminance (cd/m²)", "Brightness Uniformity (%)"
+    ]
+    assert main_data["SN1"]["results"]["Black Luminance (cd/m²)"] == "0.0672"
+    assert "Black Luminance (cd/m²)" not in main_data["SN1"]["cell_status"]
+
+
+def test_black_luminance_missing_value_is_shown_as_dash():
+    """Reports without a BlackColor measurement show a dash instead of 'None'."""
+    main_data, *_ = helpers.process_device_reports([_report_with("SN1", black_luminance=None)], helpers.UFN_MAPPING, {})
+
+    assert main_data["SN1"]["results"]["Black Luminance (cd/m²)"] == "—"
+
+
+def test_colorimeter_summary_lists_unique_devices():
+    """Equal colorimeters are listed once; different ones are joined with '; '."""
+    first = {"Model": "CA-410", "ProbeSN": "81026182", "Channel": 2}
+    second = {"Model": "CA-310", "ProbeSN": "08954195", "Channel": 1}
+    main_data, *_ = helpers.process_device_reports(
+        [_report_with("A", first), _report_with("B", first), _report_with("C", second)], helpers.UFN_MAPPING, {}
+    )
+
+    assert helpers.get_colorimeter_summary(main_data) == (
+        "Konica Minolta CA-410, S/N 81026182, Channel 2; Konica Minolta CA-310, S/N 08954195, Channel 1"
+    )
+
+
+def test_colorimeter_summary_is_empty_for_legacy_reports():
+    """Old files without the Colorimeter header produce no header line."""
+    main_data, *_ = helpers.process_device_reports([_report_with("SN1")], helpers.UFN_MAPPING, {})
+
+    assert helpers.get_colorimeter_summary(main_data) == ""
+    assert helpers.get_colorimeter_summary({}) == ""

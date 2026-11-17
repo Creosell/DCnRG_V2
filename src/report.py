@@ -21,6 +21,7 @@ CG_METRIC_KEYS = {
 
 REPORT_PRECISION = {
     "Brightness": 0,
+    "Black_luminance": 4,
     "Contrast": 0,
     "Temperature": 0,
 
@@ -88,6 +89,7 @@ def json_report(
         is_tv=None,
         t=None,
         brightness=None,
+        black_luminance=None,
         brightness_uniformity=None,
         cg_by_area_rgb=None,
         cg_by_area_ntsc=None,
@@ -109,7 +111,8 @@ def json_report(
         temperature=None,
         delta_e=None,
         coordinates=None,
-        device_name=None
+        device_name=None,
+        colorimeter=None
 ):
     # Define the JSON file name
     json_filename = f"{device_name}_{sn}_{t}.json"
@@ -122,6 +125,8 @@ def json_report(
         "IsTV": is_tv,
         "Results": {
             "Brightness": brightness,
+            "Black_luminance": black_luminance,
+            "Contrast": contrast,
             "Brightness_uniformity": brightness_uniformity,
             "Cg_rgb_area": cg_by_area_rgb,
             "Cg_ntsc_area": cg_by_area_ntsc,
@@ -139,12 +144,13 @@ def json_report(
             "Cg_ntsc_uv": cg_uv_ntsc,
             "Cg_dcip3_uv": cg_uv_dcip3,
             "Cg_rec2020_uv": cg_uv_rec2020,
-            "Contrast": contrast,
             "Temperature": temperature,
             "Delta_e": delta_e,
             "Coordinates": coordinates,
         },
     }
+    if colorimeter:
+        json_data["Colorimeter"] = colorimeter
     return json_data
 
 

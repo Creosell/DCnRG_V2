@@ -300,3 +300,30 @@ def test_run_calculations_handles_error(mock_display_data):
     assert results["contrast"] == 0.0  # Fails because 'Center' is missing
     assert "brightness" in results
     assert results["brightness"] is None  # Fails because 'Center' is missing
+
+
+def test_black_luminance_returns_black_color_lv(mock_tv_data):
+    """Black luminance is the Lv of the BlackColor measurement, for TV and non-TV alike."""
+    assert calculate.black_luminance(mock_tv_data) == pytest.approx(0.6183643)
+
+
+def test_black_luminance_missing_black_color_returns_none(mock_display_data):
+    """Older files without a BlackColor measurement yield None instead of 0."""
+    mock_display_data["Measurements"] = [
+        m for m in mock_display_data["Measurements"] if m["Location"] != "BlackColor"
+    ]
+    assert calculate.black_luminance(mock_display_data) is None
+
+
+def test_black_luminance_invalid_lv_returns_none(mock_display_data):
+    """A BlackColor measurement without a numeric Lv yields None."""
+    for m in mock_display_data["Measurements"]:
+        if m["Location"] == "BlackColor":
+            m["Lv"] = None
+    assert calculate.black_luminance(mock_display_data) is None
+
+
+def test_run_calculations_includes_black_luminance(mock_tv_data):
+    """run_calculations exposes black_luminance for json_report."""
+    results = calculate.run_calculations(mock_tv_data, is_tv=True)
+    assert results["black_luminance"] == pytest.approx(0.6183643)

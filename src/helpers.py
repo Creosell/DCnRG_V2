@@ -16,9 +16,14 @@ import src.calculate as calc
 
 HTML_TEMPLATE_NAME = "report_template.html"
 
+# Metrics that may be absent from older measurement files; shown as a placeholder instead of "None"
+OPTIONAL_DISPLAY_KEYS = {"Black_luminance"}
+MISSING_VALUE_PLACEHOLDER = "—"
+
 # User-Friendly Name mapping for keys in the JSON results
 UFN_MAPPING = {
     "Brightness": "Brightness (cd/m²)",
+    "Black_luminance": "Black Luminance (cd/m²)",
     "Contrast": "Contrast Ratio",
     "Temperature": "Color Temperature (K)",
 
@@ -143,6 +148,33 @@ def _get_cell_status(key: str, value: float, expected_values: dict, is_coordinat
             return "warning"
 
     return None
+
+
+# Gamut plot triangle id -> color space key suffix used by the Cg_<suffix>* metrics
+PLOT_TRIANGLE_KEY_SUFFIX = {
+    "srgb": "rgb",
+    "ntsc": "ntsc",
+    "dcip3": "dcip3",
+    "rec2020": "rec2020",
+}
+
+
+def _has_gamut_spec(suffix: str, expected_values: dict) -> bool:
+    """
+    Tells whether the device spec requires the given color space, i.e. its gamut triangle is ticked by default.
+
+    The area metrics (xy, then u'v') are the primary requirement; the coverage metrics (xy, then u'v')
+    count as well, so a spec that only has coverage still ticks the triangle.
+
+    Args:
+        suffix: Color space key suffix (e.g. "rgb", "ntsc", "dcip3", "rec2020")
+        expected_values: Expected values from YAML config
+
+    Returns:
+        bool: True if any area or coverage metric of the color space has an expected value.
+    """
+    keys = (f"Cg_{suffix}_area", f"Cg_{suffix}_uv_area", f"Cg_{suffix}", f"Cg_{suffix}_uv")
+    return any(_should_display_metric(key, expected_values) for key in keys)
 
 
 def _should_display_metric(key: str, expected_values: dict) -> bool:
@@ -306,10 +338,8 @@ def create_html_report(
     }
 
     plot_triangles_checked = {
-        "srgb": _should_display_metric("Cg_rgb_area", expected_values) or _should_display_metric("Cg_rgb_uv_area", expected_values),
-        "ntsc": _should_display_metric("Cg_ntsc_area", expected_values) or _should_display_metric("Cg_ntsc_uv_area", expected_values),
-        "dcip3": _should_display_metric("Cg_dcip3_area", expected_values) or _should_display_metric("Cg_dcip3_uv_area", expected_values),
-        "rec2020": _should_display_metric("Cg_rec2020_area", expected_values) or _should_display_metric("Cg_rec2020_uv_area", expected_values),
+        triangle: _has_gamut_spec(suffix, expected_values)
+        for triangle, suffix in PLOT_TRIANGLE_KEY_SUFFIX.items()
     }
 
     # --- 3. Set up Jinja2 Environment ---
@@ -351,6 +381,7 @@ def create_html_report(
 
     # 2. Calculate inspection date
     inspection_date = get_inspection_date_range(device_reports_data_filtered)
+    colorimeter_summary = get_colorimeter_summary(device_reports_data_filtered)
 
     context = {
         "main_report": main_report_filtered,
@@ -361,6 +392,7 @@ def create_html_report(
         'device_reports': device_reports_filtered,
         'current_device_name': current_device_name,
         'inspection_date': inspection_date,
+        'colorimeter': colorimeter_summary,
         'app_version': app_version,
         'tolerance_legend': tolerance_legend
     }
@@ -505,7 +537,8 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
         # Common metadata for all tables
         meta = {
             "measurement_date": data.get("MeasurementDateTime", "N/A").replace('_', ''),
-            "is_tv": data.get("IsTV", False)
+            "is_tv": data.get("IsTV", False),
+            "colorimeter": data.get("Colorimeter")
         }
 
         processed_main = {}
@@ -526,6 +559,8 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
             def format_val(k, v, default_prec):
                 ufn_key = ufn_mapping.get(k, k)
                 prec = r.REPORT_PRECISION.get(k, default_prec)
+                if v is None and k in OPTIONAL_DISPLAY_KEYS:
+                    return ufn_key, MISSING_VALUE_PLACEHOLDER
                 try:
                     return ufn_key, f"{v:.{prec}f}"
                 except (TypeError, ValueError):
@@ -644,6 +679,32 @@ def get_day_suffix(day):
     if day % 10 == 3:
         return 'rd'
     return 'th'
+
+
+def get_colorimeter_summary(all_device_reports_data: dict) -> str:
+    """
+    Builds the header description of the colorimeters used for the reported devices.
+
+    Args:
+        all_device_reports_data: Per-device report data produced by process_device_reports.
+
+    Returns:
+        str: Unique colorimeters joined by "; " (e.g. "Konica Minolta CA-410, S/N 81026182, Channel 2"),
+            or an empty string when no report carries colorimeter information.
+    """
+    descriptions = []
+    for report in (all_device_reports_data or {}).values():
+        colorimeter = report.get("colorimeter")
+        if not isinstance(colorimeter, dict):
+            continue
+        parts = [f"Konica Minolta {colorimeter['Model']}" if colorimeter.get("Model") else None,
+                 f"S/N {colorimeter['ProbeSN']}" if colorimeter.get("ProbeSN") else None,
+                 f"Channel {colorimeter['Channel']}" if colorimeter.get("Channel") is not None else None]
+        description = ", ".join(p for p in parts if p)
+        if description:
+            descriptions.append(description)
+
+    return "; ".join(dict.fromkeys(descriptions))
 
 
 def get_inspection_date_range(all_device_reports_data: dict) -> str:
