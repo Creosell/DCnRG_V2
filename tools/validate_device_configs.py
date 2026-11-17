@@ -97,8 +97,8 @@ def check_coordinate_entry(key: str, value, errors: list) -> None:
         return
     if "typ" not in value:
         errors.append(f"'{key}': missing required 'typ' field")
-    elif not is_number(value["typ"]):
-        errors.append(f"'{key}.typ': value {value['typ']!r} is not a number")
+    elif not is_number(value["typ"]) and not is_none_marker(value["typ"]):
+        errors.append(f"'{key}.typ': value {value['typ']!r} is neither a number nor 'None'")
     extra = value.keys() - {"min", "typ", "max"}
     if extra:
         errors.append(f"'{key}': unexpected field(s) {sorted(extra)}")
