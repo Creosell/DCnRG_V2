@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.4.3] - 2026-11-16
+
+### Added
+- **Black Luminance (cd/m²)** column in the Device Reports Main Data table, right after Brightness: `Lv` of the `BlackColor` measurement shown with 4 decimals, without tolerance check. Files without a `BlackColor` measurement show `—`
+- **Colorimeter** line in the report header next to the inspection date (`Konica Minolta CA-410, S/N 81026182, Channel 2`), built from the optional `Colorimeter` object of the measurement JSON. Different colorimeters within one report are listed once each, separated by `; `; the line is hidden for files without the object
+- Print stylesheet of the HTML report (`@page` A4 portrait + `@media print`; page top/bottom margins are below ~10 mm, so Chromium-based browsers do not add their own date/title header and file path footer) so that it can be saved as PDF from a browser or an HTML-to-PDF converter: cell status colors and table header backgrounds are kept (`print-color-adjust: exact`), table headers repeat on every page, rows, summary tables and the plot are not split across pages, sort arrows are hidden and only the ticked plot checkboxes are printed as the legend of the drawn triangles, scroll/zoom clipping is removed and the Device reports section follows the plot without a forced page break. The on-screen view is unchanged
+
+### Changed
+- Device Reports Main Data column order: Brightness, Black Luminance, Contrast Ratio, Brightness Uniformity, Color Temperature, ΔE (Contrast Ratio now precedes Brightness Uniformity)
+
+### Fixed
+- Gamut plot triangles are ticked by default also for color spaces that the device spec defines only through coverage (`Cg_<space>`, `Cg_<space>_uv`); before, only the area metrics (`Cg_<space>_area`, `Cg_<space>_uv_area`) were considered. Area still comes first, coverage is the fallback
+- Sort arrow of the Device Reports table headers is vertically centered in the header cell; it used to drop to the last line when a long title (e.g. `Black Luminance (cd/m²)`) wrapped
+
 ## [1.4.2] - 2026-11-16
 
 ### Fixed

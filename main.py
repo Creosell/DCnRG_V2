@@ -14,7 +14,7 @@ import src.parse as parse
 import src.report as r
 
 # --- Constants & Configuration ---
-APP_VERSION = "1.4.2"
+APP_VERSION = "1.4.3"
 
 
 class ExitCode(IntEnum):
