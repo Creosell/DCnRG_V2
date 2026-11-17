@@ -26,3 +26,7 @@
 !/config/device_configs/.gitkeep
 /docs/
 graphify-out/cache/
+
+# Python bytecode
+__pycache__/
+*.pyc
