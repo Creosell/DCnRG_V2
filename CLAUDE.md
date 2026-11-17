@@ -48,6 +48,7 @@ pytest -v src/tests/
 - `--noclean, -nc`: Skip archiving and file cleanup steps
 - `--device NAME, -d NAME`: Process only the specified device configuration
 - `--no-timestamp`: Generate output files without timestamp for easier regeneration
+- `--evaluate PATH`: Evaluate one device JSON (`-` for stdin) against its spec and print the checks as JSON (no reports, no files written)
 - `--version`: Display application version and exit
 
 ### Building Executable
@@ -129,12 +130,18 @@ report_archive/*.zip (Archive)
 - `create_html_report() -> bool`: Renders Jinja2 template (`config/report_template.html`) with report data, returns `True` on success
 - `archive_specific_files() -> str | None`: Creates zip archives of processed files, returns archive path or `None` on error
 - `clear_specific_files()`: Cleans up intermediate files after archiving
-- `_get_cell_status()`: Evaluates cell status for color-coded highlighting (critical/warning/normal)
+- `_get_cell_status()`: Alias of `evaluate.get_cell_status` (cell highlighting rules live in `evaluate.py`)
 - `process_device_reports()`: Processes device reports with cell status flags for visual indication
 - `should_display_metric()`: Determines metric visibility based on expected values in YAML config
 - `UFN_MAPPING`: Maps technical metric names to user-friendly display names
 - `DYNAMIC_VISIBILITY_KEYS`: Metrics requiring expected values to be displayed (e.g., color gamut)
 - **Handles both development and compiled (PyInstaller) modes for config path resolution using `sys.frozen` detection**
+
+**evaluate.py** - Per-device rules (single source for the report highlighting and the `--evaluate` mode)
+- `get_cell_status()`: fail (outside min/max) / warning (below typ) / None for one value, compared rounded to `REPORT_PRECISION`
+- `evaluate(device_data, expected_values) -> dict`: statuses of every metric that has a spec; metrics whose points are not measured yet are `pending`
+- `verdict_of()`: device verdict PASS / WARN / FAIL from check statuses; `required_locations()`: points a metric needs
+- `main.run_evaluate()` prints the result as JSON to stdout (no files or directories are written)
 
 **graphics_helper.py** - SVG Coordinate System
 - `SvgCoordinator`: Converts CIE xy chromaticity coordinates → SVG pixel coordinates

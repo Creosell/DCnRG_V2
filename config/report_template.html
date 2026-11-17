@@ -516,7 +516,7 @@
         <tbody id="individual-table-body-main">
             {% for serial_number, report_data in device_reports.data.items() %}
             <tr>
-                <td class="param-name">{{ serial_number }}</td>
+                <td class="param-name{% if report_data.verdict == 'FAIL' %} cell-fail{% elif report_data.verdict == 'WARN' %} cell-warning{% endif %}" title="Device verdict: {{ report_data.verdict }}">{{ serial_number }}</td>
                 <td>{{ report_data.measurement_date }}</td>
                 {% for key in master_keys_main %}
                 {% set cell_status = report_data.cell_status.get(key) %}
@@ -563,7 +563,7 @@
         <tbody id="individual-table-body-gamut_xy">
             {% for serial_number, report_data in device_reports.gamut_xy.items() %}
             <tr>
-                <td class="param-name">{{ serial_number }}</td>
+                <td class="param-name{% if report_data.verdict == 'FAIL' %} cell-fail{% elif report_data.verdict == 'WARN' %} cell-warning{% endif %}" title="Device verdict: {{ report_data.verdict }}">{{ serial_number }}</td>
                 <td>{{ report_data.measurement_date }}</td>
                 {% for key in master_keys_gamut_xy %}
                 {% set cell_status = report_data.cell_status.get(key) %}
@@ -610,7 +610,7 @@
         <tbody id="individual-table-body-gamut_uv">
             {% for serial_number, report_data in device_reports.gamut_uv.items() %}
             <tr>
-                <td class="param-name">{{ serial_number }}</td>
+                <td class="param-name{% if report_data.verdict == 'FAIL' %} cell-fail{% elif report_data.verdict == 'WARN' %} cell-warning{% endif %}" title="Device verdict: {{ report_data.verdict }}">{{ serial_number }}</td>
                 <td>{{ report_data.measurement_date }}</td>
                 {% for key in master_keys_gamut_uv %}
                 {% set cell_status = report_data.cell_status.get(key) %}
@@ -657,7 +657,7 @@
         <tbody id="individual-table-body-coords">
             {% for serial_number, report_data in device_reports.coordinates.items() %}
             <tr>
-                <td class="param-name">{{ serial_number }}</td>
+                <td class="param-name{% if report_data.verdict == 'FAIL' %} cell-fail{% elif report_data.verdict == 'WARN' %} cell-warning{% endif %}" title="Device verdict: {{ report_data.verdict }}">{{ serial_number }}</td>
                 <td>{{ report_data.measurement_date }}</td>
                 {% for key in master_keys_coords %}
                 {% set cell_status = report_data.cell_status.get(key) %}

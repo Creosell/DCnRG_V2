@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.5.0] - 2026-11-17
+
+### Added
+- `--evaluate PATH` mode (`-` reads the device JSON from stdin): evaluates one device against the spec of its `DeviceConfiguration` and prints the result as JSON to stdout, without generating reports or writing any file or directory. Intended for the measurement application, which can request it after every measurement. The result is `{"schema", "device": PASS/WARN/FAIL, "complete", "checks": [...]}`; each check carries `key`, rounded `value`, spec `min`/`typ`/`max`, `status` (`pass`, `warning`, `fail`, `pending` when the needed points are not measured yet, `n/a` when the points are measured but the metric has no valid value), the measurement `locations` it comes from (for uniformity: the darkest point) and the `missing` locations. Exit codes: 0 result printed, 3 spec not found, 1 invalid input; errors are printed as `{"schema", "error"}`
+- New module `src/evaluate.py` with the per-device rules (`get_cell_status`, `evaluate`, `verdict_of`, `required_locations`); `tests/test_evaluate.py` includes a test that the statuses of `--evaluate` equal the cell highlighting of the HTML report
+- Device verdict in the HTML report: the Serial Number cell of every device row is highlighted red (a failing cell) or yellow (a cell below typ) according to the worst cell status of the device, with the verdict in the tooltip
+
+### Changed
+- The cell status rules moved from `helpers.py` to `src/evaluate.py`; `helpers._get_cell_status` stays as an alias, report output is unchanged
+
 ## [1.4.3] - 2026-11-16
 
 ### Added

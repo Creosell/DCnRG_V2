@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import json
 import re
 import sys
 from collections import defaultdict
@@ -9,12 +10,13 @@ from enum import IntEnum
 from loguru import logger
 
 import src.calculate as cal
+import src.evaluate as ev
 import src.helpers as h
 import src.parse as parse
 import src.report as r
 
 # --- Constants & Configuration ---
-APP_VERSION = "1.4.3"
+APP_VERSION = "1.5.0"
 
 
 class ExitCode(IntEnum):
@@ -116,6 +118,13 @@ def parse_args():
     )
 
     parser.add_argument(
+        '--evaluate',
+        metavar='PATH',
+        help='Evaluate one device JSON (PATH or "-" for stdin) against its spec and print the checks as JSON; '
+             'no reports are generated and no files are written'
+    )
+
+    parser.add_argument(
         '--no-timestamp',
         action='store_true',
         help='Generate files without timestamp for quick regeneration'
@@ -159,9 +168,55 @@ def ensure_directories() -> bool:
         return False
 
 
+def run_evaluate(source: str, verbose: bool = False) -> int:
+    """
+    Evaluates one device JSON against the spec of its DeviceConfiguration and prints the result as JSON.
+
+    Nothing is written to disk and no directories are created, so it is safe to call after every measurement.
+    Logging goes to stderr only; stdout carries the JSON result (also on errors: {"schema", "error"}).
+
+    Args:
+        source: Path to the device JSON, or "-" to read it from stdin.
+        verbose: If True, debug logging is printed to stderr.
+
+    Returns:
+        int: ExitCode.SUCCESS when the result is printed, CONFIG_ERROR when the spec is not found,
+        GENERAL_ERROR when the input is not a valid device JSON.
+    """
+    logger.remove()
+    logger.add(sys.stderr, level="DEBUG" if verbose else "ERROR", format="{message}")
+
+    def emit(payload: dict, code: ExitCode) -> int:
+        print(json.dumps(payload, ensure_ascii=True))
+        return code
+
+    try:
+        raw = sys.stdin.buffer.read().decode("utf-8-sig") if source == "-" else Path(source).read_text(encoding="utf-8-sig")
+        data = json.loads(raw)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
+        return emit({"schema": ev.EVALUATE_SCHEMA_VERSION, "error": f"invalid input: {e}"}, ExitCode.GENERAL_ERROR)
+    if not isinstance(data, dict):
+        return emit({"schema": ev.EVALUATE_SCHEMA_VERSION, "error": "invalid input: JSON object expected"}, ExitCode.GENERAL_ERROR)
+
+    expected_yaml = resolve_expected_yaml(str(data.get("DeviceConfiguration") or ""))
+    spec = r.load_yaml_file(expected_yaml) if expected_yaml else None
+    if not isinstance(spec, dict):
+        return emit({"schema": ev.EVALUATE_SCHEMA_VERSION, "error": f"spec not found: {data.get('DeviceConfiguration')}"}, ExitCode.CONFIG_ERROR)
+
+    try:
+        result = ev.evaluate(data, r.expand_coordinates_tolerance(spec))
+    except Exception as e:
+        logger.exception(f"Evaluation failed: {e}")
+        return emit({"schema": ev.EVALUATE_SCHEMA_VERSION, "error": f"evaluation failed: {e}"}, ExitCode.GENERAL_ERROR)
+    return emit(result, ExitCode.SUCCESS)
+
+
 def main() -> int:
     """Main execution flow."""
     args = parse_args()
+
+    if args.evaluate:
+        return run_evaluate(args.evaluate, verbose=args.verbose)
 
     if not ensure_directories():
         return ExitCode.CONFIG_ERROR

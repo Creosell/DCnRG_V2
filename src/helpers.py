@@ -13,6 +13,7 @@ from loguru import logger
 import src.graphics_helper as gfx  # Import our new helper
 import src.report as r
 import src.calculate as calc
+from src.evaluate import get_cell_status, verdict_of
 
 HTML_TEMPLATE_NAME = "report_template.html"
 
@@ -77,77 +78,9 @@ GAMUT_KEYS_INTERNAL = GAMUT_KEYS_XY | GAMUT_KEYS_UV
 # Metrics with dynamic visibility based on expected values presence
 DYNAMIC_VISIBILITY_KEYS = GAMUT_KEYS_INTERNAL | {"Delta_e"}
 
-# Metrics where lower values are better (inverted logic)
-LOWER_IS_BETTER_KEYS = {"Delta_e"}
 
-
-def _get_cell_status(key: str, value: float, expected_values: dict, is_coordinate: bool = False):
-    """
-    Determines cell status based on expected value comparison.
-
-    Args:
-        key: Internal JSON key (e.g., "Brightness", "Red_x")
-        value: Actual measured value
-        expected_values: Expected values from YAML config
-        is_coordinate: If True, checks only min/max (for coordinates)
-
-    Returns:
-        str or None: "fail" (red), "warning" (yellow), or None (white)
-    """
-    if value is None:
-        return None
-
-    # Compare the value as displayed and as used by the verdict (rounded to REPORT_PRECISION)
-    precision = r.REPORT_PRECISION.get(key)
-    if precision is not None:
-        value = r.safe_round(value, precision)
-
-    # No mapping needed, keys are same as YAML keys
-    expected = expected_values.get(key, {})
-
-    min_val = expected.get("min")
-    max_val = expected.get("max")
-    typ_val = expected.get("typ")
-
-    # Parse string 'None' as None
-    def parse_val(v):
-        return None if v == 'None' or v is None else v
-
-    min_val = parse_val(min_val)
-    max_val = parse_val(max_val)
-    typ_val = parse_val(typ_val)
-
-    # Inverted logic for metrics where lower is better (e.g., DeltaE)
-    is_inverted = key in LOWER_IS_BETTER_KEYS
-
-    if is_inverted:
-        # For DeltaE: higher value = worse, only check max and typ as upper bounds
-        if max_val is not None and value > max_val:
-            return "fail"
-
-        # For coordinates, only check min/max
-        if is_coordinate:
-            return None
-
-        # Check typ as upper bound (warning if exceeds typical)
-        if typ_val is not None and value > typ_val:
-            return "warning"
-    else:
-        # Standard logic: higher is better
-        if min_val is not None and value < min_val:
-            return "fail"
-        if max_val is not None and value > max_val:
-            return "fail"
-
-        # For coordinates, only check min/max
-        if is_coordinate:
-            return None
-
-        # For non-coordinates, check typ (warning - yellow)
-        if typ_val is not None and value < typ_val:
-            return "warning"
-
-    return None
+# The cell status rules are shared with the --evaluate mode (src/evaluate.py)
+_get_cell_status = get_cell_status
 
 
 # Gamut plot triangle id -> color space key suffix used by the Cg_<suffix>* metrics
@@ -591,6 +524,13 @@ def process_device_reports(device_reports: list, ufn_mapping: dict, expected_val
                 status = _get_cell_status(key, value, expected_values, is_coordinate=False)
                 if status:
                     cell_status_main[name] = status
+
+        # The device verdict is the worst cell status of the device over all tables (same rules as --evaluate)
+        meta["verdict"] = verdict_of(
+            status
+            for cell_status in (cell_status_main, cell_status_gamut_xy, cell_status_gamut_uv, cell_status_coords)
+            for status in cell_status.values()
+        )
 
         # Save results once per device
         main_reports[sn] = {"results": processed_main, "cell_status": cell_status_main, **meta}
