@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 - Printing the report to PDF from a browser added the browser's own header (date, title) and footer (file path) on every page: the small page margins did not suppress them. The print stylesheet now defines `Page N of M` in the bottom right `@page` margin box and the other margin boxes empty; defining all margin boxes also stops Chromium-based browsers (Chrome, Edge) from printing their default header and footer, whatever the print dialog option says. Browsers without margin box support ignore the rules and fall back to their own header and footer
 - The tables of the individual device reports were printed in 8px (6pt), far smaller than the rest of the report; they are printed in 11px with tighter cell padding and still fit the portrait width
+- The borders between the header cells of the tables disappeared in the printed PDF: Chromium paints collapsed borders before the grey fill of a header row, so the fill covered them. The print stylesheet uses separate borders (`border-collapse: separate` with per-cell right and bottom borders), which are painted over the fill
 
 ## [1.4.3] - 2026-11-16
 

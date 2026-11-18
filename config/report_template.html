@@ -282,6 +282,12 @@
 
             body { background-color: #fff; }
 
+            /* Separate (not collapsed) borders: Chromium paints collapsed borders before the cell backgrounds of a header
+               row, so the borders between the header cells disappear under the grey fill in the PDF */
+            table { border-collapse: separate; border-spacing: 0; border-top: 1px solid #ddd; border-left: 1px solid #ddd; }
+            th, td { border-width: 0 1px 1px 0; }
+            .table-with-legend .individual-reports-table { border-top: 0; border-left: 0; }
+
             /* Let Device reports follow the plot on the same page; table headers repeat when a table continues */
             .page-break {
                 page-break-before: auto;
