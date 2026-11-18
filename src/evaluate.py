@@ -167,6 +167,123 @@ def _worst_uniformity_location(measured: dict):
     return min(points, key=points.get) if points else None
 
 
+COLOR_POINTS = ("RedColor", "GreenColor", "BlueColor")
+STATUS_RANK = {STATUS_FAIL: 0, STATUS_WARNING: 1}  # anything else (no remark) ranks 2
+
+
+def _attempts_of(measurement: dict) -> list:
+    """Returns the attempts of a point; a point without an explicit list has itself as the only attempt."""
+    attempts = measurement.get("Attempts")
+    return attempts if isinstance(attempts, list) and attempts else [measurement]
+
+
+def _attempt_value(key: str, attempt: dict):
+    """Returns the value of a single-point metric taken from one attempt, or None when the attempt has no valid value."""
+    if key in ("Brightness", "Black_luminance"):
+        source = "Lv"
+    elif key == "Temperature":
+        source = "T"
+    else:
+        _, _, axis = key.partition("_")
+        source = axis if axis in ("x", "y") else None
+    if source is None:
+        return None
+    try:
+        value = float(attempt[source])
+    except (KeyError, TypeError, ValueError):
+        return None
+    return value if math.isfinite(value) else None
+
+
+def _single_point_keys(location: str, expected_values: dict, is_tv: bool) -> list:
+    """Spec metrics that are calculated from this point alone."""
+    return [
+        key for key, expected in expected_values.items()
+        if _has_spec(expected) and required_locations(key, is_tv) == (location,)
+    ]
+
+
+def _attempt_status_rank(location: str, attempt: dict, expected_values: dict, is_tv: bool) -> int:
+    """Worst status of the single-point checks of one attempt: 0 fail, 1 warning, 2 no remark."""
+    rank = 2
+    for key in _single_point_keys(location, expected_values, is_tv):
+        value = _attempt_value(key, attempt)
+        if value is None:
+            continue
+        is_coordinate = key in r.COORDINATE_TEST_KEYS or key in ("Center_x", "Center_y")
+        status = get_cell_status(key, value, expected_values, is_coordinate=is_coordinate)
+        rank = min(rank, STATUS_RANK.get(status, 2))
+    return rank
+
+
+def _typ_distance(location: str, attempt: dict, expected_values: dict) -> float:
+    """Distance of an attempt of a color point from the typical coordinates of the spec (0 when the spec has none)."""
+    color = {"RedColor": "Red", "GreenColor": "Green", "BlueColor": "Blue"}.get(location)
+    if color is None:
+        return 0.0
+    try:
+        typ_x = float(_parse_spec_value(expected_values.get(f"{color}_x", {}).get("typ")))
+        typ_y = float(_parse_spec_value(expected_values.get(f"{color}_y", {}).get("typ")))
+        return math.hypot(float(attempt["x"]) - typ_x, float(attempt["y"]) - typ_y)
+    except (KeyError, TypeError, ValueError):
+        return 0.0
+
+
+def best_attempt_index(location: str, attempts: list, expected_values: dict, is_tv: bool) -> int:
+    """
+    Chooses the best attempt of a point: the best status first (pass, then warning, then fail); among equal statuses
+    the one closer to the typical coordinates for the red/green/blue points, then the higher luminance.
+
+    Args:
+        location: Measurement location of the point.
+        attempts: Accepted measurements of the point (dicts with x, y, Lv, T).
+        expected_values: Specification with the coordinate tolerance expanded.
+        is_tv: Whether the device is a TV.
+
+    Returns:
+        int: Index of the best attempt (the later one wins a complete tie).
+    """
+    def score(index: int):
+        attempt = attempts[index]
+        try:
+            lv = float(attempt["Lv"])
+        except (KeyError, TypeError, ValueError):
+            lv = float("-inf")
+        return (_attempt_status_rank(location, attempt, expected_values, is_tv),
+                -_typ_distance(location, attempt, expected_values),
+                lv if math.isfinite(lv) else float("-inf"),
+                index)
+
+    return max(range(len(attempts)), key=score)
+
+
+def resolve_attempts(device_data: dict, expected_values: dict) -> tuple:
+    """
+    Replaces the measurement of every point that has several attempts with its best attempt.
+
+    Args:
+        device_data: Device data; a measurement may carry an "Attempts" list (each with x, y, Lv, T).
+        expected_values: Specification with the coordinate tolerance expanded.
+
+    Returns:
+        tuple: (device data with the best attempts in "Measurements",
+        {location: {"count", "best", "deviated"}} for every point with at least one measurement). "best" is the index
+        in "Attempts" and "deviated" tells whether any attempt had a remark against the spec.
+    """
+    is_tv = bool(device_data.get("IsTV", False))
+    summary = {}
+    measurements = []
+    for measurement in device_data.get("Measurements") or []:
+        location = measurement.get("Location")
+        attempts = _attempts_of(measurement)
+        best = best_attempt_index(location, attempts, expected_values, is_tv)
+        deviated = any(_attempt_status_rank(location, attempt, expected_values, is_tv) < 2 for attempt in attempts)
+        summary[location] = {"count": len(attempts), "best": best, "deviated": deviated}
+        measurements.append({**measurement, **{field: attempts[best].get(field) for field in ("x", "y", "Lv", "T")
+                                               if field in attempts[best]}})
+    return {**device_data, "Measurements": measurements}, summary
+
+
 def _check(key: str, results: dict, measured: dict, expected_values: dict, is_tv: bool) -> dict:
     """Builds the check entry of one metric."""
     required = required_locations(key, is_tv)
@@ -230,9 +347,11 @@ def evaluate(device_data: dict, expected_values: dict) -> dict:
 
     Returns:
         dict: {"schema", "device": PASS/WARN/FAIL over the evaluated checks, "complete": no check is pending,
-        "checks": [{"key", "value", "min", "typ", "max", "status", "locations", "missing"}]}
+        "checks": [{"key", "value", "min", "typ", "max", "status", "locations", "missing"}],
+        "attempts": {location: {"count", "best", "deviated"}}}. A point with several attempts is evaluated by its best attempt.
     """
     is_tv = bool(device_data.get("IsTV", False))
+    device_data, attempts = resolve_attempts(device_data, expected_values)
     measured = _measured_locations(device_data)
     results = _flat_results(device_data, is_tv)
 
@@ -249,4 +368,5 @@ def evaluate(device_data: dict, expected_values: dict) -> dict:
         "device": verdict_of(statuses),
         "complete": STATUS_PENDING not in statuses,
         "checks": checks,
+        "attempts": attempts,
     }

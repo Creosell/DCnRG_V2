@@ -280,3 +280,79 @@ def test_temperature_is_checked_against_min_and_max_only():
     assert ev.get_cell_status("Temperature", 8833, spec) is None  # below typ, inside the window
     assert ev.get_cell_status("Temperature", 7000, spec) == ev.STATUS_FAIL
     assert ev.get_cell_status("Temperature", 11500, spec) == ev.STATUS_FAIL
+
+
+# --------------------------------------------------------------------------------
+# attempts of a point
+# --------------------------------------------------------------------------------
+
+def attempt(lv, x=0.339, y=0.348, t=6752):
+    return {"x": x, "y": y, "Lv": lv, "T": t}
+
+
+def test_best_attempt_prefers_the_better_status_over_a_higher_luminance():
+    spec = {"Brightness": {"min": 160, "typ": 190, "max": None}}
+    attempts = [attempt(150), attempt(180), attempt(195)]  # fail, warning, pass
+
+    assert ev.best_attempt_index("WhiteColor", attempts, spec, True) == 2
+    assert ev.best_attempt_index("WhiteColor", [attempt(150), attempt(180)], spec, True) == 1
+
+
+def test_best_attempt_with_equal_status_takes_the_higher_luminance():
+    spec = {"Brightness": {"min": 160, "typ": 190, "max": None}}
+
+    assert ev.best_attempt_index("WhiteColor", [attempt(150), attempt(120), attempt(140)], spec, True) == 0
+    assert ev.best_attempt_index("WhiteColor", [attempt(170), attempt(180), attempt(175)], spec, True) == 1
+
+
+def test_best_attempt_of_a_color_point_is_the_closest_to_typ_coordinates():
+    spec = {"Red_x": {"min": 0.62, "typ": 0.65, "max": 0.68}, "Red_y": {"min": 0.30, "typ": 0.33, "max": 0.36}}
+    near_but_dark = attempt(10, x=0.651, y=0.331)
+    far_but_bright = attempt(90, x=0.629, y=0.309)  # inside min/max, farther from typ
+
+    assert ev.best_attempt_index("RedColor", [far_but_bright, near_but_dark], spec, False) == 1
+
+
+def test_best_attempt_of_a_single_attempt_or_a_point_without_spec_is_the_highest_luminance():
+    assert ev.best_attempt_index("BottomLeft", [attempt(100)], {}, False) == 0
+    assert ev.best_attempt_index("BottomLeft", [attempt(100), attempt(120), attempt(110)], {}, False) == 1
+
+
+def test_best_attempt_does_not_fail_on_an_attempt_without_a_color_temperature_value():
+    spec = {"Temperature": {"min": 6000, "typ": None, "max": 7000}}
+
+    assert ev.best_attempt_index("Center", [attempt(100, t=None), attempt(90, t=5000)], spec, False) == 0  # 5000 K fails
+
+
+def test_evaluate_uses_the_best_attempt_and_reports_the_attempts(mock_tv_data):
+    data = copy.deepcopy(mock_tv_data)
+    white = next(m for m in data["Measurements"] if m["Location"] == "WhiteColor")
+    white["Attempts"] = [attempt(150), attempt(180), attempt(170)]
+    spec = {"Brightness": {"min": 160, "typ": 190, "max": None}}
+
+    result = ev.evaluate(data, spec)
+
+    check = checks_by_key(result)["Brightness"]
+    assert check["value"] == 180 and check["status"] == ev.STATUS_WARNING
+    assert result["attempts"]["WhiteColor"] == {"count": 3, "best": 1, "deviated": True}
+    assert result["attempts"]["Center"] == {"count": 1, "best": 0, "deviated": False}
+
+
+def test_evaluate_marks_a_point_as_deviated_even_when_the_best_attempt_is_fine(mock_tv_data):
+    data = copy.deepcopy(mock_tv_data)
+    white = next(m for m in data["Measurements"] if m["Location"] == "WhiteColor")
+    white["Attempts"] = [attempt(150), attempt(200)]
+    spec = {"Brightness": {"min": 160, "typ": 190, "max": None}}
+
+    result = ev.evaluate(data, spec)
+
+    assert checks_by_key(result)["Brightness"]["status"] == ev.STATUS_PASS
+    assert result["attempts"]["WhiteColor"]["deviated"] is True
+    assert result["attempts"]["WhiteColor"]["best"] == 1
+
+
+def test_evaluate_without_attempts_keeps_the_measurement_values(mock_tv_data):
+    result = ev.evaluate(mock_tv_data, SPEC)
+
+    assert checks_by_key(result)["Brightness"]["value"] == 200
+    assert all(info["count"] == 1 and info["best"] == 0 for info in result["attempts"].values())

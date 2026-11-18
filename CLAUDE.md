@@ -139,7 +139,7 @@ report_archive/*.zip (Archive)
 
 **evaluate.py** - Per-device rules (single source for the report highlighting and the `--evaluate` mode)
 - `get_cell_status()`: fail (outside min/max) / warning (below typ) / None for one value, compared rounded to `REPORT_PRECISION`
-- `evaluate(device_data, expected_values) -> dict`: statuses of every metric that has a spec; metrics whose points are not measured yet are `pending`
+- `evaluate(device_data, expected_values) -> dict`: statuses of every metric that has a spec; metrics whose points are not measured yet are `pending`; points with several attempts are evaluated by `best_attempt_index()` and summarized in `attempts`
 - `verdict_of()`: device verdict PASS / WARN / FAIL from check statuses; `required_locations()`: points a metric needs
 - `main.run_evaluate()` prints the result as JSON to stdout (no files or directories are written)
 
