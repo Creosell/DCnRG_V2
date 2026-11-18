@@ -282,6 +282,9 @@
 
             body { background-color: #fff; }
 
+            /* Light grey cell borders vanish in PDF viewers at normal zoom, especially between the header cells */
+            th, td { border-color: #b8b8b8; }
+
             /* Let Device reports follow the plot on the same page; table headers repeat when a table continues */
             .page-break {
                 page-break-before: auto;
