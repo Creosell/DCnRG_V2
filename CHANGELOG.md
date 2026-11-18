@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Color Temperature is no longer highlighted yellow when it is below `typ`: it is checked against `min`/`max` only (as in the verdict rules), so a value inside the window is not flagged
 - The cell status rules moved from `helpers.py` to `src/evaluate.py`; `helpers._get_cell_status` stays as an alias, report output is unchanged
 
+### Fixed
+- Printing the report to PDF from a browser added the browser's own header (date, title) and footer (file path) on every page: the small page margins did not suppress them. The print stylesheet now defines its own running header (report title, device and inspection date) and footer (generator version, `Page N of M`) as `@page` margin boxes; defining margin boxes also stops Chromium-based browsers (Chrome, Edge) from printing their default header and footer, whatever the print dialog option says. Browsers without margin box support ignore the rules and fall back to their own header and footer
+
 ## [1.4.3] - 2026-11-16
 
 ### Added

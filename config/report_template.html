@@ -254,9 +254,31 @@
            Applied by browsers ("Save as PDF") and HTML-to-PDF converters; the on-screen view is unchanged. */
         @page {
             size: A4 portrait;
-            /* Top/bottom margins are kept below ~10mm on purpose: Chromium-based browsers then do not
-               print their own header (date, title) and footer (file path) on every page */
-            margin: 6mm 10mm;
+            margin: 14mm 10mm;
+
+            /* Own running header and footer. Defining page margin boxes also stops Chromium-based browsers from printing
+               their default header (date, title) and footer (file path) on every page, whatever the print dialog option says.
+               Browsers without margin box support ignore these rules and fall back to their own header and footer. */
+            @top-left {
+                content: "Display Analysis Report";
+                font: 9px Arial, sans-serif;
+                color: #666;
+            }
+            @top-right {
+                content: "{{ current_device_name | replace('"', '') | replace('\\', '') | safe }}   {{ inspection_date | replace('"', '') | replace('\\', '') | safe }}";
+                font: 9px Arial, sans-serif;
+                color: #666;
+            }
+            @bottom-left {
+                content: "Report Generator v{{ app_version | replace('"', '') | safe }}";
+                font: 9px Arial, sans-serif;
+                color: #666;
+            }
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font: 9px Arial, sans-serif;
+                color: #666;
+            }
         }
 
         @media print {
