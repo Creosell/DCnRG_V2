@@ -256,24 +256,16 @@
             size: A4 portrait;
             margin: 14mm 10mm;
 
-            /* Own running header and footer. Defining page margin boxes also stops Chromium-based browsers from printing
-               their default header (date, title) and footer (file path) on every page, whatever the print dialog option says.
-               Browsers without margin box support ignore these rules and fall back to their own header and footer. */
-            @top-left {
-                content: "Display Analysis Report";
-                font: 9px Arial, sans-serif;
-                color: #666;
-            }
-            @top-right {
-                content: "{{ current_device_name | replace('"', '') | replace('\\', '') | safe }}   {{ inspection_date | replace('"', '') | replace('\\', '') | safe }}";
-                font: 9px Arial, sans-serif;
-                color: #666;
-            }
-            @bottom-left {
-                content: "Report Generator v{{ app_version | replace('"', '') | safe }}";
-                font: 9px Arial, sans-serif;
-                color: #666;
-            }
+            /* Page numbers in the bottom right margin box; the other margin boxes are defined empty on purpose.
+               Chromium-based browsers print their default header (date, title) and footer (file path) only in the
+               margin boxes the stylesheet leaves undefined, so defining all of them stops the browser header and
+               footer whatever the print dialog option says. Browsers without margin box support ignore these rules
+               and fall back to their own header and footer. */
+            @top-left { content: ""; }
+            @top-center { content: ""; }
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-center { content: ""; }
             @bottom-right {
                 content: "Page " counter(page) " of " counter(pages);
                 font: 9px Arial, sans-serif;
@@ -338,10 +330,10 @@
             .plot-container { margin-bottom: 0; }
 
             /* Fit the wide Device reports tables into portrait width */
-            .individual-reports-table { font-size: 8px; }
+            .individual-reports-table { font-size: 11px; }
             .individual-reports-table th,
             .individual-reports-table td {
-                padding: 3px 4px;
+                padding: 3px;
             }
         }
     </style>

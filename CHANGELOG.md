@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The cell status rules moved from `helpers.py` to `src/evaluate.py`; `helpers._get_cell_status` stays as an alias, report output is unchanged
 
 ### Fixed
-- Printing the report to PDF from a browser added the browser's own header (date, title) and footer (file path) on every page: the small page margins did not suppress them. The print stylesheet now defines its own running header (report title, device and inspection date) and footer (generator version, `Page N of M`) as `@page` margin boxes; defining margin boxes also stops Chromium-based browsers (Chrome, Edge) from printing their default header and footer, whatever the print dialog option says. Browsers without margin box support ignore the rules and fall back to their own header and footer
+- Printing the report to PDF from a browser added the browser's own header (date, title) and footer (file path) on every page: the small page margins did not suppress them. The print stylesheet now defines `Page N of M` in the bottom right `@page` margin box and the other margin boxes empty; defining all margin boxes also stops Chromium-based browsers (Chrome, Edge) from printing their default header and footer, whatever the print dialog option says. Browsers without margin box support ignore the rules and fall back to their own header and footer
+- The tables of the individual device reports were printed in 8px (6pt), far smaller than the rest of the report; they are printed in 11px with tighter cell padding and still fit the portrait width
 
 ## [1.4.3] - 2026-11-16
 
