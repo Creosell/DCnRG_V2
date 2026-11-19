@@ -232,7 +232,8 @@ def _typ_distance(location: str, attempt: dict, expected_values: dict) -> float:
 def best_attempt_index(location: str, attempts: list, expected_values: dict, is_tv: bool) -> int:
     """
     Chooses the best attempt of a point: the best status first (pass, then warning, then fail); among equal statuses
-    the one closer to the typical coordinates for the red/green/blue points, then the higher luminance.
+    the one closer to the typical coordinates for the red/green/blue points, then the higher luminance (the lower one
+    for the black point: the darker the black, the better).
 
     Args:
         location: Measurement location of the point.
@@ -243,15 +244,21 @@ def best_attempt_index(location: str, attempts: list, expected_values: dict, is_
     Returns:
         int: Index of the best attempt (the later one wins a complete tie).
     """
+    darker_is_better = location == "BlackColor"
+
     def score(index: int):
         attempt = attempts[index]
         try:
             lv = float(attempt["Lv"])
         except (KeyError, TypeError, ValueError):
+            lv = float("nan")
+        if math.isfinite(lv):
+            lv = -lv if darker_is_better else lv
+        else:
             lv = float("-inf")
         return (_attempt_status_rank(location, attempt, expected_values, is_tv),
                 -_typ_distance(location, attempt, expected_values),
-                lv if math.isfinite(lv) else float("-inf"),
+                lv,
                 index)
 
     return max(range(len(attempts)), key=score)

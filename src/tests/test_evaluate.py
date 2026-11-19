@@ -313,6 +313,16 @@ def test_best_attempt_of_a_color_point_is_the_closest_to_typ_coordinates():
     assert ev.best_attempt_index("RedColor", [far_but_bright, near_but_dark], spec, False) == 1
 
 
+def test_best_attempt_of_the_black_point_is_the_darkest():
+    assert ev.best_attempt_index("BlackColor", [attempt(0.05), attempt(0.02), attempt(0.04)], {}, False) == 1
+    assert ev.best_attempt_index("BlackColor", [attempt(0.02), attempt(0.02)], {}, False) == 1  # the later one wins a tie
+    assert ev.best_attempt_index("BlackColor", [attempt(0.05), attempt(0.5)], {}, True) == 0
+
+
+def test_best_attempt_of_the_black_point_ignores_an_attempt_without_luminance():
+    assert ev.best_attempt_index("BlackColor", [{"x": 0.3, "y": 0.3}, attempt(0.2)], {}, False) == 1
+
+
 def test_best_attempt_of_a_single_attempt_or_a_point_without_spec_is_the_highest_luminance():
     assert ev.best_attempt_index("BottomLeft", [attempt(100)], {}, False) == 0
     assert ev.best_attempt_index("BottomLeft", [attempt(100), attempt(120), attempt(110)], {}, False) == 1
@@ -336,6 +346,23 @@ def test_evaluate_uses_the_best_attempt_and_reports_the_attempts(mock_tv_data):
     assert check["value"] == 180 and check["status"] == ev.STATUS_WARNING
     assert result["attempts"]["WhiteColor"] == {"count": 3, "best": 1, "deviated": True}
     assert result["attempts"]["Center"] == {"count": 1, "best": 0, "deviated": False}
+
+
+def test_resolve_attempts_gives_the_black_point_its_darkest_attempt_and_the_white_point_its_brightest(mock_tv_data):
+    data = copy.deepcopy(mock_tv_data)
+    black = next((m for m in data["Measurements"] if m["Location"] == "BlackColor"), None)
+    if black is None:
+        black = {"Location": "BlackColor", "x": 0.3, "y": 0.3, "Lv": 0.1, "T": 6500}
+        data["Measurements"].append(black)
+    black["Attempts"] = [attempt(0.05), attempt(0.02), attempt(0.04)]
+    white = next(m for m in data["Measurements"] if m["Location"] == "WhiteColor")
+    white["Attempts"] = [attempt(150), attempt(180), attempt(170)]
+
+    resolved, summary = ev.resolve_attempts(data, {})
+
+    by_location = {m["Location"]: m for m in resolved["Measurements"]}
+    assert (summary["BlackColor"]["best"], by_location["BlackColor"]["Lv"]) == (1, 0.02)
+    assert (summary["WhiteColor"]["best"], by_location["WhiteColor"]["Lv"]) == (1, 180)
 
 
 def test_evaluate_marks_a_point_as_deviated_even_when_the_best_attempt_is_fine(mock_tv_data):
