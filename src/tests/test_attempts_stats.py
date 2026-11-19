@@ -67,6 +67,7 @@ def test_color_point_is_plotted_by_the_distance_from_typ_and_judged_by_the_windo
     result = build(device("SN1", RedColor=[attempt(120, 0.690, 0.318), attempt(120, 0.672, 0.311)]))
 
     p = point(result, "SN1", "RedColor")
+    assert p["scale"] == "Δxy"
     assert (p["outcome"], p["best"]) == ("rescued", 2)  # x 0.690 is outside 0.655..0.685, 0.672 inside
     assert p["first"] == "0.022" and p["best_value"] == "0.002"
 
@@ -143,7 +144,7 @@ def test_the_section_is_drawn_for_a_point_measured_again():
 
     assert "Repeated measurements" in html and "attempt-card" in html and "SN1" in html
     assert 'class="attempt-badge rescued"' in html
-    assert "best &#8470;2 of 2" in html and "<svg" in html
+    assert "best 2 of 2" in html and "cd/m²" in html and "<svg" in html
 
 
 def test_the_section_is_not_drawn_without_repeated_measurements():

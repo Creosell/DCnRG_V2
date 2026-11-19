@@ -256,7 +256,8 @@
         .attempts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
         .attempt-card { border: 1px solid #dee2e6; border-radius: 6px; padding: 6px 8px; background: #fff; min-width: 0; }
         .attempt-card h4 { margin: 0 0 3px; display: flex; justify-content: space-between; align-items: center; }
-        .attempt-sn { font-family: Consolas, "Cascadia Mono", monospace; font-weight: 700; font-size: 11.5px; letter-spacing: .2px; }
+        .attempt-sn { font-family: Consolas, "Cascadia Mono", monospace; font-weight: 700; font-size: 11.5px; letter-spacing: .2px;
+                      background: #eef1f5; border: 1px solid #d3dae3; border-radius: 10px; padding: 1px 9px; color: #222; }
         .attempt-badge { border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
         .attempt-badge.rescued { background: #28a745; color: #fff; }
         .attempt-badge.improved { background: #ffc107; color: #533f03; }
@@ -738,15 +739,20 @@
         <div class="attempts-kpi" title="{{ attempts_stats.kpis.attempts_average }} attempts on average"><b>{{ attempts_stats.kpis.points }}</b><span>points measured again</span></div>
         <div class="attempts-kpi" title="The first attempt had a remark, the best has none"><b>{{ attempts_stats.kpis.rescued }} <small>of {{ attempts_stats.kpis.points }}</small></b><span>points rescued</span></div>
         {% if attempts_stats.kpis.gain_average is not none %}
-        <div class="attempts-kpi" title="Average brightness gain, first attempt to best"><b>{{ '%+d' | format(attempts_stats.kpis.gain_average) }} <small>cd/m²</small></b><span>brightness gain</span></div>
+        <div class="attempts-kpi" title="Average brightness gain, first attempt to best"><b>{{ '%+d' | format(attempts_stats.kpis.gain_average) }} <small>cd/m²</small></b><span>average gain</span></div>
         {% endif %}
     </div>
     <div class="attempts-legend">
-        Attempts in the order measured (1, 2, 3), the ringed one is the best (the one the report uses). Background:
+        Numbers: the order of the attempts; ringed: the best one, the one the report uses.
+        Zones:
         <span class="zone" style="background:#e6f4ea;"></span>within spec
         <span class="zone" style="background:#fff3cd;"></span>below typ or near the limit
         <span class="zone" style="background:#ffdddd;"></span>outside min/max
         <span class="zone" style="background:#f1f3f5;"></span>no spec
+        <br>
+        <b>Rescued</b>: the first attempt had a remark, the best has none.
+        <b>Improved</b>: the best is better than the first.
+        <b>No gain</b>: the first attempt was already the best or within the spec.
     </div>
     <div class="attempts-grid">
         {% for card in attempts_stats.cards %}
@@ -754,9 +760,9 @@
             <h4><span class="attempt-sn">{{ card.serial }}</span><span class="attempt-badge {{ card.outcome }}">{{ card.outcome_text }}</span></h4>
             {% for point in card.points %}
             <div class="attempt-point">
-                <div class="top"><b>{{ point.name }}</b><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
+                <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
                 {{ point.svg | safe }}
-                <div class="muted">best &#8470;{{ point.best }} of {{ point.attempts }}</div>
+                <div class="muted">best {{ point.best }} of {{ point.attempts }}</div>
             </div>
             {% endfor %}
         </div>

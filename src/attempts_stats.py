@@ -204,7 +204,7 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
             "location": location,
             "name": POINT_NAMES[location],
             "metric": metric.label,
-            "unit": metric.unit,
+            "scale": metric.unit or metric.label,  # what the numbers are: cd/m² or the color distance Δxy
             "attempts": len(values),
             "best": best + 1,
             "first": metric.format(values[0]),
