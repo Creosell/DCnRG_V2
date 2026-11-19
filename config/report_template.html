@@ -247,10 +247,10 @@
 
         /* Repeated measurements: a card per serial number with a strip plot of every repeated point */
         .attempts-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 10px; }
-        .attempts-kpi { border: 1px solid #dee2e6; border-radius: 6px; padding: 7px 9px; background: #fafbfc; display: flex; align-items: center; gap: 8px; min-width: 0; }
-        .attempts-kpi b { font-size: 19px; color: #222; white-space: nowrap; }
-        .attempts-kpi b small { font-size: 11px; font-weight: 400; color: #666; }
-        .attempts-kpi span { font-size: 13px; line-height: 1.2; color: #444; }
+        .attempts-kpi { border: 1px solid #dee2e6; border-radius: 6px; padding: 8px 10px; background: #fafbfc; display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+        .attempts-kpi b { font-size: 24px; line-height: 1; color: #222; white-space: nowrap; }
+        .attempts-kpi b small { font-size: 12px; font-weight: 400; color: #666; }
+        .attempts-kpi span { font-size: 15px; line-height: 1.15; font-weight: 500; color: #333; }
         .attempts-legend { font-size: 10.5px; color: #555; margin: 4px 0 8px; line-height: 1.7; }
         .attempts-legend .zone { display: inline-block; width: 26px; height: 9px; border-radius: 2px; margin: 0 3px 0 8px; vertical-align: middle; }
         .attempts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
@@ -357,6 +357,12 @@
             table:not(.individual-reports-table) th,
             table:not(.individual-reports-table) td { padding: 5px 7px; }
             .plot-container { margin-bottom: 0; }
+
+            /* Four summary cards in the portrait width: smaller type so each stays on one or two lines inside its card */
+            .attempts-kpi { padding: 6px 7px; gap: 5px; }
+            .attempts-kpi b { font-size: 20px; }
+            .attempts-kpi b small { font-size: 10px; }
+            .attempts-kpi span { font-size: 12.5px; }
 
             /* Fit the wide Device reports tables into portrait width */
             .individual-reports-table { font-size: 11px; }
