@@ -10,6 +10,7 @@ from collections import defaultdict
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from loguru import logger
 
+import src.attempts_stats as attempts_stats
 import src.graphics_helper as gfx  # Import our new helper
 import src.report as r
 import src.calculate as calc
@@ -171,6 +172,7 @@ def create_html_report(
         current_device_name: str,
         app_version: str,
         expected_yaml: Path,
+        attempts_devices: list | None = None,
 ) -> bool:
     """
     Generates an interactive HTML report from a JSON test result file
@@ -184,6 +186,8 @@ def create_html_report(
         current_device_name (str): Name of the current device.
         app_version (str): Version of the app.
         expected_yaml (Path): Path to the expected YAML file.
+        attempts_devices (list | None): (serial number, measurement file data) of every device, the source of the
+            "Repeated measurements" section; None or no repeated point: the section is not drawn.
 
     Returns:
         bool: True if report was successfully generated, False otherwise.
@@ -327,7 +331,8 @@ def create_html_report(
         'inspection_date': inspection_date,
         'colorimeter': colorimeter_summary,
         'app_version': app_version,
-        'tolerance_legend': tolerance_legend
+        'tolerance_legend': tolerance_legend,
+        'attempts_stats': attempts_stats.build_attempts_stats(attempts_devices or [], expected_values, len(device_reports)),
     }
 
     # --- 5. Render and Save HTML ---

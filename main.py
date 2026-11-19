@@ -289,6 +289,7 @@ def main() -> int:
                 f_html_result = RESULT_DIR / f"{safe_name}.html"
 
             device_reports = []
+            attempts_devices = []
             source_files_to_archive = []
             group_is_tv = files[0][1] if files else False
 
@@ -308,6 +309,7 @@ def main() -> int:
                         **calc_res
                     )
                     device_reports.append(report_entry)
+                    attempts_devices.append((sn, data))
                     source_files_to_archive.append(f_path)
                 except Exception as e:
                     logger.error(f"Calculation failed for {sn}: {e}")
@@ -333,6 +335,7 @@ def main() -> int:
                 current_device_name=dev_name,
                 app_version=APP_VERSION,
                 expected_yaml = expected_yaml,
+                attempts_devices=attempts_devices,
             ):
                 logger.error(f"Failed to create HTML report for {dev_name}")
                 continue
