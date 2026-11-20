@@ -264,9 +264,9 @@
         .attempt-badge.same { background: #adb5bd; color: #fff; }
         .attempt-tag { margin-left: 3px; font-size: 8.5px; font-weight: 700; }
         .attempt-tag.rescued { color: #1e7e34; }
-        .attempt-tag.improved { color: #9a6b00; }
+        .attempt-tag.improved { color: #a87800; }
         .attempt-tag.same { color: #8a9099; font-weight: 400; }
-        .attempt-tag-fail { color: #c82333; }
+        .attempt-tag.still { color: #d9480f; }
         .attempt-point { margin: 0 0 6px; padding: 4px 6px 5px; font-size: 9.5px; background: #fafbfc; border: 1px solid #e9ecef; border-radius: 5px; }
         .attempt-point:last-child { margin-bottom: 0; }
         .attempt-point .top { display: flex; justify-content: space-between; gap: 6px; }
@@ -776,7 +776,7 @@
             <h4><span class="attempt-sn">{{ card.serial }}</span><span class="attempt-badge {{ card.outcome }}">{{ card.summary }}</span></h4>
             {% for point in card.points %}
             <div class="attempt-point">
-                <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span> <span class="attempt-tag {{ point.outcome }}">{{ point.outcome_text }}{% if point.still_fail %}<span class="attempt-tag-fail">, still fail</span>{% endif %}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
+                <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span> <span class="attempt-tag {{ point.outcome }}{% if point.still_fail %} still{% endif %}">{{ point.outcome_text }}{% if point.still_fail %}, still fail{% endif %}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
                 {{ point.svg | safe }}
             </div>
             {% endfor %}
