@@ -1,0 +1,3235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Display Analysis Report</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f9f9f9; }
+        h1 { text-align: center; color: #333; }
+        h2 { border-bottom: 2px solid #eee; padding-bottom: 10px; color: #444; }
+        .table-subtitle { color: #666; font-size: 0.95em; font-weight: 600; margin: 12px 0 6px; }
+
+        /* Main Report Wrapper for Centering and Max-Width */
+        .report-wrapper {
+            max-width: 1100px;
+            margin: 20px auto; /* Центрирует обертку по горизонтали, добавляет отступы сверху/снизу */
+            background-color: #fff;
+            padding: 20px; /* Внутренние отступы для контента */
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        /* Report Header Info */
+        .report-header-info {
+        text-align: left;
+        margin: 10px 0px 0px 0px;
+        color: #555;
+        font-size: 21px;
+        display: inline-grid;
+        }
+        .report-header-info span {
+        display: inline-block;
+        }
+        .report-header-info strong {
+        color: #222;
+        }
+
+        /* Report Footer */
+        .report-footer {
+            margin-top: 50px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* Table Styles */
+        table { border-collapse: collapse; margin-bottom: 30px; width: 100%;}
+        th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: center; }
+        th { background-color: #f2f2f2; font-weight: 600; }
+        td.param-name { font-weight: 500; color: #222; }
+
+        /* Status Colors */
+        .status { font-weight: bold; }
+        .status-pass { color: #28a745; }
+        .status-fail { color: #dc3545; }
+        .status-na { color: #6c757d; }
+
+        /* Cell Status Colors for Device Reports */
+        .cell-fail { background-color: #ffdddd; color: #721c24; }
+        .cell-warning { background-color: #fff3cd; color: #856404; }
+
+        /* Table + Legend wrapper */
+        .table-with-legend {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+        }
+        .table-with-legend .individual-reports-table {
+            width: 100%;
+            border-radius: 0;
+            margin-bottom: 0;
+        }
+
+        /* Cell Status Legend */
+        .cell-status-legend {
+            padding: 8px 14px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            font-size: 12px;
+            color: #555;
+        }
+        .cell-status-legend-item {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .cell-status-legend-box {
+            display: inline-block;
+            width: 20px;
+            height: 14px;
+            border: 1px solid #999;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        /* Tolerance Legend */
+        .tolerance-legend {
+            margin: 10px 0 20px 0;
+            padding: 8px 12px;
+            background-color: #fff9e6;
+            border-left: 3px solid #ffc107;
+            font-size: 12px;
+            color: #856404;
+            line-height: 1.6;
+        }
+
+        /* Plot Section */
+        .plot-container { text-align: center; margin-bottom: 20px; }
+        .plot-controls { margin-bottom: 15px; }
+        .plot-controls label { margin-right: 15px; font-size: 14px; user-select: none; }
+
+        /* === CSS FOR CLICK-TO-ZOOM === */
+        #plot-wrapper {
+            width: 494px; /* Match SVG width */
+            height: 555px; /* Match SVG height */
+            overflow: hidden; /* This clips the zoomed SVG */
+            margin: auto;
+            border: 1px solid #ccc;
+            cursor: zoom-in; /* Default cursor: click to zoom in */
+            position: relative;
+        }
+
+        /* New class for the wrapper to control cursor when zoomed */
+        #plot-wrapper.is-zoomed {
+            cursor: zoom-out; /* Cursor when zoomed in: click to zoom out */
+        }
+
+        #plot-svg {
+            /* border: 1px solid #ccc;  <-- Border moved to wrapper */
+            border: none;
+            transform-origin: center center;
+            transition: transform 0.1s ease;
+        }
+
+        #plot-svg.zoomed {
+            transform: scale(5);
+        }
+        /* === END CSS FOR ZOOM === */
+
+        /* Cursor CIE coordinate readout badge */
+        #plot-coord-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #333;
+            pointer-events: none;
+            display: none;
+        }
+
+        /* SVG Plot Elements */
+        .triangle { fill-opacity: 0.15; stroke-width: 1; }
+        #srgb_triangle { fill: #007bff; stroke: #007bff; }
+        #ntsc_triangle { fill: #dc3545; stroke: #000000; }
+        #dcip3_triangle { fill: #a600ff; stroke: #a600ff; }
+        #rec2020_triangle { fill: #ff8c00; stroke: #ff8c00; }
+        #device_triangle { fill: #28a745; stroke: #28a745; }
+        #specification_triangle { fill: #007bff; stroke: #7f1a1a; }
+
+        #device_checkbox_label {color: #28a745; }
+        #ntsc_checkbox_label {color: #000000; }
+        #srgb_checkbox_label {color: #007bff; }
+        #dcip3_checkbox_label {color: #a600ff; }
+        #rec2020_checkbox_label {color: #ff8c00; }
+        #specification_checkbox_label {color: #7f1a1a; }
+
+        /* Debug Grid */
+        .debug-grid-point { fill: #ff00ff; opacity: 0.7; }
+
+        /* Fail Report */
+        .fail-report { font-family: "Courier New", Courier, monospace; font-size: 13px; background-color: #fff; border: 1px solid #eee; padding: 15px; border-radius: 5px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+
+        /* New Table for Individual Reports Styling */
+        .individual-reports-table {
+            font-size: 13px;
+            table-layout: auto;
+            width: 100%;
+        }
+
+        .individual-reports-table th, .individual-reports-table td {
+            padding: 8px 14px;
+        }
+
+        /* Styling for table with failes by minimum values */
+        .min-fail-table {
+            font-size: 13px; /* Smaller font for many columns */
+            table-layout: auto; /* Allow column width adjustment */
+            width: 100%;
+        }
+
+        .min-fail-table td, .min-fail-table tr {
+            padding: 5px 5px;
+        }
+
+        /* === STYLES FOR SORTING === */
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-left: 10px;
+        }
+        /* Default arrow (unsorted) - subtle */
+        .sortable-header::after {
+            content: ' \2195'; /* Up/Down Arrow */
+            opacity: 0.3;
+            position: absolute;
+            top: 50%; /* Center vertically in the header cell regardless of how many lines the title wraps to */
+            transform: translateY(-50%);
+            right: 3px;
+            padding-left: 10px;
+        }
+        /* Ascending arrow */
+        .sortable-header.sort-asc::after {
+            content: ' \25B2'; /* Black Up-Pointing Triangle */
+            opacity: 1;
+        }
+        /* Descending arrow */
+        .sortable-header.sort-desc::after {
+            content: ' \25BC'; /* Black Down-Pointing Triangle */
+            opacity: 1;
+        }
+        /* === END STYLES FOR SORTING === */
+
+
+        /* Styles for filter row and inputs (NEW) */
+        .filter-cell {
+            padding: 5px 6px;
+            border-top: none; /* Make the filter row less prominent */
+        }
+
+        .filter-cell input {
+            width: 100%;
+            box-sizing: border-box; /* Include padding/border in width */
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 10px; /* Small font size for compact look */
+            text-align: center;
+        }
+
+
+        /* Repeated measurements: a card per serial number with a strip plot of every repeated point */
+        .attempts-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 10px; }
+        .attempts-kpi { border: 1px solid #dee2e6; border-radius: 6px; padding: 8px 10px; background: #fafbfc; display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+        .attempts-kpi b { font-size: 24px; line-height: 1; color: #222; white-space: nowrap; }
+        .attempts-kpi b small { font-size: 12px; font-weight: 400; color: #666; }
+        .attempts-kpi span { font-size: 15px; line-height: 1.15; font-weight: 500; color: #333; }
+        .attempts-legend { font-size: 10.5px; color: #555; margin: 4px 0 8px; line-height: 1.7; }
+        .attempts-legend .zone { display: inline-block; width: 26px; height: 9px; border-radius: 2px; margin: 0 3px 0 8px; vertical-align: middle; }
+        .attempts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+        .attempt-card { border: 1px solid #dee2e6; border-radius: 6px; padding: 6px 8px; background: #fff; min-width: 0; }
+        .attempt-card h4 { margin: 0 0 3px; display: flex; justify-content: space-between; align-items: center; }
+        .attempt-sn { font-family: Consolas, "Cascadia Mono", monospace; font-weight: 700; font-size: 11.5px; letter-spacing: .2px;
+                      background: #eef1f5; border: 1px solid #d3dae3; border-radius: 10px; padding: 1px 9px; color: #222; }
+        .attempt-badge { border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+        .attempt-badge.rescued { background: #28a745; color: #fff; }
+        .attempt-badge.improved { background: #ffc107; color: #533f03; }
+        .attempt-badge.same { background: #adb5bd; color: #fff; }
+        .attempt-point { margin: 2px 0 4px; font-size: 9.5px; }
+        .attempt-point .top { display: flex; justify-content: space-between; gap: 6px; }
+        .attempt-point .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .attempt-point .muted { color: #777; }
+        .attempt-strip { display: block; width: 100%; max-width: 340px; height: auto; }
+
+        /* Page Break for printing/PDF generation */
+        .page-break {
+            page-break-before: always;
+            break-before: page;
+        }
+
+        /* === PRINT / PDF EXPORT ===
+           Applied by browsers ("Save as PDF") and HTML-to-PDF converters; the on-screen view is unchanged. */
+        @page {
+            size: A4 portrait;
+            margin: 14mm 10mm;
+
+            /* Page numbers in the bottom right margin box; the other margin boxes are defined empty on purpose.
+               Chromium-based browsers print their default header (date, title) and footer (file path) only in the
+               margin boxes the stylesheet leaves undefined, so defining all of them stops the browser header and
+               footer whatever the print dialog option says. Browsers without margin box support ignore these rules
+               and fall back to their own header and footer. */
+            @top-left { content: ""; }
+            @top-center { content: ""; }
+            @top-right { content: ""; }
+            @bottom-left { content: ""; }
+            @bottom-center { content: ""; }
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font: 9px Arial, sans-serif;
+                color: #666;
+            }
+        }
+
+        @media print {
+            /* Keep cell status colors, header backgrounds and plot fills in the PDF */
+            * {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            body { background-color: #fff; }
+
+            /* Separate (not collapsed) borders: Chromium paints collapsed borders before the cell backgrounds of a header
+               row, so the borders between the header cells disappear under the grey fill in the PDF */
+            table { border-collapse: separate; border-spacing: 0; border-top: 1px solid #ddd; border-left: 1px solid #ddd; }
+            th, td { border-width: 0 1px 1px 0; }
+            .table-with-legend .individual-reports-table { border-top: 0; border-left: 0; }
+
+            /* Let Device reports follow the plot on the same page; table headers repeat when a table continues */
+            .page-break {
+                page-break-before: auto;
+                break-before: auto;
+            }
+
+            /* Use the full sheet width instead of the centered on-screen card */
+            .report-wrapper {
+                max-width: none;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            /* Interactive controls make no sense on paper */
+            .filter-cell,
+            .sortable-header::after {
+                display: none;
+            }
+
+            /* Plot checkboxes double as the legend of the drawn triangles: print only the ticked ones.
+               Converters without :has() support simply print all of them. */
+            .plot-controls label:has(input:not(:checked)) { display: none; }
+
+            /* Never clip content to a scroll/zoom viewport */
+            .table-with-legend { overflow: visible; }
+            .fail-report { max-height: none; overflow: visible; }
+            #plot-wrapper { cursor: default; }
+
+            /* Do not split rows, boxes or the plot; keep headings with their content */
+            tr, .plot-container, .fail-report, .tolerance-legend, .cell-status-legend, .report-footer, .attempt-card, .attempts-kpis,
+            table:not(.individual-reports-table) {
+                break-inside: avoid;
+            }
+            h1, h2, h3, h4 { break-after: avoid; }
+
+            /* Repeat table headers on every page */
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+
+            /* Compact summary tables so that results and coordinates share the first page */
+            table:not(.individual-reports-table) { margin-bottom: 14px; font-size: 12px; }
+            table:not(.individual-reports-table) th,
+            table:not(.individual-reports-table) td { padding: 5px 7px; }
+            .plot-container { margin-bottom: 0; }
+
+            /* Four summary cards in the portrait width: smaller type so each stays on one or two lines inside its card */
+            .attempts-kpi { padding: 6px 7px; gap: 5px; }
+            .attempts-kpi b { font-size: 20px; }
+            .attempts-kpi b small { font-size: 10px; }
+            .attempts-kpi span { font-size: 12.5px; }
+
+            /* Fit the wide Device reports tables into portrait width */
+            .individual-reports-table { font-size: 11px; }
+            .individual-reports-table th,
+            .individual-reports-table td {
+                padding: 3px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="report-wrapper">
+    <h1>Display Analysis Report</h1>
+    <div class="report-header-info">
+        <span><strong>Device configuration:</strong> CH32\SDF-50UQ7000MBA_CH32</span>
+        <span><strong>Inspection date:</strong> 5th November 2026</span>
+        
+    </div>
+    <h2>Main Test Results</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Min (Actual)</th>
+                <th>Min (Expected)</th>
+                <th>Typ (Actual)</th>
+                <th>Typ (Expected)</th>
+                <th>Max (Actual)</th>
+                <th>Max (Expected)</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+            <tr>
+                <td class="param-name">Brightness (cd/m²)</td>
+                <td>364</td>
+                <td>320</td>
+                <td>379</td>
+                <td>
+                    
+                        350
+                    
+                </td>
+                <td>402</td>
+                <td>None</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">Brightness Uniformity (%)</td>
+                <td>76.2</td>
+                <td>65</td>
+                <td>80.1</td>
+                <td>
+                    
+                        70
+                    
+                </td>
+                <td>83.6</td>
+                <td>None</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">Contrast Ratio</td>
+                <td>5805</td>
+                <td>3500</td>
+                <td>6717</td>
+                <td>
+                    
+                        5000
+                    
+                </td>
+                <td>7232</td>
+                <td>None</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">DCI-P3 Gamut Area 1976 (%)</td>
+                <td>94.2</td>
+                <td>88</td>
+                <td>95.5</td>
+                <td>
+                    
+                        93
+                    
+                </td>
+                <td>96.4</td>
+                <td>None</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">Color Temperature (K)</td>
+                <td>7792</td>
+                <td>7300</td>
+                <td>8312</td>
+                <td>
+                    
+                        9300
+                    
+                </td>
+                <td>9552</td>
+                <td>11300</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+        </tbody>
+    </table>
+
+    
+
+    
+
+    <h2>Color Coordinates</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Coordinate</th>
+                <th>Min (Actual)</th>
+                <th>Min (Expected)</th>
+                <th>Typ (Actual)</th>
+                <th>Typ (Expected)</th>
+                <th>Max (Actual)</th>
+                <th>Max (Expected)</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+            <tr>
+                <td class="param-name">Red (x)</td>
+                <td>0.664</td>
+                <td>0.61</td>
+                <td>0.665</td>
+                <td>0.67</td>
+                <td>0.666</td>
+                <td>0.73</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">Red (y)</td>
+                <td>0.316</td>
+                <td>0.26</td>
+                <td>0.316</td>
+                <td>0.32</td>
+                <td>0.317</td>
+                <td>0.38</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">Green (x)</td>
+                <td>0.27</td>
+                <td>0.22</td>
+                <td>0.271</td>
+                <td>0.28</td>
+                <td>0.273</td>
+                <td>0.34</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">Green (y)</td>
+                <td>0.639</td>
+                <td>0.58</td>
+                <td>0.641</td>
+                <td>0.64</td>
+                <td>0.642</td>
+                <td>0.7</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">Blue (x)</td>
+                <td>0.152</td>
+                <td>0.095</td>
+                <td>0.152</td>
+                <td>0.155</td>
+                <td>0.152</td>
+                <td>0.215</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">Blue (y)</td>
+                <td>0.054</td>
+                <td>-0.005</td>
+                <td>0.056</td>
+                <td>0.055</td>
+                <td>0.058</td>
+                <td>0.115</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">White (x)</td>
+                <td>0.269</td>
+                <td>0.22</td>
+                <td>0.276</td>
+                <td>0.28</td>
+                <td>0.282</td>
+                <td>0.34</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+            <tr>
+                <td class="param-name">White (y)</td>
+                <td>0.269</td>
+                <td>0.23</td>
+                <td>0.28</td>
+                <td>0.29</td>
+                <td>0.286</td>
+                <td>0.35</td>
+
+                
+                
+                
+                <td class="status status-pass">PASS</td>
+            </tr>
+            
+        </tbody>
+    </table>
+
+    
+
+    <h2>Color Gamut Plot</h2>
+    <div class="plot-container">
+        <div class="plot-controls">
+            <label id="ntsc_checkbox_label"><input type="checkbox" onchange="toggleTriangle('ntsc_triangle')" > NTSC</label>
+            <label id="srgb_checkbox_label"><input type="checkbox" onchange="toggleTriangle('srgb_triangle')" > sRGB</label>
+            <label id="dcip3_checkbox_label"><input type="checkbox" onchange="toggleTriangle('dcip3_triangle')" checked> DCI-P3</label>
+            <label id="rec2020_checkbox_label"><input type="checkbox" onchange="toggleTriangle('rec2020_triangle')" > Rec.2020</label>
+            <label id="device_checkbox_label"><input type="checkbox" onchange="toggleTriangle('device_triangle')" checked> Device</label>
+            <label id="specification_checkbox_label"><input type="checkbox" onchange="toggleTriangle('specification_triangle')" > Specification</label>
+        </div>
+
+        <div id="plot-wrapper">
+            <svg id="plot-svg" width="494" height="555" viewBox="0 0 494 525" xmlns="http://www.w3.org/2000/svg">
+
+                <image href="" width="494" height="525" x="0" y="0" />
+
+                <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
+	id="CIExy1931"
+	x="0px" y="0px" width="476px" height="540px" viewBox="0 0 476 540">
+<title>CIExy color gamut diagram</title>
+<rect id="background" width="475.9" height="526" x="0" y="11.5" fill="none"/>
+<rect id="canvas" width="409.6" height="460.8" x="47.8" y="32" fill="white"/>
+<defs>
+	<g id="grid-lines" fill="none" stroke="#B3B3B3" stroke-width="0.5">
+		<g id="grid-h-lines">
+			<line id="line3255" x1="47.8" y1="467.2" x2="457.9" y2="467.2" />
+			<line id="line3257" x1="47.8" y1="441.6" x2="457.9" y2="441.6" />
+			<line id="line3259" x1="47.8" y1="416" x2="457.9" y2="416" />
+			<line id="line3261" x1="47.8" y1="390.4" x2="457.9" y2="390.4" />
+			<line id="line3263" x1="47.8" y1="364.8" x2="457.9" y2="364.8" />
+			<line id="line3265" x1="47.8" y1="339.2" x2="457.9" y2="339.2" />
+			<line id="line3267" x1="47.8" y1="313.6" x2="457.9" y2="313.6" />
+			<line id="line3269" x1="47.8" y1="288" x2="457.9" y2="288" />
+			<line id="line3271" x1="47.8" y1="262.4" x2="457.9" y2="262.4" />
+			<line id="line3273" x1="47.8" y1="236.8" x2="457.9" y2="236.8" />
+			<line id="line3275" x1="47.8" y1="211.2" x2="457.9" y2="211.2" />
+			<line id="line3277" x1="47.8" y1="185.6" x2="457.9" y2="185.6" />
+			<line id="line3279" x1="47.8" y1="160" x2="457.9" y2="160" />
+			<line id="line3281" x1="47.8" y1="134.4" x2="457.9" y2="134.4" />
+			<line id="line3283" x1="47.8" y1="108.8" x2="457.9" y2="108.8" />
+			<line id="line3285" x1="47.8" y1="83.2" x2="457.9" y2="83.2" />
+			<line id="line3287" x1="47.8" y1="57.6" x2="457.9" y2="57.6" />
+		</g>
+		<g id="grid-v-lines">
+			<line id="line3289" x1="73.4" y1="32" x2="73.4" y2="492.8" />
+			<line id="line3291" x1="99" y1="32" x2="99" y2="492.8" />
+			<line id="line3293" x1="124.6" y1="32" x2="124.6" y2="492.8" />
+			<line id="line3295" x1="150.2" y1="32" x2="150.2" y2="492.8" />
+			<line id="line3297" x1="175.8" y1="32" x2="175.8" y2="492.8" />
+			<line id="line3299" x1="201.4" y1="32" x2="201.4" y2="492.8" />
+			<line id="line3301" x1="227" y1="32" x2="227" y2="492.8" />
+			<line id="line3303" x1="252.6" y1="32" x2="252.6" y2="492.8" />
+			<line id="line3305" x1="278.2" y1="32" x2="278.2" y2="492.8" />
+			<line id="line3307" x1="303.8" y1="32" x2="303.8" y2="492.8" />
+			<line id="line3309" x1="329.4" y1="32" x2="329.4" y2="492.8" />
+			<line id="line3311" x1="355" y1="32" x2="355" y2="492.8" />
+			<line id="line3313" x1="380.6" y1="32" x2="380.6" y2="492.8" />
+			<line id="line3315" x1="406.2" y1="32" x2="406.2" y2="492.8" />
+			<line id="line3317" x1="431.8" y1="32" x2="431.8" y2="492.8" />
+		</g>
+		<rect id="grid-outline" fill="none" stroke="black" stroke-width="0.5" x="47.8" y="32" width="409.6" height="460.8" />
+	</g>
+	<path id="border" d="M 426.8,358.8 C 320.5,252.5 249.6,184.6 204.1,139.1 164.9,99.9 110.1,65.7 89.8,65.7 c -28.7,0 -39.5,45.1 -39.5,98.5 0,59.3 18.4,227.4 66,306.4 0,0 10.3,15.6 21.7,20 L 426.8,358.8 z"/>
+</defs>
+<g id="horseshoe">
+	<clipPath id="clipborder">
+		<use style="overflow: visible" x="0" y="0" width="475.9" height="539.9" xlink:href="#border"/>
+		<!--temp3:                     x="0" y="0" width="494.6" height="525.8" xlink:href="#border"/-->
+	</clipPath>
+	<use xlink:href="#grid-lines"/>
+	<g id="gradient" clip-path="url(#clipborder)">
+		<image style="overflow: visible; opacity: 0.8;" width="384" height="448" x="47.7488" y="44.7988" xlink:href="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsK CwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQU FBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wgARCAHAAYADASIA AhEBAxEB/8QAHAAAAwEBAQEBAQAAAAAAAAAAAQIDAAQFBgcI/8QAHQEAAgMBAQEBAQAAAAAAAAAA AwQAAQUCBgcICf/aAAwDAQACEAMQAAAB93bfD/zhttJttJttJttJttJttJttJttJttJttJiKV129 vP1o+pteV1d+lUqDTeqUFovRaBeai04dNFoJ1nDjcKtGNLFomZEjIxxIzKf4EUT1n47G2De20m20 m20m20m20m20m20m20m20m6Ofu4a7OqHVn+tradltqlUqHTei0DoNVaDfZw4nWotBuMw3DiRaJGl kZHYEjIxxMzKf4xaD334zktVze02yt7bSbbSbbSbbSbbSbbSbbSbbSN6PF6QNbo6Y9KHq6WnZfYp VKh0notA6D0Wg3motBPGgcbuk0LaWLROyJGRmBIzKcSMym+XDr9K/Fqq4VuS1XO7niEOttqm20m2 0m20m20m20m2Mvq9Hk70vSW6JdCfpaWnZfWeqVDpPRai0GotBPNRaDebGXDiwaJ2lkZGZWRmZgSM ymEzMpvn8w+o/iZQ2Bcw4V6mllz+o50zu9thzbaTbaTbaTbaTOnRyXu7efrz/X2vOyu9SyVBqvVa A0nqtB6DUWoXzQMN5YPzkbWLROyImRmBIyMwJmZTaRmY3kZh9V/EChsK1DBe1Vwtc1qqPURVMvtd sC9tpNtpNtpN28npCf6+qHVnewredltylkqDUeqVDpPRai0GotBPtN+enVg0WGli0TsrIyMwJ6ZT 6ekY2mZkNxBt9b/DKZgK1xAbAYAtVcLdIlVTuK2TLImISvbaTbaSvqcHpq73R1R6UPWUvOy2zSqW BqPVKi0mqtQ6DOFG+kGgZxYNFhpZGRmBEzMwJ6RjaeQhhMzKaWO+wfhMA4UAYC6UMA2FcBtVcLWi 0VPqSXTM7lmXO6xD8dd3ocvch62/RLoT9LS87LbFKpYOo9UqHRei0Do6D8/TyQeDLawaJ2RFomYE 9MxxPTKfT0yG08hS0x32P8GgHcRcwFYBw7UNg2oYAtMwXtFoFOpJZc3qF06sdzu7efryPbW6JdCn oKWSy+u9kqHUeq1DpNjHjQTnaDDiwaDDYiYnZEjIxxIyKfT0yn09MpcmmQvdiPs/4GGO4sBgOAMB 2uYCtccG1DANqGC9qrhTpPQ5fUyNh+pb+W9u/RK+Xv0vO6+u9UsDUeqsLTTmfnK8kG52XBBoHaEj E7GiZGPp6RT6emU+nplLkCEL7G2+1fz/ABjuIuYcWuOHYDAcAYCtcwFahsC0Dhfq3q8fpZHqKdAv g+wWr0876AXS2RsvVbL6pk/NWinM/O06kGgy2ImJ2hEyOxpaRT6WmU5lplKZiZTGemQv0YO+2/z3 Abc2uO4gB3FgNhxQwHYDYdpmAbVhYBO/0OfuxPcP0L0ZPqNU2yN1Hq+Btzo0cPYnzPyl0F5252XR AxZaETE7IkYmY0tMp9MTMYzEymMxMhjMTIX6/bfcf53jHc2ubcRQw4gDbi1x3EXHDtcwFa9vJ6ir /Z2R7MX3j9C9GZ6Q21szcFWfL2o8PXxZOvyct+PP0k52h26IGLDQlpGYEtIzBlpGMZaRTmYmQxmJ lMZiRS/d477p/OYBhzYx3MGO4sA7mANuLXMOIobDtvX8/wBhD0HR1z6sf3L9C9Gd6I3F8/cyW5M/ Z5uLo419SHH0ciejz81+TOfSJjw3o6RmNLSOfTEinMxIpjMSKdprIhmmsjG/Swd91/m6MdUAbcxc wqLm3MXHcRcw5sYtxfb63H6eT7W/VPqy/ZP0L0IehN8UNyHB0cK2xDkryB0pcteUD8uenOs7Hmtz 57k5aK7ZkJFOZCRTtJZmO0lkU7TSJT0ikDH/AF7Hfd/5njHVYx1QYioMw5gx3NgNqi2n2iZ9H0eb 0Mb6FXqn153q26V6EfQ7l6POT3IcVuIOtLkpyi0J8z84Xk525wuJB+ddufPXnScSJgm0ZLIjDSWJ jvKcTMUjLlYavzc3K07/AEFjvuP8uhjpBjqgx1Rc2lrmFQBtUHq+f7a2x2d8O7G+i0659aHqWq3O l6Hm8+/AvtR46cYdROV+UWgnO3OJ1ecwE2sDATY525wtDmfnUbWI5k3HjLm6avzc3G2708k805tt 0T+h8h+5/wArnyCR8mkfJqj6eu6aekpp6Tu93xfaz/Xej3cHble/7uvh6kvUV83p8xP0MOC3CvsS 5H5A6S8rcwn15zzDd3PufhvQ3ONvQHONs868vDj8k+Ab9eFZA0cNhH22k22k/ftDfev5bW0NcuIa Xfc4udG5xd9A59L6Dy0hPe9Xx/Ry/oPq9nldWf7P1enyuhT0vT51vOW3pcVOJbWTkbkDojm3MN7c 25uHTzjm4cbmXlp1+aPDb/RwQj1ombAbKLRVO5Ci5vS7ZPrbap+4aO/QX8v66Iu7CIu7iAvq4gLu 4gt9dHV5npcP+13+X2ZX0X0unzehT1fpX82q3ouvgpwA3U4m419Qcm5Q6G5RyjfbmTl5efllwXod HDy8xNKkCI4oYL9qGC1qGC3SBwpc1oqHaYhHr9kEh+hv5k1Elu7CI66sILfVxBeurrBeuur1vE9h f0HqdXndOd7/ANG3n2W9P6FfOoH0PZwniDuDjHGDTPIvGPRfklwVpX4eTi71L8gFvgMoCKGC9gHL 9KDl7UMF7UMFrUMFukSqpdfqYkPvn81arJbuyyXruyxXrqyxTru6wXsnqep5Hopez9Ho8+yXtfQp wOH0noP5549D28S8I91uKfnD1b8HJ5t6/V56C9NQcAyghWwDl+lBC9gHA6UMF7XEAsBgvahgDpQw Wv8AQxJfuv8AOCoknXdkkvXVVivZLJFOyWPLW2fZ7fM6kPf+hXgdf1ve3BuPSegPOnfovQ8/k8kn pO3yozmyFZVmVDKn2AQr0AyrWAQtYDAFqGAOlxALAYAtcQCwDgWoYAv7RZr9z/nXRZL2SqSTslpy TslUjMhbdfl+hWt6l/Pql9A7289ePV+inmchPUetxeYWPV9MyOdpVZc8gBCXSghPoAhXoAhawCF+ gDgWoYAtcQCxiA2AQGxiAWAcG/pVkn3T+e9UknZKpFCFrOMilvKESn7fQ8btH6n0z5sQ++9Xm8oG 9h2GFr9Ha0bC1q7FZ9ARnkUEJdBWCnSg5XpcQva4hewCAXlYAsAgNgHB6AODa4gMGID16qST7v8A gKs5SIW0pRKa0oc52OiHLysO+3TxKV9B9Ec9+PaXvG4Nyt42BrVvC4NOuBA+gZUCBWCXShlUsAhb oAhe8rBewCAdDbBsKwBYBwrAIDeBAbG2FbzlL75+D7ShEzF4c3Kw11cfFwu6HXLk7Wdfv7ObsQ9x fojdT0FrSsvr1tKwdStZVDpVIK76qwS7UEJdAEK9KGVbrAhaxtgWuIBYBAbGIDYBAbGIFYxArAYB vzYw5v0N+Iejm4+Bt/s4YBx8jYhj6fn+qHU6uvn6s72Nrxutt2rOoNWtpVBp1rKotGjK4HkBCRFD BPpQQr0AQtYBy/QBALAZQTAgPQ2wbAZQ2McKLiBWNsK//8QAIRABAQEAAgMBAAMBAQAAAAAAAQAC AxEQEkAhIDAxEwT/2gAIAQEAAQUC+cuMsxERER4P5szMzP0Z/wBwWYiIiPB/QzMzM/RxlmIiIiPB /NZmZn6uMsxERERH82WZmZmfnP8AcFmIiIjwfzWZmZnw/Pg/cFmIiIiI8nllmZmfDPz8ZZsxERER 4I8ssyzMzP08ZZiIiIiPBHlZZZlmZn6M/wC4LMRERER4PLLLMszM+X5uMsFmIiIiIiPKyzLMzL4Z +fiLNmIiIiIiPCyyzLMyzM/OXGWbMRERERHhllllmZnw/B1/Rg/cFmIiIiIiPCyyyyzMzM+V/u6/ nxFgsxEREREeFlllllmWZl8r8HX8uIs2YiIiIiPCyyyyyyzMs+H4+vOf94yzZiIiIiPGmWWWWWWW ZZ8LL8nXjjP3BZiIiIiImWWWWWWWWWWZZfPfx9XFmwWYiIiIjxpllllllmWXwsvz9XHmyWYiIiI8 abTLLLLLLLLMsvnvx38eD9wQQRERER40yyyyyyyyyyy+O5fHfycRYIILqCIiPGm0yyyyyyyyyy+F llu7u7+PizZIIILqCIiW0yyyyyyyyyy3d3dy3d3d3fxH+8ZZIIIILq6jxptMssssssssst3Ld3d3 d3d38XGfuCyQQQQQXV1abTaZZZZZZZZZZZZbu7u7u7u/i4c2CyQQQQQQWrdptMssssssssssssss t3d3fxcWbBZIIIIIPG21btSyyyyyyyyyyyyyyyyy/Dg/eMslkgggggtW202rVqWWWWWWWW7lllll lll+HiP3BZLJBBBBP5bbTabTatWpZZZZZZZZZZZZZZZfh4c2CyWSCCCC22202m02m02rUsssssss sssssss6+AP3izYLJZIIILX5bbTabTabTLLamZZZZZZZZZZZ1Op18HGfvGWCyWSCC/y22202m02m WWWWZmWWWWWWWdTqdTu1yfBw5uMslkslkgtttttptNptMsssssszLLLLOp1Op1a3a5Z13/f1cObB ZLJZLJP4b1bbTabTaZZZZZZZZZbTLOp1Op3a3a5Z338OD94s2CyWSyQXJq3q22m02m02mWWWWWWW WW02tTq1u1y2uTv4+HP7xlgslkslp6uTVvVttNptNptMssssssstrVrVrVvktcl3/Lu7u7u7u7u7 va9ru9r2va4LjbDZ1Z1Z1cmrererTabTaZbTLLLOp1Op1a1a3b5LfJL3/R3d3d3d3d3e17Xte17X tD+8Nhs6s6s6jVvVvVvVrVptNptMs6lnU6nVrVrdrkt8s67/AKu7u7u7u7u7u7u72va9rje3jsNn VnUajVvVvVvVrVrVrVrVrVrU6nVrVrVrdrkt8trff9nd3d3d3d3d3d3d3e17XDYbLZ1Go1Grerer WrWrWrWrWrWrWrWrWrW7XJb5bXJ3/d3d3d3d3d3d3d3d3td3DYbLGo1Go1a1b1a1a1a1a1a1a1a1 a3a5LfLb5e5f7+7u7u7u7u7u7va9r2h/eKy2WNRqNRq1q3q1q1q1q1q1u1u1yW+W3zS9/D3d3d3d 3d7Xd3d3d7XH/uGywxqNXtGrW7erWrWrW7W7fJb5bfNa138fd3d3d3d3d3d3d3e1xWGyxqNRq9r3 tbt7t7t7t8lvluTntbX5e7u7u7u7u72u72u7u4rLDGr2va973tbt7t8lvluTnt8i/P3d3d3d3d3d 3d7Xdl/cWWNXte173vf9LXJcnLcnPb5u7vv6O7u7u7u7u7u7va9rjbLGo1e173vf9J5bfPcnP3L3 9Xd3d3d3d3d7Xte17XE2WNXte97zy2ue1/6J2v2d3d3d3d3d3te06vb942NXve9/0nmtf+ieRYj7 O7u7u7u9r2nU6nVl/c6va955bXPPKvgiPs7u7u7u51Op1Op1cbG7/pa555V8EREfZ3d3te06nU6n U7ndjd/2nm7u+4iIiI+zudTqdTqdTqd2uSeX9/6w9xEREREfZ7TqdTqdTu1yW+W3z2X2cWYiIjwR H2e06nU7tbtctvntcnfjiLNmIiIiIj7HU7ndrkt81rk78lxlmzEREeCI+x3a5LfLa5e7v+GP9xZs xEREREfZ/8QAIhEAAwEAAwACAwEBAQAAAAAAAAECAwQREhAwBSAhMUFR/9oACAEDAQE/Afrlds40 dIyRmiEQiUSiUShISEvs48+rMJM0QiEQiESiUShISEvjv6uHH/TGTNEIhEIhEolCQkJCXz39PEjp GUmaIRCIRCJRKEhISEv07/fNeqOPH8MpM0QiEQiESiUJCQkJfr3+3EjujCTKTNEIhESSiUShISEh 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 iBrQn0f/2Q=="/>
+	</g>
+	<path id="horsehoe-outline" fill="none" stroke="black" stroke-width="0.5" d="M 426.8,358.8 C 320.5,252.5 249.6,184.6 204.1,139.1 164.9,99.9 110.1,65.7 89.8,65.7 c -28.7,0 -39.5,45.1 -39.5,98.5 0,59.3 18.4,227.4 66,306.4 0,0 10.3,15.6 21.7,20 L 426.8,358.8 z"/>
+</g>
+<g id="axes">
+	<g id="axes-labels" style="font-size: 18px; font-style: italic; font-family: serif;">
+		<text id="x" x="247.8953" y="531.2246">x</text>
+		<text id="y" x="13.2346"  y="265.2246">y</text>
+	</g>
+	<g id="axes-tick-labels" style="font-size: 16px; font-family: sans-serif;">
+		<g id="y-axis-labels">
+			<text x="22.7522" y="38.0">0.9</text>
+			<text x="22.7522" y="89.2">0.8</text>
+			<text x="22.7522" y="140.4">0.7</text>
+			<text x="22.7522" y="191.6">0.6</text>
+			<text x="22.7522" y="242.8">0.5</text>
+			<text x="22.7522" y="294.0">0.4</text>
+			<text x="22.7522" y="345.2">0.3</text>
+			<text x="22.7522" y="396.4">0.2</text>
+			<text x="22.7522" y="447.6">0.1</text>
+		</g>
+		<text x="22.7522" y="512.2246">0.0</text>
+		<g id="x-axis-labels">
+			<text x="88.9534" y="512.2246">0.1</text>
+			<text x="140.1541" y="512.2246">0.2</text>
+			<text x="191.3547" y="512.2246">0.3</text>
+			<text x="242.5554" y="512.2246">0.4</text>
+			<text x="293.7566" y="512.2246">0.5</text>
+			<text x="344.9578" y="512.2246">0.6</text>
+			<text x="396.157" y="512.2246">0.7</text>
+			<text x="447.3582" y="512.2246">0.8</text>
+		</g>
+	</g>
+	<line id="physical-xy-limit" fill="none" stroke="#BABABA" stroke-width="1.5" stroke-linecap="round" x1="99" y1="32" x2="457.4" y2="390.4"/>
+	<polygon fill="white" opacity="0.7" stroke="#BABABA" stroke-width="1.5" stroke-linecap="round" points="99,32 457.4,390.4 457.4,32"/>
+</g>
+<g id="nm-ticks" fill="none" stroke="black" stroke-width="0.5" style="display: visible">
+	<line id="tick-380nm" x1="137.9" y1="490.7" x2="135  " y2="496.3" />
+	<line id="tick-460nm" x1="121.1" y1="477.2" x2="116.8" y2="481.7" />
+	<line id="tick-470nm" x1="111.6" y1="462.6" x2="106.1" y2="465.7" />
+	<line id="tick-480nm" x1=" 94.8" y1="424.7" x2=" 88.8" y2="426.6" />
+	<line id="tick-490nm" x1=" 71.4" y1="341.3" x2=" 65.4" y2="343  " />
+	<line id="tick-500nm" x1=" 52.9" y1="216.5" x2=" 46.7" y2="217.5" />
+	<line id="tick-520nm" x1=" 84.7" y1=" 66.2" x2=" 84.5" y2=" 59.9" />
+	<line id="tick-540nm" x1="165.4" y1="105.5" x2="169.1" y2="100.4" />
+	<line id="tick-560nm" x1="238.1" y1="172.8" x2="242.6" y2="168.3" />
+	<line id="tick-580nm" x1="309.9" y1="243.1" x2="314.4" y2="238.6" />
+	<line id="tick-600nm" x1="369.2" y1="301.5" x2="373.7" y2="297  " />
+	<line id="tick-620nm" x1="402.3" y1="334.3" x2="406.7" y2="329.8" />
+	<line id="tick-700nm" x1="426.8" y1="358.8" x2="431.2" y2="354.3" />
+</g>
+<g id="nm-labels" style="font-size: 16px; fill: #06C; font-family: sans-serif; display: visible;">
+	<text x="110"     y="507"     >380</text>
+	<text x= "89.491" y="490.2227">460</text>
+	<text x= "77.491" y="472.2227">470</text>
+	<text x= "61.491" y="433.2227">480</text>
+	<text x= "45.491" y="358.2227">490</text>
+	<text x= "17.491" y="222.2227">500</text>
+	<text x= "72.491" y= "54.2227">520</text>
+	<text x="169.491" y= "95.2227">540</text>
+	<text x="244.491" y="163.2227">560</text>
+	<text x="314.491" y="235.2227">580</text>
+	<text x="375.491" y="294.2227">600</text>
+	<text x="406.491" y="327.2227">620</text>
+	<text x="429"     y="361"     >700</text>
+</g>
+<g id="illuminant-markers" stroke="black">
+	<g id="D65-illuminant-marker">
+		<circle fill="black" stroke-width="0" cx="207.8" cy="324.33" r="3"/>
+	</g>
+</g>
+<g id="illuminant-labels" style="font-size: 14px; font-family: sans-serif;">
+	<text id="D65-label" x="212.3" y="340.6"><tspan>D65</tspan></text>
+</g>
+</svg>
+
+
+                <polygon id="srgb_triangle" class="triangle" points="373.4,323.33 200.0,185.33 123.5,461.33" style="display: none;" />
+                <polygon id="ntsc_triangle" class="triangle" points="388.7,323.33 154.1,129.11 118.4,451.11" style="display: none;" />
+                <polygon id="dcip3_triangle" class="triangle" points="393.8,328.44 182.15,139.33 123.5,461.33"  />
+                <polygon id="rec2020_triangle" class="triangle" points="408.08,342.76 133.7,84.64 113.81,468.49" style="display: none;" />
+                <polygon id="device_triangle" class="triangle" points="386.15,330.49 185.21,164.38 124.52,463.38" />
+                <polygon id="specification_triangle" class="triangle" points="388.7,328.44 189.8,164.89 126.05,463.89" style="display: none;"/>
+
+                <g id="debug_grid" style="display: none;">
+                    <circle class="debug-grid-point" cx="47.0" cy="492.0" r="5" />
+                    <circle class="debug-grid-point" cx="455.0" cy="492.0" r="5" />
+                    <circle class="debug-grid-point" cx="47.0" cy="32.0" r="5" />
+                    <circle class="debug-grid-point" cx="455.0" cy="32.0" r="5" />
+                </g>
+            </svg>
+            <div id="plot-coord-badge"></div>
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+<h2 class="individual-reports-header">Device reports</h2>
+    <h3>Main Data</h3>
+    <div class="table-with-legend">
+    <table id="individual_reports_table_main" class="individual-reports-table">
+        <thead id="individual-table-head-main">
+            <tr>
+                <th class="sortable-header" style="width: 150px;" onclick="sortTable('main', 0)">Serial Number</th>
+                <th class="sortable-header" style="width: 120px;" onclick="sortTable('main', 1)">Meas. Date/Time</th>
+                
+                
+                
+                <th class="sortable-header" onclick="sortTable('main', 2)">Brightness (cd/m²)</th>
+                
+                <th class="sortable-header" onclick="sortTable('main', 3)">Black Luminance (cd/m²)</th>
+                
+                <th class="sortable-header" onclick="sortTable('main', 4)">Contrast Ratio</th>
+                
+                <th class="sortable-header" onclick="sortTable('main', 5)">Brightness Uniformity (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('main', 6)">Color Temperature (K)</th>
+                
+                <th class="sortable-header" onclick="sortTable('main', 7)">ΔE</th>
+                
+            </tr>
+        </thead>
+        <tbody id="individual-table-body-main">
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101306CE</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    364
+                </td>
+                
+                
+                <td >
+                    0.0503
+                </td>
+                
+                
+                <td >
+                    7232
+                </td>
+                
+                
+                <td >
+                    78.1
+                </td>
+                
+                
+                <td >
+                    8302
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A561014002B</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    371
+                </td>
+                
+                
+                <td >
+                    0.0517
+                </td>
+                
+                
+                <td >
+                    7182
+                </td>
+                
+                
+                <td >
+                    83.6
+                </td>
+                
+                
+                <td >
+                    8293
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101400BB</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    369
+                </td>
+                
+                
+                <td >
+                    0.0600
+                </td>
+                
+                
+                <td >
+                    6142
+                </td>
+                
+                
+                <td >
+                    81.6
+                </td>
+                
+                
+                <td >
+                    7792
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101400BC</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    398
+                </td>
+                
+                
+                <td >
+                    0.0582
+                </td>
+                
+                
+                <td >
+                    6836
+                </td>
+                
+                
+                <td >
+                    77.6
+                </td>
+                
+                
+                <td >
+                    8269
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A561014072F</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    366
+                </td>
+                
+                
+                <td >
+                    0.0582
+                </td>
+                
+                
+                <td >
+                    6280
+                </td>
+                
+                
+                <td >
+                    80.3
+                </td>
+                
+                
+                <td >
+                    7907
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140730</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    364
+                </td>
+                
+                
+                <td >
+                    0.0553
+                </td>
+                
+                
+                <td >
+                    6581
+                </td>
+                
+                
+                <td >
+                    81.3
+                </td>
+                
+                
+                <td >
+                    8167
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140731</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    382
+                </td>
+                
+                
+                <td >
+                    0.0572
+                </td>
+                
+                
+                <td >
+                    6675
+                </td>
+                
+                
+                <td >
+                    81.8
+                </td>
+                
+                
+                <td >
+                    8240
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140732</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    375
+                </td>
+                
+                
+                <td >
+                    0.0646
+                </td>
+                
+                
+                <td >
+                    5805
+                </td>
+                
+                
+                <td >
+                    81.8
+                </td>
+                
+                
+                <td >
+                    8373
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140734</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    398
+                </td>
+                
+                
+                <td >
+                    0.0552
+                </td>
+                
+                
+                <td >
+                    7216
+                </td>
+                
+                
+                <td >
+                    78.5
+                </td>
+                
+                
+                <td >
+                    8226
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140736</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    402
+                </td>
+                
+                
+                <td >
+                    0.0557
+                </td>
+                
+                
+                <td >
+                    7223
+                </td>
+                
+                
+                <td >
+                    76.2
+                </td>
+                
+                
+                <td >
+                    9552
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+            </tr>
+            
+        </tbody>
+    </table>
+    <div class="cell-status-legend">
+        <strong>Cell colors:</strong>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #ffdddd;"></span>
+            Critical (below min or above max)
+        </span>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #fff3cd;"></span>
+            Warning (below typical)
+        </span>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #fff;"></span>
+            Normal
+        </span>
+    </div>
+    </div>
+
+    <h3>Gamut Data</h3>
+    <h4 class="table-subtitle">CIE 1931 xy</h4>
+    <div class="table-with-legend">
+    <table id="individual_reports_table_gamut_xy" class="individual-reports-table">
+        <thead id="individual-table-head-gamut_xy">
+            <tr>
+                <th class="sortable-header" style="width: 150px;" onclick="sortTable('gamut_xy', 0)">Serial Number</th>
+                <th class="sortable-header" style="width: 120px;" onclick="sortTable('gamut_xy', 1)">Meas. Date/Time</th>
+                
+                
+                
+                <th class="sortable-header" onclick="sortTable('gamut_xy', 2)">sRGB Gamut Area (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_xy', 3)">NTSC Gamut Area (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_xy', 4)">DCI-P3 Gamut Area (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_xy', 5)">Rec.2020 Gamut Area (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_xy', 6)">sRGB Gamut Coverage (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_xy', 7)">NTSC Gamut Coverage (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_xy', 8)">DCI-P3 Gamut Coverage (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_xy', 9)">Rec.2020 Gamut Coverage (%)</th>
+                
+            </tr>
+        </thead>
+        <tbody id="individual-table-body-gamut_xy">
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101306CE</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    120.1
+                </td>
+                
+                
+                <td >
+                    85.1
+                </td>
+                
+                
+                <td >
+                    88.5
+                </td>
+                
+                
+                <td >
+                    63.5
+                </td>
+                
+                
+                <td >
+                    100.0
+                </td>
+                
+                
+                <td >
+                    78.4
+                </td>
+                
+                
+                <td >
+                    87.9
+                </td>
+                
+                
+                <td >
+                    63.5
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A561014002B</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    120.4
+                </td>
+                
+                
+                <td >
+                    85.3
+                </td>
+                
+                
+                <td >
+                    88.8
+                </td>
+                
+                
+                <td >
+                    63.7
+                </td>
+                
+                
+                <td >
+                    99.9
+                </td>
+                
+                
+                <td >
+                    78.4
+                </td>
+                
+                
+                <td >
+                    88.1
+                </td>
+                
+                
+                <td >
+                    63.7
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101400BB</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    119.9
+                </td>
+                
+                
+                <td >
+                    84.9
+                </td>
+                
+                
+                <td >
+                    88.4
+                </td>
+                
+                
+                <td >
+                    63.4
+                </td>
+                
+                
+                <td >
+                    100.0
+                </td>
+                
+                
+                <td >
+                    78.7
+                </td>
+                
+                
+                <td >
+                    88.1
+                </td>
+                
+                
+                <td >
+                    63.4
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101400BC</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    120.7
+                </td>
+                
+                
+                <td >
+                    85.5
+                </td>
+                
+                
+                <td >
+                    89.0
+                </td>
+                
+                
+                <td >
+                    63.8
+                </td>
+                
+                
+                <td >
+                    99.9
+                </td>
+                
+                
+                <td >
+                    78.7
+                </td>
+                
+                
+                <td >
+                    88.2
+                </td>
+                
+                
+                <td >
+                    63.8
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A561014072F</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    120.4
+                </td>
+                
+                
+                <td >
+                    85.3
+                </td>
+                
+                
+                <td >
+                    88.7
+                </td>
+                
+                
+                <td >
+                    63.7
+                </td>
+                
+                
+                <td >
+                    100.0
+                </td>
+                
+                
+                <td >
+                    78.7
+                </td>
+                
+                
+                <td >
+                    88.3
+                </td>
+                
+                
+                <td >
+                    63.7
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140730</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    119.9
+                </td>
+                
+                
+                <td >
+                    85.0
+                </td>
+                
+                
+                <td >
+                    88.4
+                </td>
+                
+                
+                <td >
+                    63.4
+                </td>
+                
+                
+                <td >
+                    100.0
+                </td>
+                
+                
+                <td >
+                    78.6
+                </td>
+                
+                
+                <td >
+                    88.1
+                </td>
+                
+                
+                <td >
+                    63.4
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140731</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    120.4
+                </td>
+                
+                
+                <td >
+                    85.2
+                </td>
+                
+                
+                <td >
+                    88.7
+                </td>
+                
+                
+                <td >
+                    63.7
+                </td>
+                
+                
+                <td >
+                    99.9
+                </td>
+                
+                
+                <td >
+                    78.5
+                </td>
+                
+                
+                <td >
+                    88.2
+                </td>
+                
+                
+                <td >
+                    63.7
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140732</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    120.5
+                </td>
+                
+                
+                <td >
+                    85.4
+                </td>
+                
+                
+                <td >
+                    88.9
+                </td>
+                
+                
+                <td >
+                    63.7
+                </td>
+                
+                
+                <td >
+                    100.0
+                </td>
+                
+                
+                <td >
+                    78.6
+                </td>
+                
+                
+                <td >
+                    88.3
+                </td>
+                
+                
+                <td >
+                    63.7
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140734</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    119.1
+                </td>
+                
+                
+                <td >
+                    84.4
+                </td>
+                
+                
+                <td >
+                    87.8
+                </td>
+                
+                
+                <td >
+                    63.0
+                </td>
+                
+                
+                <td >
+                    100.0
+                </td>
+                
+                
+                <td >
+                    78.2
+                </td>
+                
+                
+                <td >
+                    87.6
+                </td>
+                
+                
+                <td >
+                    63.0
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140736</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    120.0
+                </td>
+                
+                
+                <td >
+                    85.0
+                </td>
+                
+                
+                <td >
+                    88.5
+                </td>
+                
+                
+                <td >
+                    63.5
+                </td>
+                
+                
+                <td >
+                    100.0
+                </td>
+                
+                
+                <td >
+                    78.4
+                </td>
+                
+                
+                <td >
+                    88.0
+                </td>
+                
+                
+                <td >
+                    63.5
+                </td>
+                
+            </tr>
+            
+        </tbody>
+    </table>
+    <div class="cell-status-legend">
+        <strong>Cell colors:</strong>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #ffdddd;"></span>
+            Critical (below min or above max)
+        </span>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #fff3cd;"></span>
+            Warning (below typical)
+        </span>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #fff;"></span>
+            Normal
+        </span>
+    </div>
+    </div>
+
+    
+    <h4 class="table-subtitle">CIE 1976 u'v'</h4>
+    <div class="table-with-legend">
+    <table id="individual_reports_table_gamut_uv" class="individual-reports-table">
+        <thead id="individual-table-head-gamut_uv">
+            <tr>
+                <th class="sortable-header" style="width: 150px;" onclick="sortTable('gamut_uv', 0)">Serial Number</th>
+                <th class="sortable-header" style="width: 120px;" onclick="sortTable('gamut_uv', 1)">Meas. Date/Time</th>
+                
+                
+                
+                <th class="sortable-header" onclick="sortTable('gamut_uv', 2)">sRGB Gamut Area 1976 (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_uv', 3)">NTSC Gamut Area 1976 (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_uv', 4)">DCI-P3 Gamut Area 1976 (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_uv', 5)">Rec.2020 Gamut Area 1976 (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_uv', 6)">sRGB Gamut Coverage 1976 (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_uv', 7)">NTSC Gamut Coverage 1976 (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_uv', 8)">DCI-P3 Gamut Coverage 1976 (%)</th>
+                
+                <th class="sortable-header" onclick="sortTable('gamut_uv', 9)">Rec.2020 Gamut Coverage 1976 (%)</th>
+                
+            </tr>
+        </thead>
+        <tbody id="individual-table-body-gamut_uv">
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101306CE</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    120.5
+                </td>
+                
+                
+                <td >
+                    105.0
+                </td>
+                
+                
+                <td >
+                    95.9
+                </td>
+                
+                
+                <td >
+                    69.9
+                </td>
+                
+                
+                <td >
+                    99.8
+                </td>
+                
+                
+                <td >
+                    85.1
+                </td>
+                
+                
+                <td >
+                    93.6
+                </td>
+                
+                
+                <td >
+                    69.9
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A561014002B</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    120.9
+                </td>
+                
+                
+                <td >
+                    105.4
+                </td>
+                
+                
+                <td >
+                    96.3
+                </td>
+                
+                
+                <td >
+                    70.1
+                </td>
+                
+                
+                <td >
+                    99.8
+                </td>
+                
+                
+                <td >
+                    85.0
+                </td>
+                
+                
+                <td >
+                    93.8
+                </td>
+                
+                
+                <td >
+                    70.1
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101400BB</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    118.9
+                </td>
+                
+                
+                <td >
+                    103.6
+                </td>
+                
+                
+                <td >
+                    94.7
+                </td>
+                
+                
+                <td >
+                    69.0
+                </td>
+                
+                
+                <td >
+                    99.9
+                </td>
+                
+                
+                <td >
+                    85.2
+                </td>
+                
+                
+                <td >
+                    93.5
+                </td>
+                
+                
+                <td >
+                    69.0
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101400BC</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    121.1
+                </td>
+                
+                
+                <td >
+                    105.6
+                </td>
+                
+                
+                <td >
+                    96.4
+                </td>
+                
+                
+                <td >
+                    70.3
+                </td>
+                
+                
+                <td >
+                    99.8
+                </td>
+                
+                
+                <td >
+                    85.1
+                </td>
+                
+                
+                <td >
+                    93.7
+                </td>
+                
+                
+                <td >
+                    70.3
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A561014072F</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    119.9
+                </td>
+                
+                
+                <td >
+                    104.5
+                </td>
+                
+                
+                <td >
+                    95.5
+                </td>
+                
+                
+                <td >
+                    69.6
+                </td>
+                
+                
+                <td >
+                    99.8
+                </td>
+                
+                
+                <td >
+                    85.2
+                </td>
+                
+                
+                <td >
+                    93.8
+                </td>
+                
+                
+                <td >
+                    69.6
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140730</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    119.3
+                </td>
+                
+                
+                <td >
+                    104.0
+                </td>
+                
+                
+                <td >
+                    95.0
+                </td>
+                
+                
+                <td >
+                    69.2
+                </td>
+                
+                
+                <td >
+                    99.9
+                </td>
+                
+                
+                <td >
+                    85.2
+                </td>
+                
+                
+                <td >
+                    93.7
+                </td>
+                
+                
+                <td >
+                    69.2
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140731</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    120.2
+                </td>
+                
+                
+                <td >
+                    104.8
+                </td>
+                
+                
+                <td >
+                    95.8
+                </td>
+                
+                
+                <td >
+                    69.8
+                </td>
+                
+                
+                <td >
+                    99.8
+                </td>
+                
+                
+                <td >
+                    84.9
+                </td>
+                
+                
+                <td >
+                    93.7
+                </td>
+                
+                
+                <td >
+                    69.8
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140732</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    120.4
+                </td>
+                
+                
+                <td >
+                    105.0
+                </td>
+                
+                
+                <td >
+                    95.9
+                </td>
+                
+                
+                <td >
+                    69.9
+                </td>
+                
+                
+                <td >
+                    99.8
+                </td>
+                
+                
+                <td >
+                    85.1
+                </td>
+                
+                
+                <td >
+                    93.9
+                </td>
+                
+                
+                <td >
+                    69.9
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140734</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    118.3
+                </td>
+                
+                
+                <td >
+                    103.1
+                </td>
+                
+                
+                <td >
+                    94.2
+                </td>
+                
+                
+                <td >
+                    68.6
+                </td>
+                
+                
+                <td >
+                    99.8
+                </td>
+                
+                
+                <td >
+                    85.0
+                </td>
+                
+                
+                <td >
+                    93.2
+                </td>
+                
+                
+                <td >
+                    68.6
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140736</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    119.9
+                </td>
+                
+                
+                <td >
+                    104.5
+                </td>
+                
+                
+                <td >
+                    95.5
+                </td>
+                
+                
+                <td >
+                    69.6
+                </td>
+                
+                
+                <td >
+                    99.8
+                </td>
+                
+                
+                <td >
+                    85.0
+                </td>
+                
+                
+                <td >
+                    93.7
+                </td>
+                
+                
+                <td >
+                    69.6
+                </td>
+                
+            </tr>
+            
+        </tbody>
+    </table>
+    <div class="cell-status-legend">
+        <strong>Cell colors:</strong>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #ffdddd;"></span>
+            Critical (below min or above max)
+        </span>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #fff3cd;"></span>
+            Warning (below typical)
+        </span>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #fff;"></span>
+            Normal
+        </span>
+    </div>
+    </div>
+    
+
+    <h3>Coordinates</h3>
+    <div class="table-with-legend">
+    <table id="individual_reports_table_coords" class="individual-reports-table">
+        <thead id="individual-table-head-coords">
+            <tr>
+                <th class="sortable-header" style="width: 150px;" onclick="sortTable('coords', 0)">Serial Number</th>
+                <th class="sortable-header" style="width: 120px;" onclick="sortTable('coords', 1)">Meas. Date/Time</th>
+                
+                
+                
+                <th class="sortable-header" onclick="sortTable('coords', 2)">Red (x)</th>
+                
+                <th class="sortable-header" onclick="sortTable('coords', 3)">Red (y)</th>
+                
+                <th class="sortable-header" onclick="sortTable('coords', 4)">Green (x)</th>
+                
+                <th class="sortable-header" onclick="sortTable('coords', 5)">Green (y)</th>
+                
+                <th class="sortable-header" onclick="sortTable('coords', 6)">Blue (x)</th>
+                
+                <th class="sortable-header" onclick="sortTable('coords', 7)">Blue (y)</th>
+                
+                <th class="sortable-header" onclick="sortTable('coords', 8)">Center (x)</th>
+                
+                <th class="sortable-header" onclick="sortTable('coords', 9)">Center (y)</th>
+                
+                <th class="sortable-header" onclick="sortTable('coords', 10)">White (x)</th>
+                
+                <th class="sortable-header" onclick="sortTable('coords', 11)">White (y)</th>
+                
+            </tr>
+        </thead>
+        <tbody id="individual-table-body-coords">
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101306CE</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    0.665
+                </td>
+                
+                
+                <td >
+                    0.316
+                </td>
+                
+                
+                <td >
+                    0.270
+                </td>
+                
+                
+                <td >
+                    0.640
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.055
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.277
+                </td>
+                
+                
+                <td >
+                    0.280
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A561014002B</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    0.666
+                </td>
+                
+                
+                <td >
+                    0.316
+                </td>
+                
+                
+                <td >
+                    0.270
+                </td>
+                
+                
+                <td >
+                    0.640
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.055
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.276
+                </td>
+                
+                
+                <td >
+                    0.278
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101400BB</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    0.664
+                </td>
+                
+                
+                <td >
+                    0.317
+                </td>
+                
+                
+                <td >
+                    0.271
+                </td>
+                
+                
+                <td >
+                    0.642
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.057
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.282
+                </td>
+                
+                
+                <td >
+                    0.286
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A56101400BC</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    0.665
+                </td>
+                
+                
+                <td >
+                    0.316
+                </td>
+                
+                
+                <td >
+                    0.270
+                </td>
+                
+                
+                <td >
+                    0.642
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.054
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.269
+                </td>
+                
+                
+                <td >
+                    0.269
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A561014072F</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    0.665
+                </td>
+                
+                
+                <td >
+                    0.316
+                </td>
+                
+                
+                <td >
+                    0.271
+                </td>
+                
+                
+                <td >
+                    0.642
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.057
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.278
+                </td>
+                
+                
+                <td >
+                    0.286
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140730</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    0.665
+                </td>
+                
+                
+                <td >
+                    0.317
+                </td>
+                
+                
+                <td >
+                    0.272
+                </td>
+                
+                
+                <td >
+                    0.641
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.057
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.279
+                </td>
+                
+                
+                <td >
+                    0.285
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140731</td>
+                <td>20261105162231</td>
+                
+                
+                <td >
+                    0.666
+                </td>
+                
+                
+                <td >
+                    0.316
+                </td>
+                
+                
+                <td >
+                    0.273
+                </td>
+                
+                
+                <td >
+                    0.642
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.056
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.276
+                </td>
+                
+                
+                <td >
+                    0.283
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140732</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    0.666
+                </td>
+                
+                
+                <td >
+                    0.316
+                </td>
+                
+                
+                <td >
+                    0.271
+                </td>
+                
+                
+                <td >
+                    0.642
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.056
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.277
+                </td>
+                
+                
+                <td >
+                    0.282
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140734</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    0.665
+                </td>
+                
+                
+                <td >
+                    0.317
+                </td>
+                
+                
+                <td >
+                    0.272
+                </td>
+                
+                
+                <td >
+                    0.639
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.058
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.276
+                </td>
+                
+                
+                <td >
+                    0.280
+                </td>
+                
+            </tr>
+            
+            <tr>
+                <td class="param-name" title="Device verdict: PASS">82203598215M7A5610140736</td>
+                <td>20261105162156</td>
+                
+                
+                <td >
+                    0.666
+                </td>
+                
+                
+                <td >
+                    0.316
+                </td>
+                
+                
+                <td >
+                    0.272
+                </td>
+                
+                
+                <td >
+                    0.640
+                </td>
+                
+                
+                <td >
+                    0.152
+                </td>
+                
+                
+                <td >
+                    0.056
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    None
+                </td>
+                
+                
+                <td >
+                    0.271
+                </td>
+                
+                
+                <td >
+                    0.269
+                </td>
+                
+            </tr>
+            
+        </tbody>
+    </table>
+    <div class="cell-status-legend">
+        <strong>Cell colors:</strong>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #ffdddd;"></span>
+            Critical (outside min/max bounds)
+        </span>
+        <span class="cell-status-legend-item">
+            <span class="cell-status-legend-box" style="background-color: #fff;"></span>
+            Normal
+        </span>
+    </div>
+    </div>
+
+    
+    <h2 class="attempts-header">Repeated measurements</h2>
+    <div class="attempts-kpis">
+        <div class="attempts-kpi" title="70% of the devices of the report"><b>7 <small>of 10</small></b><span>devices measured again</span></div>
+        <div class="attempts-kpi" title="3.5 attempts on average"><b>20</b><span>points measured again</span></div>
+        <div class="attempts-kpi" title="The first attempt had a remark, the best has none"><b>0 <small>of 20</small></b><span>points rescued</span></div>
+        
+        <div class="attempts-kpi" title="Average brightness gain, first attempt to best"><b>+24 <small>cd/m²</small></b><span>average gain</span></div>
+        
+    </div>
+    <div class="attempts-legend">
+        Numbers: the order of the attempts; ringed: the best one, the one the report uses.
+        Zones:
+        <span class="zone" style="background:#e6f4ea;"></span>within spec
+        <span class="zone" style="background:#fff3cd;"></span>below typ or near the limit
+        <span class="zone" style="background:#ffdddd;"></span>outside min/max
+        <span class="zone" style="background:#f1f3f5;"></span>no spec
+        <br>
+        <b>Rescued</b>: the first attempt had a remark, the best has none.
+        <b>Improved</b>: the best is better than the first.
+        <b>No gain</b>: the first attempt was already the best or within the spec.
+    </div>
+    <div class="attempts-grid">
+        
+        <div class="attempt-card">
+            <h4><span class="attempt-sn">82203598215M7A561014002B</span><span class="attempt-badge same">No gain</span></h4>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Red</b> <span class="muted">Δxy</span></span><span class="num">0.006 &rarr; <b>0.005</b> <span class="muted">-0.001</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="31.4" y="2" width="171.9" height="33" fill="#e6f4ea"/><rect x="203.3" y="2" width="71.2" height="33" fill="#fff3cd"/><rect x="274.6" y="2" width="19.4" height="33" fill="#ffdddd"/><polyline points="49.9,7.5 46.9,18.5 51.8,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="49.9" cy="7.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="56.9" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.006</text><text x="8" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">2</text><circle cx="46.9" cy="18.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="53.9" y="21.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.005</text><text x="8" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">3</text><circle cx="51.8" cy="29.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="58.8" y="32.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.007</text></svg>
+                <div class="muted">best 2 of 3</div>
+            </div>
+            
+        </div>
+        
+        <div class="attempt-card">
+            <h4><span class="attempt-sn">82203598215M7A56101400BC</span><span class="attempt-badge improved">Improved</span></h4>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">376 &rarr; <b>398</b> <span class="muted">+22</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="19.4" height="33" fill="#ffdddd"/><rect x="31.4" y="2" width="88.6" height="33" fill="#fff3cd"/><rect x="120.1" y="2" width="173.9" height="33" fill="#e6f4ea"/><polyline points="197.6,7.5 187.0,18.5 261.3,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="197.6" cy="7.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="190.6" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">376</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="187.0" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="180.0" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">373</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="261.3" cy="29.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="254.3" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">398</text></svg>
+                <div class="muted">best 3 of 3</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Black</b> <span class="muted">cd/m²</span></span><span class="num">0.058 &rarr; <b>0.058</b> <span class="muted">+0.000</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 48" role="img"><rect x="12.0" y="2" width="282.0" height="44" fill="#f1f3f5"/><polyline points="121.5,7.5 256.5,18.5 160.5,29.5 274.6,40.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">1</text><circle cx="121.5" cy="7.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="128.5" y="10.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.058</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="256.5" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="249.5" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">0.063</text><text x="8" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">3</text><circle cx="160.5" cy="29.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="167.5" y="32.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.059</text><text x="8" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">4</text><circle cx="274.6" cy="40.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="267.6" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">0.063</text></svg>
+                <div class="muted">best 1 of 4</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Blue</b> <span class="muted">Δxy</span></span><span class="num">0.004 &rarr; <b>0.003</b> <span class="muted">-0.001</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="31.4" y="2" width="171.9" height="33" fill="#e6f4ea"/><rect x="203.3" y="2" width="71.2" height="33" fill="#fff3cd"/><rect x="274.6" y="2" width="19.4" height="33" fill="#ffdddd"/><polyline points="42.6,7.5 43.8,18.5 40.1,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="42.6" cy="7.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="49.6" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.004</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="43.8" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="50.8" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.004</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="40.1" cy="29.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="47.1" y="32.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.003</text></svg>
+                <div class="muted">best 3 of 3</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Top left</b> <span class="muted">cd/m²</span></span><span class="num">279 &rarr; <b>312</b> <span class="muted">+33</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 59" role="img"><rect x="12.0" y="2" width="282.0" height="55" fill="#f1f3f5"/><polyline points="60.5,7.5 132.8,18.5 255.2,29.5 122.9,40.5 274.6,51.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="60.5" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="67.5" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">279</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="132.8" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="139.8" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">290</text><text x="8" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">3</text><circle cx="255.2" cy="29.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="248.2" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">309</text><text x="8" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">4</text><circle cx="122.9" cy="40.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="129.9" y="43.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">288</text><text x="8" y="54.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">5</text><circle cx="274.6" cy="51.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="267.6" y="54.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">312</text></svg>
+                <div class="muted">best 5 of 5</div>
+            </div>
+            
+        </div>
+        
+        <div class="attempt-card">
+            <h4><span class="attempt-sn">82203598215M7A561014072F</span><span class="attempt-badge improved">Improved</span></h4>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Black</b> <span class="muted">cd/m²</span></span><span class="num">0.058 &rarr; <b>0.058</b> <span class="muted">+0.000</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="12.0" y="2" width="282.0" height="22" fill="#f1f3f5"/><polyline points="121.5,7.5 160.5,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">1</text><circle cx="121.5" cy="7.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="128.5" y="10.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.058</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="160.5" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="167.5" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.059</text></svg>
+                <div class="muted">best 1 of 2</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Top left</b> <span class="muted">cd/m²</span></span><span class="num">274 &rarr; <b>298</b> <span class="muted">+24</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="12.0" y="2" width="282.0" height="22" fill="#f1f3f5"/><polyline points="31.4,7.5 185.5,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="31.4" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="38.4" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">274</text><text x="8" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">2</text><circle cx="185.5" cy="18.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="192.5" y="21.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">298</text></svg>
+                <div class="muted">best 2 of 2</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Bottom right</b> <span class="muted">cd/m²</span></span><span class="num">287 &rarr; <b>320</b> <span class="muted">+34</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 48" role="img"><rect x="12.0" y="2" width="282.0" height="44" fill="#f1f3f5"/><polyline points="46.3,7.5 31.4,18.5 274.6,29.5 78.3,40.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="46.3" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="53.3" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">287</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="31.4" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="38.4" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">285</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="274.6" cy="29.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="267.6" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">320</text><text x="8" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">4</text><circle cx="78.3" cy="40.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="85.3" y="43.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">291</text></svg>
+                <div class="muted">best 3 of 4</div>
+            </div>
+            
+        </div>
+        
+        <div class="attempt-card">
+            <h4><span class="attempt-sn">82203598215M7A5610140731</span><span class="attempt-badge improved">Improved</span></h4>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Red</b> <span class="muted">Δxy</span></span><span class="num">0.006 &rarr; <b>0.005</b> <span class="muted">-0.001</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 59" role="img"><rect x="31.4" y="2" width="171.9" height="55" fill="#e6f4ea"/><rect x="203.3" y="2" width="71.2" height="55" fill="#fff3cd"/><rect x="274.6" y="2" width="19.4" height="55" fill="#ffdddd"/><polyline points="49.2,7.5 53.5,18.5 46.9,29.5 52.1,40.5 49.1,51.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="49.2" cy="7.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="56.2" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.006</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="53.5" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="60.5" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.008</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="46.9" cy="29.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="53.9" y="32.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.005</text><text x="8" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">4</text><circle cx="52.1" cy="40.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="59.1" y="43.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.007</text><text x="8" y="54.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">5</text><circle cx="49.1" cy="51.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="56.1" y="54.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.006</text></svg>
+                <div class="muted">best 3 of 5</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Green</b> <span class="muted">Δxy</span></span><span class="num">0.007 &rarr; <b>0.007</b> <span class="muted">+0.000</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 59" role="img"><rect x="31.4" y="2" width="171.9" height="55" fill="#e6f4ea"/><rect x="203.3" y="2" width="71.2" height="55" fill="#fff3cd"/><rect x="274.6" y="2" width="19.4" height="55" fill="#ffdddd"/><polyline points="52.1,7.5 57.5,18.5 64.2,29.5 57.9,40.5 62.1,51.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">1</text><circle cx="52.1" cy="7.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="59.1" y="10.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.007</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="57.5" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="64.5" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.009</text><text x="8" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">3</text><circle cx="64.2" cy="29.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="71.2" y="32.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.011</text><text x="8" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">4</text><circle cx="57.9" cy="40.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="64.9" y="43.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.009</text><text x="8" y="54.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">5</text><circle cx="62.1" cy="51.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="69.1" y="54.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.011</text></svg>
+                <div class="muted">best 1 of 5</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Top left</b> <span class="muted">cd/m²</span></span><span class="num">283 &rarr; <b>312</b> <span class="muted">+29</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 48" role="img"><rect x="12.0" y="2" width="282.0" height="44" fill="#f1f3f5"/><polyline points="88.1,7.5 77.8,18.5 274.6,29.5 185.5,40.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="88.1" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="95.1" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">283</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="77.8" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="84.8" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">281</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="274.6" cy="29.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="267.6" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">312</text><text x="8" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">4</text><circle cx="185.5" cy="40.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="192.5" y="43.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">298</text></svg>
+                <div class="muted">best 3 of 4</div>
+            </div>
+            
+        </div>
+        
+        <div class="attempt-card">
+            <h4><span class="attempt-sn">82203598215M7A5610140732</span><span class="attempt-badge improved">Improved</span></h4>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Top right</b> <span class="muted">cd/m²</span></span><span class="num">282 &rarr; <b>315</b> <span class="muted">+33</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="282.0" height="33" fill="#f1f3f5"/><polyline points="31.4,7.5 274.6,18.5 159.4,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="31.4" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="38.4" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">282</text><text x="8" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">2</text><circle cx="274.6" cy="18.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="267.6" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">315</text><text x="8" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">3</text><circle cx="159.4" cy="29.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="166.4" y="32.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">299</text></svg>
+                <div class="muted">best 2 of 3</div>
+            </div>
+            
+        </div>
+        
+        <div class="attempt-card">
+            <h4><span class="attempt-sn">82203598215M7A5610140734</span><span class="attempt-badge same">No gain</span></h4>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">372 &rarr; <b>398</b> <span class="muted">+26</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="19.4" height="33" fill="#ffdddd"/><rect x="31.4" y="2" width="88.6" height="33" fill="#fff3cd"/><rect x="120.1" y="2" width="173.9" height="33" fill="#e6f4ea"/><polyline points="186.5,7.5 203.0,18.5 262.7,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="186.5" cy="7.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="193.5" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">372</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="203.0" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="196.0" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">378</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="262.7" cy="29.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="255.7" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">398</text></svg>
+                <div class="muted">best 3 of 3</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Black</b> <span class="muted">cd/m²</span></span><span class="num">0.055 &rarr; <b>0.055</b> <span class="muted">+0.000</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="12.0" y="2" width="282.0" height="22" fill="#f1f3f5"/><polyline points="31.4,7.5 241.5,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">1</text><circle cx="31.4" cy="7.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="38.4" y="10.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.055</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="241.5" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="234.5" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">0.062</text></svg>
+                <div class="muted">best 1 of 2</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Red</b> <span class="muted">Δxy</span></span><span class="num">0.006 &rarr; <b>0.006</b> <span class="muted">-0.000</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="31.4" y="2" width="171.9" height="22" fill="#e6f4ea"/><rect x="203.3" y="2" width="71.2" height="22" fill="#fff3cd"/><rect x="274.6" y="2" width="19.4" height="22" fill="#ffdddd"/><polyline points="49.6,7.5 48.8,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="49.6" cy="7.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="56.6" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.006</text><text x="8" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">2</text><circle cx="48.8" cy="18.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="55.8" y="21.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.006</text></svg>
+                <div class="muted">best 2 of 2</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Green</b> <span class="muted">Δxy</span></span><span class="num">0.008 &rarr; <b>0.008</b> <span class="muted">+0.000</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="31.4" y="2" width="171.9" height="33" fill="#e6f4ea"/><rect x="203.3" y="2" width="71.2" height="33" fill="#fff3cd"/><rect x="274.6" y="2" width="19.4" height="33" fill="#ffdddd"/><polyline points="54.8,7.5 59.9,18.5 58.1,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">1</text><circle cx="54.8" cy="7.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="61.8" y="10.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.008</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="59.9" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="66.9" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.010</text><text x="8" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">3</text><circle cx="58.1" cy="29.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="65.1" y="32.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.009</text></svg>
+                <div class="muted">best 1 of 3</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Center</b> <span class="muted">cd/m²</span></span><span class="num">346 &rarr; <b>346</b> <span class="muted">+0</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="12.0" y="2" width="282.0" height="22" fill="#f1f3f5"/><polyline points="70.1,7.5 31.4,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">1</text><circle cx="70.1" cy="7.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="77.1" y="10.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">346</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="31.4" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="38.4" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">341</text></svg>
+                <div class="muted">best 1 of 2</div>
+            </div>
+            
+        </div>
+        
+        <div class="attempt-card">
+            <h4><span class="attempt-sn">82203598215M7A5610140736</span><span class="attempt-badge improved">Improved</span></h4>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">376 &rarr; <b>402</b> <span class="muted">+26</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 59" role="img"><rect x="12.0" y="2" width="19.4" height="55" fill="#ffdddd"/><rect x="31.4" y="2" width="88.6" height="55" fill="#fff3cd"/><rect x="120.1" y="2" width="173.9" height="55" fill="#e6f4ea"/><polyline points="197.8,7.5 261.3,18.5 274.6,29.5 242.7,40.5 258.8,51.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="197.8" cy="7.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="190.8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">376</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="261.3" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="254.3" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">398</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="274.6" cy="29.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="267.6" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">402</text><text x="8" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">4</text><circle cx="242.7" cy="40.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="235.7" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">392</text><text x="8" y="54.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">5</text><circle cx="258.8" cy="51.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="251.8" y="54.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">397</text></svg>
+                <div class="muted">best 3 of 5</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Center</b> <span class="muted">cd/m²</span></span><span class="num">353 &rarr; <b>372</b> <span class="muted">+19</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 48" role="img"><rect x="12.0" y="2" width="282.0" height="44" fill="#f1f3f5"/><polyline points="127.9,7.5 173.2,18.5 126.8,29.5 274.6,40.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="127.9" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="134.9" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">353</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="173.2" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="180.2" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">359</text><text x="8" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">3</text><circle cx="126.8" cy="29.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="133.8" y="32.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">353</text><text x="8" y="43.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">4</text><circle cx="274.6" cy="40.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="267.6" y="43.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">372</text></svg>
+                <div class="muted">best 4 of 4</div>
+            </div>
+            
+            <div class="attempt-point">
+                <div class="top"><span><b>Bottom right</b> <span class="muted">cd/m²</span></span><span class="num">290 &rarr; <b>316</b> <span class="muted">+25</span></span></div>
+                <svg class="attempt-strip" viewBox="0 0 300 59" role="img"><rect x="12.0" y="2" width="282.0" height="55" fill="#f1f3f5"/><polyline points="70.7,7.5 179.7,18.5 242.8,29.5 96.7,40.5 227.7,51.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="70.7" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="77.7" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">290</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="179.7" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="186.7" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">306</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="242.8" cy="29.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="235.8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">316</text><text x="8" y="43.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">4</text><circle cx="96.7" cy="40.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="103.7" y="43.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">294</text><text x="8" y="54.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">5</text><circle cx="227.7" cy="51.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="220.7" y="54.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">314</text></svg>
+                <div class="muted">best 3 of 5</div>
+            </div>
+            
+        </div>
+        
+    </div>
+    
+
+    <div class="report-footer">
+        Generated by Report Generator v1.5.0
+    </div>
+
+
+    <script>
+        // CIE xy <-> pixel calibration, mirrors SvgCoordinator in src/graphics_helper.py
+        const PLOT_CALIBRATION = {"x_pixel_start": 47, "y_pixel_end": 492, "pixels_per_cie_x": 510.0, "pixels_per_cie_y": 511.1111111111111, "x_cie_min": 0.0, "y_cie_min": 0.0};
+
+        // Toggles the visibility of a specified triangle (sRGB, NTSC, DCI-P3, Device)
+        function toggleTriangle(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+            }
+        }
+
+        // Toggles the visibility of the debug grid (4 corner points)
+        function toggleDebugGrid() {
+            const el = document.getElementById('debug_grid');
+            if (el) {
+                el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+            }
+        }
+
+        // === JAVASCRIPT FOR ZOOM (без изменений) ===
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const wrapper = document.getElementById('plot-wrapper');
+            const svg = document.getElementById('plot-svg');
+            if (!wrapper || !svg) return; // Safety check
+
+            // Smooth panning state: the origin eases toward the mouse position
+            // each animation frame instead of snapping to it on every mousemove,
+            // which is what made panning at 5x zoom look jerky.
+            let panTargetX = null, panTargetY = null;
+            let panCurrentX = null, panCurrentY = null;
+            let panRafId = null;
+            const PAN_SMOOTHING = 0.5; // 0..1, lower = smoother/slower to catch up
+
+            function panStep() {
+                panRafId = null;
+                if (panTargetX === null || panCurrentX === null) return;
+
+                panCurrentX += (panTargetX - panCurrentX) * PAN_SMOOTHING;
+                panCurrentY += (panTargetY - panCurrentY) * PAN_SMOOTHING;
+                svg.style.transformOrigin = `${panCurrentX}px ${panCurrentY}px`;
+
+                if (Math.abs(panTargetX - panCurrentX) > 0.1 || Math.abs(panTargetY - panCurrentY) > 0.1) {
+                    panRafId = requestAnimationFrame(panStep);
+                }
+            }
+
+            function resetPan() {
+                panTargetX = panTargetY = panCurrentX = panCurrentY = null;
+                if (panRafId) {
+                    cancelAnimationFrame(panRafId);
+                    panRafId = null;
+                }
+            }
+
+            // 1. Click: Toggle zoom and set origin
+            wrapper.addEventListener('click', (e) => {
+                svg.classList.toggle('zoomed');
+                wrapper.classList.toggle('is-zoomed');
+
+                if (svg.classList.contains('zoomed')) {
+                    const rect = wrapper.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    svg.style.transformOrigin = `${x}px ${y}px`;
+                    panCurrentX = panTargetX = x;
+                    panCurrentY = panTargetY = y;
+                } else {
+                    svg.style.transformOrigin = 'center center';
+                    resetPan();
+                }
+            });
+
+            // 2. Mouse leaves: Always reset zoom
+            wrapper.addEventListener('mouseleave', () => {
+                svg.classList.remove('zoomed');
+                wrapper.classList.remove('is-zoomed');
+                svg.style.transformOrigin = 'center center';
+                resetPan();
+            });
+
+            // 3. Mouse move: Update the pan target; panStep() eases toward it
+            wrapper.addEventListener('mousemove', (e) => {
+                if (svg.classList.contains('zoomed')) {
+                    const rect = wrapper.getBoundingClientRect();
+                    panTargetX = e.clientX - rect.left;
+                    panTargetY = e.clientY - rect.top;
+                    if (panCurrentX === null) {
+                        panCurrentX = panTargetX;
+                        panCurrentY = panTargetY;
+                    }
+                    if (!panRafId) {
+                        panRafId = requestAnimationFrame(panStep);
+                    }
+                }
+            });
+
+            // === JAVASCRIPT FOR CURSOR CIE COORDINATE READOUT ===
+            const coordBadge = document.getElementById('plot-coord-badge');
+            if (coordBadge) {
+                wrapper.addEventListener('mousemove', (e) => {
+                    const ctm = svg.getScreenCTM();
+                    if (!ctm) return;
+
+                    // Map screen coords to the SVG's own viewBox coords (accounts for zoom/scale)
+                    const pt = svg.createSVGPoint();
+                    pt.x = e.clientX;
+                    pt.y = e.clientY;
+                    const svgPoint = pt.matrixTransform(ctm.inverse());
+
+                    const cieX = (svgPoint.x - PLOT_CALIBRATION.x_pixel_start) / PLOT_CALIBRATION.pixels_per_cie_x + PLOT_CALIBRATION.x_cie_min;
+                    const cieY = (PLOT_CALIBRATION.y_pixel_end - svgPoint.y) / PLOT_CALIBRATION.pixels_per_cie_y + PLOT_CALIBRATION.y_cie_min;
+
+                    coordBadge.textContent = `x: ${cieX.toFixed(3)}, y: ${cieY.toFixed(3)}`;
+                    coordBadge.style.display = 'block';
+                });
+
+                wrapper.addEventListener('mouseleave', () => {
+                    coordBadge.style.display = 'none';
+                });
+            }
+
+            // === JAVASCRIPT MODIFICATION: Table Sorting Logic ===
+
+            // Store current sort direction (now an object for multiple tables)
+            let sortDirections = {
+                'main': {},
+                'gamut_xy': {},
+                'gamut_uv': {},
+                'coords': {}
+            };
+
+            // Helper function to parse values
+            function parseValue(val, dir) {
+                // Push "N/A" or "None" to the bottom regardless of sort direction
+                if (val === 'N/A' || val === 'None' || val.trim() === '') {
+                    return dir === 'asc' ? Infinity : -Infinity;
+                }
+                // Try to convert to number
+                const num = parseFloat(val.replace(',', '.')); // Handle decimal commas
+                // If it's not a number, return lowercase string. Otherwise, return the number.
+                return isNaN(num) ? val.toLowerCase() : num;
+            }
+
+            // Main sort function (now takes tableSuffix)
+            window.sortTable = function(tableSuffix, colIndex) {
+                const tbody = document.getElementById('individual-table-body-' + tableSuffix);
+                const thead = document.getElementById('individual-table-head-' + tableSuffix);
+                if (!tbody || !thead) return;
+
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                // Determine direction (toggle or default to 'asc')
+                const currentDir = sortDirections[tableSuffix][colIndex];
+                const dir = currentDir === 'asc' ? 'desc' : 'asc';
+
+                // Reset directions for this table
+                sortDirections[tableSuffix] = {};
+                // Set direction for the clicked column
+                sortDirections[tableSuffix][colIndex] = dir;
+
+                // Sort the rows
+                rows.sort((rowA, rowB) => {
+                    const cellA = rowA.querySelectorAll('td')[colIndex].innerText;
+                    const cellB = rowB.querySelectorAll('td')[colIndex].innerText;
+
+                    const valA = parseValue(cellA, dir);
+                    const valB = parseValue(cellB, dir);
+
+                    let comparison = 0;
+                    if (valA > valB) {
+                        comparison = 1;
+                    } else if (valA < valB) {
+                        comparison = -1;
+                    }
+
+                    return dir === 'asc' ? comparison : -comparison;
+                });
+
+                // Update visual arrows
+                const headers = thead.querySelectorAll('.sortable-header');
+                headers.forEach(th => th.classList.remove('sort-asc', 'sort-desc'));
+                headers[colIndex].classList.add(dir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+                // Re-append sorted rows to the tbody
+                rows.forEach(row => tbody.appendChild(row));
+            }
+
+            // Default sort by Serial Number (Column 0) on page load
+            sortTable('main', 0);
+            sortTable('gamut_xy', 0);
+            sortTable('gamut_uv', 0);
+            sortTable('coords', 0);
+
+        }); // End DOMContentLoaded
+        // === END JAVASCRIPT MODIFICATION ===
+    </script>
+</div>
+</body>
+</html>

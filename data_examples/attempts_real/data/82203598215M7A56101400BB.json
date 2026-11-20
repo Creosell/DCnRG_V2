@@ -1,0 +1,106 @@
+{
+  "SerialNumber": "82203598215M7A56101400BB",
+  "DeviceConfiguration": "CH32\\SDF-50UQ7000MBA_CH32",
+  "IsTV": true,
+  "MeasurementDateTime": "20261105_162231",
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": null,
+      "y": null,
+      "Lv": 281.14,
+      "T": null
+    },
+    {
+      "Location": "TopCenter",
+      "x": null,
+      "y": null,
+      "Lv": 312.82,
+      "T": null
+    },
+    {
+      "Location": "TopRight",
+      "x": null,
+      "y": null,
+      "Lv": 277.32,
+      "T": null
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": null,
+      "y": null,
+      "Lv": 325.85,
+      "T": null
+    },
+    {
+      "Location": "Center",
+      "x": null,
+      "y": null,
+      "Lv": 339.95,
+      "T": 7792
+    },
+    {
+      "Location": "MiddleRight",
+      "x": null,
+      "y": null,
+      "Lv": 328.89,
+      "T": null
+    },
+    {
+      "Location": "BottomLeft",
+      "x": null,
+      "y": null,
+      "Lv": 304,
+      "T": null
+    },
+    {
+      "Location": "BottomCenter",
+      "x": null,
+      "y": null,
+      "Lv": 321.94,
+      "T": null
+    },
+    {
+      "Location": "BottomRight",
+      "x": null,
+      "y": null,
+      "Lv": 288.22,
+      "T": null
+    },
+    {
+      "Location": "WhiteColor",
+      "x": 0.2819,
+      "y": 0.2862,
+      "Lv": 368.55,
+      "T": null
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.6638,
+      "y": 0.3167,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.2714,
+      "y": 0.6422,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.1517,
+      "y": 0.057,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "BlackColor",
+      "x": null,
+      "y": null,
+      "Lv": 0.06,
+      "T": null
+    }
+  ]
+}

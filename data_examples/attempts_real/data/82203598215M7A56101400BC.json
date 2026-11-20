@@ -1,0 +1,219 @@
+{
+  "SerialNumber": "82203598215M7A56101400BC",
+  "DeviceConfiguration": "CH32\\SDF-50UQ7000MBA_CH32",
+  "IsTV": true,
+  "MeasurementDateTime": "20261105_162156",
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": null,
+      "y": null,
+      "Lv": 312.12,
+      "T": null,
+      "Attempts": [
+        {
+          "x": null,
+          "y": null,
+          "Lv": 278.71,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 290.0,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 309.1,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 288.46,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 312.12,
+          "T": null,
+          "Best": true
+        }
+      ]
+    },
+    {
+      "Location": "TopCenter",
+      "x": null,
+      "y": null,
+      "Lv": 319.83,
+      "T": null
+    },
+    {
+      "Location": "TopRight",
+      "x": null,
+      "y": null,
+      "Lv": 277.77,
+      "T": null
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": null,
+      "y": null,
+      "Lv": 330.35,
+      "T": null
+    },
+    {
+      "Location": "Center",
+      "x": null,
+      "y": null,
+      "Lv": 348.74,
+      "T": 8269
+    },
+    {
+      "Location": "MiddleRight",
+      "x": null,
+      "y": null,
+      "Lv": 327.05,
+      "T": null
+    },
+    {
+      "Location": "BottomLeft",
+      "x": null,
+      "y": null,
+      "Lv": 287.76,
+      "T": null
+    },
+    {
+      "Location": "BottomCenter",
+      "x": null,
+      "y": null,
+      "Lv": 320.22,
+      "T": null
+    },
+    {
+      "Location": "BottomRight",
+      "x": null,
+      "y": null,
+      "Lv": 270.75,
+      "T": null
+    },
+    {
+      "Location": "WhiteColor",
+      "x": 0.2689,
+      "y": 0.2686,
+      "Lv": 397.84,
+      "T": null,
+      "Attempts": [
+        {
+          "x": null,
+          "y": 0.2838,
+          "Lv": 376.26,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": 0.2752,
+          "y": 0.2783,
+          "Lv": 372.65,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": 0.2689,
+          "y": 0.2686,
+          "Lv": 397.84,
+          "T": null,
+          "Best": true
+        }
+      ]
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.6646,
+      "y": 0.3163,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.2698,
+      "y": 0.6421,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.1521,
+      "y": 0.0541,
+      "Lv": null,
+      "T": null,
+      "Attempts": [
+        {
+          "x": 0.1515,
+          "y": 0.0567,
+          "Lv": null,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": 0.1515,
+          "y": 0.0525,
+          "Lv": null,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": 0.1521,
+          "y": 0.0541,
+          "Lv": null,
+          "T": null,
+          "Best": true
+        }
+      ]
+    },
+    {
+      "Location": "BlackColor",
+      "x": null,
+      "y": null,
+      "Lv": 0.0582,
+      "T": null,
+      "Attempts": [
+        {
+          "x": null,
+          "y": null,
+          "Lv": 0.0582,
+          "T": null,
+          "Best": true
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 0.0627,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 0.0595,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 0.0633,
+          "T": null,
+          "Best": false
+        }
+      ]
+    }
+  ]
+}

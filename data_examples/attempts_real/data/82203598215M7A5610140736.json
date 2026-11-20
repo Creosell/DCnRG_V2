@@ -1,0 +1,210 @@
+{
+  "SerialNumber": "82203598215M7A5610140736",
+  "DeviceConfiguration": "CH32\\SDF-50UQ7000MBA_CH32",
+  "IsTV": true,
+  "MeasurementDateTime": "20261105_162156",
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": null,
+      "y": null,
+      "Lv": 283.4,
+      "T": null
+    },
+    {
+      "Location": "TopCenter",
+      "x": null,
+      "y": null,
+      "Lv": 321.37,
+      "T": null
+    },
+    {
+      "Location": "TopRight",
+      "x": null,
+      "y": null,
+      "Lv": 292.62,
+      "T": null
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": null,
+      "y": null,
+      "Lv": 334.52,
+      "T": null
+    },
+    {
+      "Location": "Center",
+      "x": null,
+      "y": null,
+      "Lv": 371.95,
+      "T": 9552.0,
+      "Attempts": [
+        {
+          "x": null,
+          "y": null,
+          "Lv": 353.08,
+          "T": 8430.0,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 358.91,
+          "T": 8395.0,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 352.93,
+          "T": 8211.0,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 371.95,
+          "T": 9552.0,
+          "Best": true
+        }
+      ]
+    },
+    {
+      "Location": "MiddleRight",
+      "x": null,
+      "y": null,
+      "Lv": 334.34,
+      "T": null
+    },
+    {
+      "Location": "BottomLeft",
+      "x": null,
+      "y": null,
+      "Lv": 307.91,
+      "T": null
+    },
+    {
+      "Location": "BottomCenter",
+      "x": null,
+      "y": null,
+      "Lv": 347.42,
+      "T": null
+    },
+    {
+      "Location": "BottomRight",
+      "x": null,
+      "y": null,
+      "Lv": 315.77,
+      "T": null,
+      "Attempts": [
+        {
+          "x": null,
+          "y": null,
+          "Lv": 290.34,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 306.45,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 315.77,
+          "T": null,
+          "Best": true
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 294.18,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 313.55,
+          "T": null,
+          "Best": false
+        }
+      ]
+    },
+    {
+      "Location": "WhiteColor",
+      "x": 0.2709,
+      "y": 0.2693,
+      "Lv": 402.31,
+      "T": null,
+      "Attempts": [
+        {
+          "x": 0.2762,
+          "y": 0.2814,
+          "Lv": 376.34,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": 0.2689,
+          "y": 0.2686,
+          "Lv": 397.84,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": 0.2709,
+          "y": 0.2693,
+          "Lv": 402.31,
+          "T": null,
+          "Best": true
+        },
+        {
+          "x": 0.2718,
+          "y": 0.271,
+          "Lv": 391.51,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": 0.2715,
+          "y": 0.2793,
+          "Lv": 396.97,
+          "T": null,
+          "Best": false
+        }
+      ]
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.6656,
+      "y": 0.3162,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.2715,
+      "y": 0.6403,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.1519,
+      "y": 0.0562,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "BlackColor",
+      "x": null,
+      "y": null,
+      "Lv": 0.0557,
+      "T": null
+    }
+  ]
+}

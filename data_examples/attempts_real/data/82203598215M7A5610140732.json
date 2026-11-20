@@ -1,0 +1,129 @@
+{
+  "SerialNumber": "82203598215M7A5610140732",
+  "DeviceConfiguration": "CH32\\SDF-50UQ7000MBA_CH32",
+  "IsTV": true,
+  "MeasurementDateTime": "20261105_162156",
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": null,
+      "y": null,
+      "Lv": 286.7,
+      "T": null
+    },
+    {
+      "Location": "TopCenter",
+      "x": null,
+      "y": null,
+      "Lv": 335.76,
+      "T": null
+    },
+    {
+      "Location": "TopRight",
+      "x": null,
+      "y": null,
+      "Lv": 314.52,
+      "T": null,
+      "Attempts": [
+        {
+          "x": null,
+          "y": null,
+          "Lv": 282.0,
+          "T": null,
+          "Best": false
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 314.52,
+          "T": null,
+          "Best": true
+        },
+        {
+          "x": null,
+          "y": null,
+          "Lv": 299.11,
+          "T": null,
+          "Best": false
+        }
+      ]
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": null,
+      "y": null,
+      "Lv": 336.33,
+      "T": null
+    },
+    {
+      "Location": "Center",
+      "x": null,
+      "y": null,
+      "Lv": 350.38,
+      "T": 8373
+    },
+    {
+      "Location": "MiddleRight",
+      "x": null,
+      "y": null,
+      "Lv": 328.74,
+      "T": null
+    },
+    {
+      "Location": "BottomLeft",
+      "x": null,
+      "y": null,
+      "Lv": 289.02,
+      "T": null
+    },
+    {
+      "Location": "BottomCenter",
+      "x": null,
+      "y": null,
+      "Lv": 331.08,
+      "T": null
+    },
+    {
+      "Location": "BottomRight",
+      "x": null,
+      "y": null,
+      "Lv": 294.6,
+      "T": null
+    },
+    {
+      "Location": "WhiteColor",
+      "x": 0.2765,
+      "y": 0.2816,
+      "Lv": 375,
+      "T": null
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.666,
+      "y": 0.3158,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.2709,
+      "y": 0.6416,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.152,
+      "y": 0.056,
+      "Lv": null,
+      "T": null
+    },
+    {
+      "Location": "BlackColor",
+      "x": null,
+      "y": null,
+      "Lv": 0.0646,
+      "T": null
+    }
+  ]
+}

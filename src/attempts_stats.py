@@ -22,7 +22,7 @@ POINT_ORDER = list(POINT_NAMES)
 COLOR_KEYS = {"RedColor": "Red", "GreenColor": "Green", "BlueColor": "Blue"}
 
 # Strip plot geometry (SVG user units; the strip scales with the card)
-STRIP_WIDTH, STRIP_HEIGHT, BAND_TOP, BAND_HEIGHT = 200, 28, 8, 14
+STRIP_WIDTH, GUTTER, ROW_HEIGHT, ROW_PAD = 300, 12, 11, 2
 STATUS_COLORS = {"ok": "#28a745", "warning": "#e0a800", "fail": "#dc3545", "none": "#6c757d"}
 BAND_COLORS = {"ok": "#e6f4ea", "warning": "#fff3cd", "fail": "#ffdddd", "none": "#f1f3f5"}
 
@@ -131,18 +131,27 @@ def _outcome(metric: _Metric, statuses: list, values: list, best: int) -> str:
 
 
 def _strip_svg(metric: _Metric, values: list, statuses: list, best: int, low: float, high: float) -> str:
-    """The strip plot: the spec zones, the path of the attempts (1, 2, 3 ...) and the best one ringed."""
-    scale = lambda v: (v - low) / (high - low) * STRIP_WIDTH
-    mid = BAND_TOP + BAND_HEIGHT / 2
-    parts = [f'<svg class="attempt-strip" viewBox="0 0 {STRIP_WIDTH} {STRIP_HEIGHT}" role="img">']
+    """
+    The strip plot: the spec zones run through one row per attempt (1, 2, 3 ...), so attempts with close values never overlap;
+    every dot carries its value, the path joins the dots in the order of the attempts, the best one is ringed.
+    """
+    rows = len(values)
+    height = rows * ROW_HEIGHT + 2 * ROW_PAD
+    left, right = GUTTER, STRIP_WIDTH - GUTTER / 2
+    scale = lambda v: left + (v - low) / (high - low) * (right - left)
+    row_y = lambda i: ROW_PAD + ROW_HEIGHT * i + ROW_HEIGHT / 2
+    parts = [f'<svg class="attempt-strip" viewBox="0 0 {STRIP_WIDTH} {height}" role="img">']
     for start, end, name in metric.bands(low, high):
-        parts.append(f'<rect x="{scale(start):.1f}" y="{BAND_TOP}" width="{scale(end) - scale(start):.1f}" height="{BAND_HEIGHT}" fill="{BAND_COLORS[name]}"/>')
+        parts.append(f'<rect x="{scale(start):.1f}" y="{ROW_PAD}" width="{scale(end) - scale(start):.1f}" height="{rows * ROW_HEIGHT}" fill="{BAND_COLORS[name]}"/>')
     xs = [scale(v) for v in values]
-    parts.append('<polyline points="' + " ".join(f"{x:.1f},{mid}" for x in xs) + '" fill="none" stroke="#9aa4b2" stroke-width="1" stroke-dasharray="2 2"/>')
+    parts.append('<polyline points="' + " ".join(f"{x:.1f},{row_y(i):.1f}" for i, x in enumerate(xs)) + '" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/>')
     for i, x in enumerate(xs):
-        ring = i == best
-        parts.append(f'<circle cx="{x:.1f}" cy="{mid}" r="{5.2 if ring else 3.6}" fill="{STATUS_COLORS[statuses[i]]}" stroke="{"#111" if ring else "#fff"}" stroke-width="{2 if ring else 1}"/>')
-        parts.append(f'<text x="{x:.1f}" y="{BAND_TOP - 2}" font-size="7.5" text-anchor="middle" fill="#555">{i + 1}</text>')
+        ring, y = i == best, row_y(i)
+        weight = "700" if ring else "400"
+        parts.append(f'<text x="{GUTTER - 4}" y="{y + 2.6:.1f}" font-size="7.5" font-weight="{weight}" text-anchor="end" fill="#555">{i + 1}</text>')
+        parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{4.4 if ring else 3.2}" fill="{STATUS_COLORS[statuses[i]]}" stroke="{"#111" if ring else "#fff"}" stroke-width="{1.6 if ring else 1}"/>')
+        label_left = x > left + (right - left) * 0.62  # the value goes to the free side of the dot
+        parts.append(f'<text x="{x + (-7 if label_left else 7):.1f}" y="{y + 2.6:.1f}" font-size="7.5" font-weight="{weight}" text-anchor="{"end" if label_left else "start"}" fill="#333">{metric.format(values[i])}</text>')
     parts.append("</svg>")
     return "".join(parts)
 

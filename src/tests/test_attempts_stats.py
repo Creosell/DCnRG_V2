@@ -112,6 +112,15 @@ def test_the_strip_draws_every_attempt_and_rings_the_best_one():
     assert svg.startswith("<svg") and svg.endswith("</svg>")
 
 
+def test_attempts_with_equal_values_sit_in_rows_of_their_own():
+    result = build(device("SN1", WhiteColor=[attempt(388), attempt(388), attempt(389)]))
+
+    svg = point(result, "SN1", "WhiteColor")["svg"]
+    ys = [float(s.split('cy="')[1].split('"')[0]) for s in svg.split("<circle")[1:]]
+    assert len(set(ys)) == 3  # one row per attempt: the dots never overlap
+    assert svg.count(">388<") == 2 and svg.count(">389<") == 1  # every dot carries its value
+
+
 def test_the_strips_of_one_point_share_a_scale():
     result = build(
         device("SN1", WhiteColor=[attempt(398), attempt(462)]),
