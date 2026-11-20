@@ -364,10 +364,19 @@
             .plot-container { margin-bottom: 0; }
 
             /* Four summary cards in the portrait width: smaller type so each stays on one or two lines inside its card */
-            .attempts-kpi { padding: 6px 7px; gap: 5px; }
-            .attempts-kpi b { font-size: 20px; }
-            .attempts-kpi b small { font-size: 10px; }
-            .attempts-kpi span { font-size: 12.5px; }
+            .attempts-kpis { gap: 5px; }
+            .attempts-kpi { padding: 5px 6px; gap: 1px 4px; }
+            .attempts-kpi b { font-size: 17px; }
+            .attempts-kpi b small { font-size: 9px; }
+            .attempts-kpi span { font-size: 10.5px; }
+            /* Cards of different heights flow down three columns, so a short card fills the gap under a tall one instead of leaving a gap in a grid row */
+            .attempts-grid { display: block; column-count: 3; column-gap: 7px; }
+            .attempt-card { margin-bottom: 7px; }
+            .best-line { display: none; }  /* the ringed dot and the bold number already say which attempt is the best */
+            .attempt-card h4 { gap: 4px; }
+            .attempt-sn { font-size: 9px; padding: 1px 6px; letter-spacing: 0; }
+            .attempt-badge { font-size: 9px; padding: 1px 4px; }
+            .attempts-legend { font-size: 9.5px; }
 
             /* Fit the wide Device reports tables into portrait width */
             .individual-reports-table { font-size: 11px; }
@@ -767,7 +776,7 @@
             <div class="attempt-point">
                 <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span> <span class="attempt-tag {{ point.outcome }}">{{ point.outcome_text }}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
                 {{ point.svg | safe }}
-                <div class="muted">best {{ point.best }} of {{ point.attempts }}</div>
+                <div class="muted best-line">best {{ point.best }} of {{ point.attempts }}</div>
             </div>
             {% endfor %}
         </div>
