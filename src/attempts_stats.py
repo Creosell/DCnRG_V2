@@ -149,14 +149,14 @@ def _strip_svg(metric: _Metric, values: list, statuses: list, best: int, low: fl
     for i, x in enumerate(xs):
         ring, y = i == best, row_y(i)
         weight = "700" if ring else "400"
-        parts.append(f'<text x="{GUTTER - 4}" y="{y + 3:.1f}" font-size="8.5" font-weight="{weight}" text-anchor="end" fill="#555">{i + 1}</text>')
+        parts.append(f'<text x="{GUTTER - 4}" y="{y + 3:.1f}" font-size="7.5" font-weight="{weight}" text-anchor="end" fill="#555">{i + 1}</text>')
         parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{4.4 if ring else 3.2}" fill="{STATUS_COLORS[statuses[i]]}" stroke="{"#111" if ring else "#fff"}" stroke-width="{1.6 if ring else 1}"/>')
         label_left = x > left + (right - left) * 0.62  # the value goes to the free side of the dot
         text = metric.format(values[i])
-        width = len(text) * 4.8 + 4  # a plate under the value keeps the dashed path from running through the digits
+        width = len(text) * 5 + 4  # a plate under the value keeps the dashed path from running through the digits
         plate_x = x - 6 - width if label_left else x + 6
         parts.append(f'<rect x="{plate_x:.1f}" y="{y - ROW_HEIGHT / 2 + 1:.1f}" width="{width:.1f}" height="{ROW_HEIGHT - 2}" rx="2" fill="#fff" fill-opacity="0.9"/>')
-        parts.append(f'<text x="{plate_x + width / 2:.1f}" y="{y + 3:.1f}" font-size="8.5" font-weight="{weight}" text-anchor="middle" fill="#333">{text}</text>')
+        parts.append(f'<text x="{plate_x + width / 2:.1f}" y="{y + 3:.1f}" font-size="7.5" font-weight="{weight}" text-anchor="middle" fill="#333">{text}</text>')
     parts.append("</svg>")
     return "".join(parts)
 

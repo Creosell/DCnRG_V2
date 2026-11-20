@@ -270,7 +270,7 @@
         .attempt-point .top { display: flex; justify-content: space-between; gap: 6px; }
         .attempt-point .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
         .attempt-point .muted { color: #777; }
-        .attempt-strip { display: block; width: 100%; max-width: 340px; height: auto; }
+        .attempt-strip { display: block; width: 100%; max-width: 250px; height: auto; }
 
         /* Page Break for printing/PDF generation */
         .page-break {
@@ -369,9 +369,7 @@
             .attempts-kpi b { font-size: 17px; }
             .attempts-kpi b small { font-size: 9px; }
             .attempts-kpi span { font-size: 10.5px; }
-            /* Cards of different heights flow down three columns, so a short card fills the gap under a tall one instead of leaving a gap in a grid row */
-            .attempts-grid { display: block; column-count: 3; column-gap: 7px; }
-            .attempt-card { margin-bottom: 7px; }
+            .attempt-strip text { font-size: 8.4px; }  /* the strip is scaled down in print: keep the digits readable */
             .best-line { display: none; }  /* the ringed dot and the bold number already say which attempt is the best */
             .attempt-card h4 { gap: 4px; }
             .attempt-sn { font-size: 9px; padding: 1px 6px; letter-spacing: 0; }
