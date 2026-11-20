@@ -27,7 +27,7 @@ def test_a_bare_name_is_a_file_of_the_root_only(configs):
 
 
 def test_the_same_name_in_two_folders_is_two_configurations(configs):
-    assert main.resolve_expected_yaml("CH32\Same") == configs / "CH32" / "Same.yaml"
+    assert main.resolve_expected_yaml("CH32\\Same") == configs / "CH32" / "Same.yaml"
     assert main.resolve_expected_yaml("CH33/Same") == configs / "CH33" / "Same.yaml"
     assert main.resolve_expected_yaml("Same") is None
 
