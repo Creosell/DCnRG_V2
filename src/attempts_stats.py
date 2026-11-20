@@ -227,6 +227,7 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
             "delta": metric.delta(values[0], values[best]),
             "outcome": outcome,
             "outcome_text": OUTCOMES[outcome],
+            "still_fail": outcome == "improved" and statuses[best] == "fail",  # better than the first attempt, yet still outside min/max
             "svg": _strip_svg(metric, values, statuses, best, low, high),
             "gain": values[best] - values[0] if metric.kind == "spec" else None,
         })

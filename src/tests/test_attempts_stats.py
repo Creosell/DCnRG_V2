@@ -112,6 +112,15 @@ def test_the_strip_draws_every_attempt_and_rings_the_best_one():
     assert svg.startswith("<svg") and svg.endswith("</svg>")
 
 
+def test_an_improved_point_that_is_still_outside_the_spec_says_so():
+    result = build(device("SN1", WhiteColor=[attempt(378), attempt(392)]), device("SN2", WhiteColor=[attempt(392), attempt(456)]), device("SN3", WhiteColor=[attempt(430), attempt(441)]))
+
+    assert point(result, "SN1", "WhiteColor")["still_fail"] is True  # 378 -> 392: better, below the min of 400
+    assert point(result, "SN2", "WhiteColor")["still_fail"] is False  # fixed
+    assert point(result, "SN3", "WhiteColor")["still_fail"] is False  # better, below typ but inside the limits
+    assert ", still fail" in render_section(result)
+
+
 def test_attempts_with_equal_values_sit_in_rows_of_their_own():
     result = build(device("SN1", WhiteColor=[attempt(388), attempt(388), attempt(389)]))
 
