@@ -340,7 +340,8 @@ def create_html_report(
         'colorimeter': colorimeter_summary,
         'app_version': app_version,
         'tolerance_legend': tolerance_legend,
-        'attempts_stats': attempts_stats.build_attempts_stats(attempts_devices or [], expected_values, len(device_reports)),
+        'attempts_stats': attempts_stats.build_attempts_stats(attempts_devices or [], expected_values, len(device_reports),
+                                                                {sn: data.get("verdict") for sn, data in device_reports_data_filtered.items()}),
     }
 
     # --- 5. Render and Save HTML ---

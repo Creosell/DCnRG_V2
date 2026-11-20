@@ -258,11 +258,9 @@
         .attempt-card h4 { margin: 0 0 3px; display: flex; justify-content: space-between; align-items: center; }
         .attempt-sn { font-family: Consolas, "Cascadia Mono", monospace; font-weight: 700; font-size: 11.5px; letter-spacing: .2px;
                       background: #eef1f5; border: 1px solid #d3dae3; border-radius: 10px; padding: 1px 9px; color: #222; }
-        .attempt-badge { border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; white-space: nowrap; }
-        .attempt-badge.tone-ok { background: #28a745; color: #fff; }
-        .attempt-badge.tone-warning { background: #ffc107; color: #533f03; }
-        .attempt-badge.tone-fail { background: #dc3545; color: #fff; }
-        .attempt-badge.tone-none { background: #adb5bd; color: #fff; }
+        .attempt-badge { border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; white-space: nowrap; color: #495057; background: #eef1f5; }
+        .attempt-sn.verdict-fail { background: #ffdddd; border-color: #f1aeb5; color: #721c24; }  /* the serial number takes the colour of the device verdict, as in the tables */
+        .attempt-sn.verdict-warn { background: #fff3cd; border-color: #ffe69c; color: #856404; }
         .attempt-tag { margin-left: 3px; font-size: 8.5px; font-weight: 700; }
         .attempt-tag.tone-ok { color: #1e7e34; }
         .attempt-tag.tone-warning { color: #a87800; }
@@ -2956,7 +2954,7 @@
     <div class="attempts-grid">
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10002</span><span class="attempt-badge tone-fail">2 improved</span></h4>
+            <h4><span class="attempt-sn verdict-fail" title="Device verdict: FAIL">AT10002</span><span class="attempt-badge">2 improved</span></h4>
             
             <div class="attempt-point">
                 <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag tone-fail">Improved, still fail</span></span><span class="num">378 &rarr; <b>392</b> <span class="muted">+14</span></span></div>
@@ -2971,7 +2969,7 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10003</span><span class="attempt-badge tone-fail">2 improved</span></h4>
+            <h4><span class="attempt-sn verdict-fail" title="Device verdict: FAIL">AT10003</span><span class="attempt-badge">2 improved</span></h4>
             
             <div class="attempt-point">
                 <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag tone-fail">Improved, still fail</span></span><span class="num">388 &rarr; <b>389</b> <span class="muted">+1</span></span></div>
@@ -2986,7 +2984,7 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10004</span><span class="attempt-badge tone-ok">1 fixed</span></h4>
+            <h4><span class="attempt-sn verdict-pass" title="Device verdict: PASS">AT10004</span><span class="attempt-badge">1 fixed</span></h4>
             
             <div class="attempt-point">
                 <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag tone-ok">Fixed</span></span><span class="num">392 &rarr; <b>456</b> <span class="muted">+64</span></span></div>
@@ -2996,7 +2994,7 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10005</span><span class="attempt-badge tone-ok">1 improved</span></h4>
+            <h4><span class="attempt-sn verdict-pass" title="Device verdict: PASS">AT10005</span><span class="attempt-badge">1 improved</span></h4>
             
             <div class="attempt-point">
                 <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag tone-ok">Improved</span></span><span class="num">472 &rarr; <b>475</b> <span class="muted">+3</span></span></div>
@@ -3011,7 +3009,7 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10006</span><span class="attempt-badge tone-ok">1 fixed</span></h4>
+            <h4><span class="attempt-sn verdict-pass" title="Device verdict: PASS">AT10006</span><span class="attempt-badge">1 fixed</span></h4>
             
             <div class="attempt-point">
                 <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag tone-ok">Fixed</span></span><span class="num">398 &rarr; <b>462</b> <span class="muted">+64</span></span></div>
@@ -3021,7 +3019,7 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10007</span><span class="attempt-badge tone-none">No effect</span></h4>
+            <h4><span class="attempt-sn verdict-pass" title="Device verdict: PASS">AT10007</span><span class="attempt-badge">No effect</span></h4>
             
             <div class="attempt-point">
                 <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag tone-none">No effect</span></span><span class="num">458 &rarr; <b>458</b> <span class="muted">+0</span></span></div>
@@ -3031,7 +3029,7 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10008</span><span class="attempt-badge tone-none">3 improved</span></h4>
+            <h4><span class="attempt-sn verdict-pass" title="Device verdict: PASS">AT10008</span><span class="attempt-badge">3 improved</span></h4>
             
             <div class="attempt-point">
                 <div class="top"><span><b>Black</b> <span class="muted">cd/m²</span> <span class="attempt-tag tone-none">Improved</span></span><span class="num">0.094 &rarr; <b>0.058</b> <span class="muted">-0.036</span></span></div>
@@ -3051,7 +3049,7 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10009</span><span class="attempt-badge tone-ok">2 fixed</span></h4>
+            <h4><span class="attempt-sn verdict-pass" title="Device verdict: PASS">AT10009</span><span class="attempt-badge">2 fixed</span></h4>
             
             <div class="attempt-point">
                 <div class="top"><span><b>Red</b> <span class="muted">Δxy</span> <span class="attempt-tag tone-ok">Fixed</span></span><span class="num">0.022 &rarr; <b>0.002</b> <span class="muted">-0.019</span></span></div>
@@ -3071,7 +3069,7 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10010</span><span class="attempt-badge tone-warning">2 improved</span></h4>
+            <h4><span class="attempt-sn verdict-warn" title="Device verdict: WARN">AT10010</span><span class="attempt-badge">2 improved</span></h4>
             
             <div class="attempt-point">
                 <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag tone-warning">Improved, still warn</span></span><span class="num">425 &rarr; <b>440</b> <span class="muted">+15</span></span></div>

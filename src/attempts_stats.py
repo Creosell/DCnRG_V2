@@ -28,7 +28,6 @@ STATUS_COLORS = {"ok": "#28a745", "warning": "#e0a800", "fail": "#dc3545", "none
 BAND_COLORS = {"ok": "#e6f4ea", "warning": "#fff3cd", "fail": "#ffdddd", "none": "#f1f3f5"}
 
 OUTCOMES = {"rescued": "Fixed", "improved": "Improved", "same": "No effect"}
-TONE_ORDER = ("fail", "warning", "ok", "none")  # the worst first: the tone of a card is the worst tone of its points
 
 
 class _Metric:
@@ -188,7 +187,7 @@ def _scale(metric: _Metric, all_values: list) -> tuple:
     return low - pad, high + pad
 
 
-def build_attempts_stats(devices: list, expected_values: dict, total_devices: int):
+def build_attempts_stats(devices: list, expected_values: dict, total_devices: int, verdicts: dict | None = None):
     """
     Builds the data of the "Repeated measurements" section.
 
@@ -197,6 +196,8 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
             whether the white point (a TV) or the center is the brightness reference.
         expected_values: Specification with the coordinate tolerance expanded.
         total_devices: Number of devices in the report.
+        verdicts: Verdict (PASS / WARN / FAIL) of every device by serial number; it colours the serial number of the card like the
+            tables of the report do.
 
     Returns:
         dict or None: {"kpis", "cards"}; None when no point of any device was measured more than once.
@@ -253,8 +254,7 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
         outcomes = [p["outcome"] for p in points]
         overall = "rescued" if "rescued" in outcomes else "improved" if "improved" in outcomes else "same"
         counts = [f"{outcomes.count(o)} {OUTCOMES[o].lower()}" for o in ("rescued", "improved") if o in outcomes]
-        tone = min((p["tone"] for p in points), key=TONE_ORDER.index)
-        ordered.append({"serial": serial, "outcome": overall, "tone": tone, "summary": " · ".join(counts) or OUTCOMES["same"], "points": points})
+        ordered.append({"serial": serial, "outcome": overall, "verdict": (verdicts or {}).get(serial, ""), "summary": " · ".join(counts) or OUTCOMES["same"], "points": points})
 
     points_total = [p for card in ordered for p in card["points"]]
     gains = [p["gain"] for p in points_total if p["gain"] is not None]

@@ -258,11 +258,9 @@
         .attempt-card h4 { margin: 0 0 3px; display: flex; justify-content: space-between; align-items: center; }
         .attempt-sn { font-family: Consolas, "Cascadia Mono", monospace; font-weight: 700; font-size: 11.5px; letter-spacing: .2px;
                       background: #eef1f5; border: 1px solid #d3dae3; border-radius: 10px; padding: 1px 9px; color: #222; }
-        .attempt-badge { border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; white-space: nowrap; }
-        .attempt-badge.tone-ok { background: #28a745; color: #fff; }
-        .attempt-badge.tone-warning { background: #ffc107; color: #533f03; }
-        .attempt-badge.tone-fail { background: #dc3545; color: #fff; }
-        .attempt-badge.tone-none { background: #adb5bd; color: #fff; }
+        .attempt-badge { border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; white-space: nowrap; color: #495057; background: #eef1f5; }
+        .attempt-sn.verdict-fail { background: #ffdddd; border-color: #f1aeb5; color: #721c24; }  /* the serial number takes the colour of the device verdict, as in the tables */
+        .attempt-sn.verdict-warn { background: #fff3cd; border-color: #ffe69c; color: #856404; }
         .attempt-tag { margin-left: 3px; font-size: 8.5px; font-weight: 700; }
         .attempt-tag.tone-ok { color: #1e7e34; }
         .attempt-tag.tone-warning { color: #a87800; }
@@ -780,7 +778,7 @@
     <div class="attempts-grid">
         {% for card in attempts_stats.cards %}
         <div class="attempt-card">
-            <h4><span class="attempt-sn">{{ card.serial }}</span><span class="attempt-badge tone-{{ card.tone }}">{{ card.summary }}</span></h4>
+            <h4><span class="attempt-sn verdict-{{ card.verdict | lower }}" title="Device verdict: {{ card.verdict }}">{{ card.serial }}</span><span class="attempt-badge">{{ card.summary }}</span></h4>
             {% for point in card.points %}
             <div class="attempt-point">
                 <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span> <span class="attempt-tag tone-{{ point.tone }}">{{ point.outcome_text }}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>

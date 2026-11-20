@@ -129,12 +129,18 @@ def test_the_words_and_the_tone_of_every_transition_of_the_white_point(lvs, word
     assert (p["outcome_text"], p["tone"]) == (words, tone)
 
 
-def test_a_point_without_a_spec_is_neutral_and_the_card_takes_the_worst_tone_of_its_points():
-    result = build(device("SN1", BlackColor=[attempt(0.094), attempt(0.058)], WhiteColor=[attempt(378), attempt(392)]))
+def test_a_point_without_a_spec_is_neutral():
+    result = build(device("SN1", BlackColor=[attempt(0.094), attempt(0.058)]))
 
     assert point(result, "SN1", "BlackColor")["tone"] == "none"
-    assert result["cards"][0]["tone"] == "fail"
-    assert "Improved, still fail" in render_section(result)
+
+
+def test_the_serial_number_of_a_card_takes_the_verdict_of_the_device():
+    result = stats.build_attempts_stats([device("SN1", WhiteColor=[attempt(392), attempt(456)]), device("SN2", WhiteColor=[attempt(430), attempt(441)])], SPEC, 5, {"SN1": "FAIL", "SN2": "PASS"})
+
+    assert {c["serial"]: c["verdict"] for c in result["cards"]} == {"SN1": "FAIL", "SN2": "PASS"}
+    html = render_section(result)
+    assert 'verdict-fail" title="Device verdict: FAIL">SN1' in html and 'verdict-pass" title="Device verdict: PASS">SN2' in html
 
 
 def test_attempts_with_equal_values_sit_in_rows_of_their_own():
@@ -177,7 +183,7 @@ def test_the_section_is_drawn_for_a_point_measured_again():
     html = render_section(build(device("SN1", WhiteColor=[attempt(392), attempt(456)])))
 
     assert "Repeated measurements" in html and "attempt-card" in html and "SN1" in html
-    assert 'class="attempt-badge tone-ok"' in html
+    assert 'class="attempt-badge">1 fixed' in html
     assert "best 2 of 2" not in html and "cd/m²" in html and "<svg" in html  # the ringed dot says which attempt is the best
 
 
