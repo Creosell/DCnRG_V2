@@ -22,7 +22,7 @@ POINT_ORDER = list(POINT_NAMES)
 COLOR_KEYS = {"RedColor": "Red", "GreenColor": "Green", "BlueColor": "Blue"}
 
 # Strip plot geometry (SVG user units; the strip scales with the card)
-STRIP_WIDTH, GUTTER, ROW_HEIGHT, ROW_PAD = 220, 11, 13, 4
+STRIP_WIDTH, GUTTER, ROW_HEIGHT, ROW_PAD = 220, 11, 13, 3
 FONT_SIZE, CHAR_WIDTH = 8.8, 5.6  # the type of the strip (SVG units) and the width the plate of a value reserves per character
 STATUS_COLORS = {"ok": "#28a745", "warning": "#e0a800", "fail": "#dc3545", "none": "#6c757d"}
 BAND_COLORS = {"ok": "#e6f4ea", "warning": "#fff3cd", "fail": "#ffdddd", "none": "#f1f3f5"}
