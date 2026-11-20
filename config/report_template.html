@@ -266,7 +266,8 @@
         .attempt-tag.rescued { color: #1e7e34; }
         .attempt-tag.improved { color: #9a6b00; }
         .attempt-tag.same { color: #8a9099; font-weight: 400; }
-        .attempt-point { margin: 3px 0 10px; font-size: 9.5px; }
+        .attempt-point { margin: 0 0 6px; padding: 4px 6px 5px; font-size: 9.5px; background: #fafbfc; border: 1px solid #e9ecef; border-radius: 5px; }
+        .attempt-point:last-child { margin-bottom: 0; }
         .attempt-point .top { display: flex; justify-content: space-between; gap: 6px; }
         .attempt-point .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
         .attempt-point .muted { color: #777; }
@@ -371,6 +372,8 @@
             .attempts-kpi b small { font-size: 9px; }
             .attempts-kpi span { font-size: 10.5px; }
             .attempt-strip text { font-size: 9.4px; }  /* the strip is scaled down in print: keep the digits readable */
+            .attempt-point { padding: 3px 4px 4px; margin-bottom: 5px; font-size: 9px; }
+            .attempt-point .top { white-space: nowrap; }
             .attempt-card h4 { gap: 4px; }
             .attempt-sn { font-size: 9px; padding: 1px 6px; letter-spacing: 0; }
             .attempt-badge { font-size: 9px; padding: 1px 4px; }
