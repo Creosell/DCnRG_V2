@@ -68,7 +68,7 @@ def build_devices(batch: list, expected_values: dict) -> list:
             measurements[location].update(attempts[best])
             measurements[location]["Attempts"] = [{**a, "Best": i == best} for i, a in enumerate(attempts)]
         device["Measurements"] = list(measurements.values())
-        device["DeviceConfiguration"] = CONFIG_SOURCE.stem  # the bare name: the generator finds the file in its subfolder
+        device["DeviceConfiguration"] = f"{CONFIG_SOURCE.parent.name}\{CONFIG_SOURCE.stem}"  # the folder the configuration is chosen from, as the application writes it
         result.append(device)
     return result
 

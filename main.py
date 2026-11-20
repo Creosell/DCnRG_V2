@@ -66,11 +66,12 @@ def resolve_expected_yaml(dev_name: str) -> Path | None:
     """
     Resolves the device-specific expected-values YAML path.
 
-    `dev_name` is normally the bare configuration name, which is searched in
-    device_configs and its subfolders; it may also contain "/" or "\\"
-    separators to reference a subfolder (older measurement files). Path
-    components are normalized and ".." / empty segments are dropped to
-    prevent path traversal outside config/device_configs.
+    `dev_name` may contain "/" or "\\" separators to reference a
+    device_configs subfolder. The configuration is taken from exactly that
+    folder: the same file name in another folder is another configuration, so
+    a bare name is never searched for in the subfolders. Path components are
+    normalized and ".." / empty segments are dropped to prevent path
+    traversal outside config/device_configs.
 
     Returns:
         Path to the YAML file if it exists, otherwise None.
@@ -78,13 +79,8 @@ def resolve_expected_yaml(dev_name: str) -> Path | None:
     parts = [p for p in re.split(r"[\\/]+", dev_name) if p not in ("", ".", "..")]
     if not parts:
         return None
-    root = CONFIG_DIR / "device_configs"
-    candidate = root.joinpath(*parts[:-1], f"{parts[-1]}.yaml")
-    if candidate.exists():
-        return candidate
-    if len(parts) == 1:  # a bare configuration name: the file may lie in any subfolder of device_configs
-        return next(iter(sorted(root.rglob(f"{parts[0]}.yaml"))), None)
-    return None
+    candidate = CONFIG_DIR.joinpath("device_configs", *parts[:-1], f"{parts[-1]}.yaml")
+    return candidate if candidate.exists() else None
 
 
 def parse_args():
