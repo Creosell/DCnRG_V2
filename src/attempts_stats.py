@@ -26,7 +26,7 @@ STRIP_WIDTH, GUTTER, ROW_HEIGHT, ROW_PAD = 300, 12, 11, 2
 STATUS_COLORS = {"ok": "#28a745", "warning": "#e0a800", "fail": "#dc3545", "none": "#6c757d"}
 BAND_COLORS = {"ok": "#e6f4ea", "warning": "#fff3cd", "fail": "#ffdddd", "none": "#f1f3f5"}
 
-OUTCOMES = {"rescued": "Rescued", "improved": "Improved", "same": "No gain"}
+OUTCOMES = {"rescued": "Fixed", "improved": "Improved", "same": "No effect"}
 
 
 class _Metric:
