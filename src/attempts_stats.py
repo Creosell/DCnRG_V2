@@ -117,11 +117,12 @@ class _Metric:
 
 
 def _outcome(metric: _Metric, statuses: list, values: list, best: int) -> str:
-    """rescued: the first attempt had a remark and the best has none; improved: the best is better than the first; same: it is not."""
+    """rescued: the first attempt had a remark and the best has none; improved: the best is better than the first (a better value
+    counts inside the spec too: it moves the typical value of the batch); same: it is not."""
     first, chosen = statuses[0], statuses[best]
     if first in ("warning", "fail") and chosen == "ok":
         return "rescued"
-    if best == 0 or first == "ok":  # the first attempt was already within the spec: the repeat was not needed
+    if best == 0:
         return "same"
     rank = {"fail": 0, "warning": 1, "ok": 2, "none": 2}
     if rank[chosen] > rank[first]:
@@ -220,6 +221,7 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
             "best_value": metric.format(values[best]),
             "delta": metric.delta(values[0], values[best]),
             "outcome": outcome,
+            "outcome_text": OUTCOMES[outcome],
             "svg": _strip_svg(metric, values, statuses, best, low, high),
             "gain": values[best] - values[0] if metric.kind == "spec" else None,
         })
@@ -228,8 +230,9 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
     for serial, points in cards.items():
         points.sort(key=lambda p: POINT_ORDER.index(p["location"]))
         outcomes = [p["outcome"] for p in points]
-        overall = "rescued" if all(o == "rescued" for o in outcomes) else "improved" if any(o != "same" for o in outcomes) else "same"
-        ordered.append({"serial": serial, "outcome": overall, "outcome_text": OUTCOMES[overall], "points": points})
+        overall = "rescued" if "rescued" in outcomes else "improved" if "improved" in outcomes else "same"
+        counts = [f"{outcomes.count(o)} {OUTCOMES[o].lower()}" for o in ("rescued", "improved") if o in outcomes]
+        ordered.append({"serial": serial, "outcome": overall, "summary": " · ".join(counts) or OUTCOMES["same"], "points": points})
 
     points_total = [p for card in ordered for p in card["points"]]
     gains = [p["gain"] for p in points_total if p["gain"] is not None]
@@ -243,6 +246,7 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
             "points": len(points_total),
             "attempts_average": round(attempts_total / len(points_total), 1),
             "rescued": sum(1 for p in points_total if p["outcome"] == "rescued"),
+            "improved": sum(1 for p in points_total if p["outcome"] == "improved"),
             "gain_average": round(sum(gains) / len(gains)) if gains else None,
         },
     }

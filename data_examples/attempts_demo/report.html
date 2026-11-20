@@ -262,6 +262,10 @@
         .attempt-badge.rescued { background: #28a745; color: #fff; }
         .attempt-badge.improved { background: #ffc107; color: #533f03; }
         .attempt-badge.same { background: #adb5bd; color: #fff; }
+        .attempt-tag { margin-left: 3px; font-size: 8.5px; font-weight: 700; }
+        .attempt-tag.rescued { color: #1e7e34; }
+        .attempt-tag.improved { color: #9a6b00; }
+        .attempt-tag.same { color: #8a9099; font-weight: 400; }
         .attempt-point { margin: 2px 0 4px; font-size: 9.5px; }
         .attempt-point .top { display: flex; justify-content: space-between; gap: 6px; }
         .attempt-point .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -2913,7 +2917,7 @@
     <div class="attempts-kpis">
         <div class="attempts-kpi" title="90% of the devices of the report"><b>9 <small>of 10</small></b><span>devices measured again</span></div>
         <div class="attempts-kpi" title="2.6 attempts on average"><b>17</b><span>points measured again</span></div>
-        <div class="attempts-kpi" title="The first attempt had a remark, the best has none"><b>4 <small>of 17</small></b><span>points fixed</span></div>
+        <div class="attempts-kpi" title="Fixed: the first attempt had a remark, the best has none. Improved: the best is better than the first, 10 points"><b>4 <small>of 17</small></b><span>points fixed</span></div>
         
         <div class="attempts-kpi" title="Average brightness gain, first attempt to best"><b>+23 <small>cd/m²</small></b><span>average gain</span></div>
         
@@ -2927,22 +2931,22 @@
         <span class="zone" style="background:#f1f3f5;"></span>no spec
         <br>
         <b>Fixed</b>: the first attempt had a remark, the best has none.
-        <b>Improved</b>: the best is better than the first.
-        <b>No effect</b>: the first attempt was already the best or within the spec.
+        <b>Improved</b>: the best is better than the first, inside the spec too.
+        <b>No effect</b>: the first attempt is the best.
     </div>
     <div class="attempts-grid">
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10002</span><span class="attempt-badge improved">Improved</span></h4>
+            <h4><span class="attempt-sn">AT10002</span><span class="attempt-badge improved">2 improved</span></h4>
             
             <div class="attempt-point">
-                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">378 &rarr; <b>392</b> <span class="muted">+14</span></span></div>
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag improved">Improved</span></span><span class="num">378 &rarr; <b>392</b> <span class="muted">+14</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="74.6" height="33" fill="#ffdddd"/><rect x="86.6" y="2" width="125.3" height="33" fill="#fff3cd"/><rect x="211.9" y="2" width="82.1" height="33" fill="#e6f4ea"/><polyline points="31.4,7.5 49.0,18.5 66.5,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="31.4" cy="7.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="38.4" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">378</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="49.0" cy="18.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="56.0" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">385</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="66.5" cy="29.5" r="4.4" fill="#dc3545" stroke="#111" stroke-width="1.6"/><text x="73.5" y="32.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">392</text></svg>
                 <div class="muted">best 3 of 3</div>
             </div>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Top left</b> <span class="muted">cd/m²</span></span><span class="num">392 &rarr; <b>404</b> <span class="muted">+12</span></span></div>
+                <div class="top"><span><b>Top left</b> <span class="muted">cd/m²</span> <span class="attempt-tag improved">Improved</span></span><span class="num">392 &rarr; <b>404</b> <span class="muted">+12</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="282.0" height="33" fill="#f1f3f5"/><polyline points="31.4,7.5 96.9,18.5 143.6,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="31.4" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="38.4" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">392</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="96.9" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="103.9" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">399</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="143.6" cy="29.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="150.6" y="32.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">404</text></svg>
                 <div class="muted">best 3 of 3</div>
             </div>
@@ -2950,16 +2954,16 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10003</span><span class="attempt-badge improved">Improved</span></h4>
+            <h4><span class="attempt-sn">AT10003</span><span class="attempt-badge improved">2 improved</span></h4>
             
             <div class="attempt-point">
-                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">388 &rarr; <b>389</b> <span class="muted">+1</span></span></div>
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag improved">Improved</span></span><span class="num">388 &rarr; <b>389</b> <span class="muted">+1</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="74.6" height="33" fill="#ffdddd"/><rect x="86.6" y="2" width="125.3" height="33" fill="#fff3cd"/><rect x="211.9" y="2" width="82.1" height="33" fill="#e6f4ea"/><polyline points="56.5,7.5 54.0,18.5 59.0,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="56.5" cy="7.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="63.5" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">388</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="54.0" cy="18.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="61.0" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">387</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="59.0" cy="29.5" r="4.4" fill="#dc3545" stroke="#111" stroke-width="1.6"/><text x="66.0" y="32.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">389</text></svg>
                 <div class="muted">best 3 of 3</div>
             </div>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Red</b> <span class="muted">Δxy</span></span><span class="num">0.024 &rarr; <b>0.022</b> <span class="muted">-0.003</span></span></div>
+                <div class="top"><span><b>Red</b> <span class="muted">Δxy</span> <span class="attempt-tag improved">Improved</span></span><span class="num">0.024 &rarr; <b>0.022</b> <span class="muted">-0.003</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="31.4" y="2" width="135.9" height="33" fill="#e6f4ea"/><rect x="167.3" y="2" width="56.3" height="33" fill="#fff3cd"/><rect x="223.6" y="2" width="70.4" height="33" fill="#ffdddd"/><polyline points="250.4,7.5 274.6,18.5 226.6,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="250.4" cy="7.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="243.4" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">0.024</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="274.6" cy="18.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="267.6" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">0.027</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="226.6" cy="29.5" r="4.4" fill="#dc3545" stroke="#111" stroke-width="1.6"/><text x="219.6" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">0.022</text></svg>
                 <div class="muted">best 3 of 3</div>
             </div>
@@ -2967,10 +2971,10 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10004</span><span class="attempt-badge rescued">Fixed</span></h4>
+            <h4><span class="attempt-sn">AT10004</span><span class="attempt-badge rescued">1 fixed</span></h4>
             
             <div class="attempt-point">
-                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">392 &rarr; <b>456</b> <span class="muted">+64</span></span></div>
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag rescued">Fixed</span></span><span class="num">392 &rarr; <b>456</b> <span class="muted">+64</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="12.0" y="2" width="74.6" height="22" fill="#ffdddd"/><rect x="86.6" y="2" width="125.3" height="22" fill="#fff3cd"/><rect x="211.9" y="2" width="82.1" height="22" fill="#e6f4ea"/><polyline points="66.5,7.5 226.9,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="66.5" cy="7.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="73.5" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">392</text><text x="8" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">2</text><circle cx="226.9" cy="18.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="219.9" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">456</text></svg>
                 <div class="muted">best 2 of 2</div>
             </div>
@@ -2978,16 +2982,16 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10005</span><span class="attempt-badge same">No effect</span></h4>
+            <h4><span class="attempt-sn">AT10005</span><span class="attempt-badge improved">1 improved</span></h4>
             
             <div class="attempt-point">
-                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">472 &rarr; <b>475</b> <span class="muted">+3</span></span></div>
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag improved">Improved</span></span><span class="num">472 &rarr; <b>475</b> <span class="muted">+3</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="74.6" height="33" fill="#ffdddd"/><rect x="86.6" y="2" width="125.3" height="33" fill="#fff3cd"/><rect x="211.9" y="2" width="82.1" height="33" fill="#e6f4ea"/><polyline points="267.0,7.5 257.0,18.5 274.6,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="267.0" cy="7.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="260.0" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">472</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="257.0" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="250.0" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">468</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="274.6" cy="29.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="267.6" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">475</text></svg>
                 <div class="muted">best 3 of 3</div>
             </div>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Black</b> <span class="muted">cd/m²</span></span><span class="num">0.058 &rarr; <b>0.058</b> <span class="muted">+0.000</span></span></div>
+                <div class="top"><span><b>Black</b> <span class="muted">cd/m²</span> <span class="attempt-tag same">No effect</span></span><span class="num">0.058 &rarr; <b>0.058</b> <span class="muted">+0.000</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="12.0" y="2" width="282.0" height="22" fill="#f1f3f5"/><polyline points="31.4,7.5 51.7,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">1</text><circle cx="31.4" cy="7.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="38.4" y="10.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.058</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="51.7" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="58.7" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.061</text></svg>
                 <div class="muted">best 1 of 2</div>
             </div>
@@ -2995,10 +2999,10 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10006</span><span class="attempt-badge rescued">Fixed</span></h4>
+            <h4><span class="attempt-sn">AT10006</span><span class="attempt-badge rescued">1 fixed</span></h4>
             
             <div class="attempt-point">
-                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">398 &rarr; <b>462</b> <span class="muted">+64</span></span></div>
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag rescued">Fixed</span></span><span class="num">398 &rarr; <b>462</b> <span class="muted">+64</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="74.6" height="33" fill="#ffdddd"/><rect x="86.6" y="2" width="125.3" height="33" fill="#fff3cd"/><rect x="211.9" y="2" width="82.1" height="33" fill="#e6f4ea"/><polyline points="81.6,7.5 242.0,18.5 189.3,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="81.6" cy="7.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="88.6" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">398</text><text x="8" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">2</text><circle cx="242.0" cy="18.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="235.0" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">462</text><text x="8" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">3</text><circle cx="189.3" cy="29.5" r="3.2" fill="#e0a800" stroke="#fff" stroke-width="1"/><text x="182.3" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">441</text></svg>
                 <div class="muted">best 2 of 3</div>
             </div>
@@ -3009,7 +3013,7 @@
             <h4><span class="attempt-sn">AT10007</span><span class="attempt-badge same">No effect</span></h4>
             
             <div class="attempt-point">
-                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">458 &rarr; <b>458</b> <span class="muted">+0</span></span></div>
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag same">No effect</span></span><span class="num">458 &rarr; <b>458</b> <span class="muted">+0</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="74.6" height="33" fill="#ffdddd"/><rect x="86.6" y="2" width="125.3" height="33" fill="#fff3cd"/><rect x="211.9" y="2" width="82.1" height="33" fill="#e6f4ea"/><polyline points="231.9,7.5 189.3,18.5 209.4,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">1</text><circle cx="231.9" cy="7.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="224.9" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">458</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="189.3" cy="18.5" r="3.2" fill="#e0a800" stroke="#fff" stroke-width="1"/><text x="182.3" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">441</text><text x="8" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">3</text><circle cx="209.4" cy="29.5" r="3.2" fill="#e0a800" stroke="#fff" stroke-width="1"/><text x="202.4" y="32.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">449</text></svg>
                 <div class="muted">best 1 of 3</div>
             </div>
@@ -3017,22 +3021,22 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10008</span><span class="attempt-badge improved">Improved</span></h4>
+            <h4><span class="attempt-sn">AT10008</span><span class="attempt-badge improved">3 improved</span></h4>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Black</b> <span class="muted">cd/m²</span></span><span class="num">0.094 &rarr; <b>0.058</b> <span class="muted">-0.036</span></span></div>
+                <div class="top"><span><b>Black</b> <span class="muted">cd/m²</span> <span class="attempt-tag improved">Improved</span></span><span class="num">0.094 &rarr; <b>0.058</b> <span class="muted">-0.036</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="282.0" height="33" fill="#f1f3f5"/><polyline points="274.6,7.5 51.7,18.5 31.4,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="274.6" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="267.6" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">0.094</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="51.7" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="58.7" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.061</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="31.4" cy="29.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="38.4" y="32.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.058</text></svg>
                 <div class="muted">best 3 of 3</div>
             </div>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Top left</b> <span class="muted">cd/m²</span></span><span class="num">405 &rarr; <b>418</b> <span class="muted">+13</span></span></div>
+                <div class="top"><span><b>Top left</b> <span class="muted">cd/m²</span> <span class="attempt-tag improved">Improved</span></span><span class="num">405 &rarr; <b>418</b> <span class="muted">+13</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="12.0" y="2" width="282.0" height="22" fill="#f1f3f5"/><polyline points="153.0,7.5 274.6,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="153.0" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="160.0" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">405</text><text x="8" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">2</text><circle cx="274.6" cy="18.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="267.6" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">418</text></svg>
                 <div class="muted">best 2 of 2</div>
             </div>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Middle left</b> <span class="muted">cd/m²</span></span><span class="num">410 &rarr; <b>431</b> <span class="muted">+21</span></span></div>
+                <div class="top"><span><b>Middle left</b> <span class="muted">cd/m²</span> <span class="attempt-tag improved">Improved</span></span><span class="num">410 &rarr; <b>431</b> <span class="muted">+21</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="282.0" height="33" fill="#f1f3f5"/><polyline points="31.4,7.5 54.6,18.5 274.6,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="31.4" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="38.4" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">410</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="54.6" cy="18.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="61.6" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">412</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="274.6" cy="29.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="267.6" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">431</text></svg>
                 <div class="muted">best 3 of 3</div>
             </div>
@@ -3040,22 +3044,22 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10009</span><span class="attempt-badge improved">Improved</span></h4>
+            <h4><span class="attempt-sn">AT10009</span><span class="attempt-badge rescued">2 fixed</span></h4>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Red</b> <span class="muted">Δxy</span></span><span class="num">0.022 &rarr; <b>0.002</b> <span class="muted">-0.019</span></span></div>
+                <div class="top"><span><b>Red</b> <span class="muted">Δxy</span> <span class="attempt-tag rescued">Fixed</span></span><span class="num">0.022 &rarr; <b>0.002</b> <span class="muted">-0.019</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="31.4" y="2" width="135.9" height="33" fill="#e6f4ea"/><rect x="167.3" y="2" width="56.3" height="33" fill="#fff3cd"/><rect x="223.6" y="2" width="70.4" height="33" fill="#ffdddd"/><polyline points="226.6,7.5 129.0,18.5 51.7,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="226.6" cy="7.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="219.6" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">0.022</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="129.0" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="136.0" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.011</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="51.7" cy="29.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="58.7" y="32.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.002</text></svg>
                 <div class="muted">best 3 of 3</div>
             </div>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Green</b> <span class="muted">Δxy</span></span><span class="num">0.022 &rarr; <b>0.011</b> <span class="muted">-0.011</span></span></div>
+                <div class="top"><span><b>Green</b> <span class="muted">Δxy</span> <span class="attempt-tag rescued">Fixed</span></span><span class="num">0.022 &rarr; <b>0.011</b> <span class="muted">-0.011</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="31.4" y="2" width="163.1" height="22" fill="#e6f4ea"/><rect x="194.5" y="2" width="67.5" height="22" fill="#fff3cd"/><rect x="262.1" y="2" width="31.9" height="22" fill="#ffdddd"/><polyline points="274.6,7.5 153.0,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="274.6" cy="7.5" r="3.2" fill="#dc3545" stroke="#fff" stroke-width="1"/><text x="267.6" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#333">0.022</text><text x="8" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">2</text><circle cx="153.0" cy="18.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="160.0" y="21.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.011</text></svg>
                 <div class="muted">best 2 of 2</div>
             </div>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Blue</b> <span class="muted">Δxy</span></span><span class="num">0.000 &rarr; <b>0.000</b> <span class="muted">+0.000</span></span></div>
+                <div class="top"><span><b>Blue</b> <span class="muted">Δxy</span> <span class="attempt-tag same">No effect</span></span><span class="num">0.000 &rarr; <b>0.000</b> <span class="muted">+0.000</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="31.4" y="2" width="171.9" height="22" fill="#e6f4ea"/><rect x="203.3" y="2" width="71.2" height="22" fill="#fff3cd"/><rect x="274.6" y="2" width="19.4" height="22" fill="#ffdddd"/><polyline points="31.4,7.5 47.7,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">1</text><circle cx="31.4" cy="7.5" r="4.4" fill="#28a745" stroke="#111" stroke-width="1.6"/><text x="38.4" y="10.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">0.000</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="47.7" cy="18.5" r="3.2" fill="#28a745" stroke="#fff" stroke-width="1"/><text x="54.7" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">0.001</text></svg>
                 <div class="muted">best 1 of 2</div>
             </div>
@@ -3063,16 +3067,16 @@
         </div>
         
         <div class="attempt-card">
-            <h4><span class="attempt-sn">AT10010</span><span class="attempt-badge improved">Improved</span></h4>
+            <h4><span class="attempt-sn">AT10010</span><span class="attempt-badge improved">2 improved</span></h4>
             
             <div class="attempt-point">
-                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span></span><span class="num">425 &rarr; <b>440</b> <span class="muted">+15</span></span></div>
+                <div class="top"><span><b>White</b> <span class="muted">cd/m²</span> <span class="attempt-tag improved">Improved</span></span><span class="num">425 &rarr; <b>440</b> <span class="muted">+15</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 37" role="img"><rect x="12.0" y="2" width="74.6" height="33" fill="#ffdddd"/><rect x="86.6" y="2" width="125.3" height="33" fill="#fff3cd"/><rect x="211.9" y="2" width="82.1" height="33" fill="#e6f4ea"/><polyline points="149.2,7.5 164.3,18.5 186.8,29.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="149.2" cy="7.5" r="3.2" fill="#e0a800" stroke="#fff" stroke-width="1"/><text x="156.2" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">425</text><text x="8" y="21.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">2</text><circle cx="164.3" cy="18.5" r="3.2" fill="#e0a800" stroke="#fff" stroke-width="1"/><text x="171.3" y="21.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">431</text><text x="8" y="32.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">3</text><circle cx="186.8" cy="29.5" r="4.4" fill="#e0a800" stroke="#111" stroke-width="1.6"/><text x="193.8" y="32.1" font-size="7.5" font-weight="700" text-anchor="start" fill="#333">440</text></svg>
                 <div class="muted">best 3 of 3</div>
             </div>
             
             <div class="attempt-point">
-                <div class="top"><span><b>Bottom right</b> <span class="muted">cd/m²</span></span><span class="num">430 &rarr; <b>436</b> <span class="muted">+6</span></span></div>
+                <div class="top"><span><b>Bottom right</b> <span class="muted">cd/m²</span> <span class="attempt-tag improved">Improved</span></span><span class="num">430 &rarr; <b>436</b> <span class="muted">+6</span></span></div>
                 <svg class="attempt-strip" viewBox="0 0 300 26" role="img"><rect x="12.0" y="2" width="282.0" height="22" fill="#f1f3f5"/><polyline points="31.4,7.5 274.6,18.5" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/><text x="8" y="10.1" font-size="7.5" font-weight="400" text-anchor="end" fill="#555">1</text><circle cx="31.4" cy="7.5" r="3.2" fill="#6c757d" stroke="#fff" stroke-width="1"/><text x="38.4" y="10.1" font-size="7.5" font-weight="400" text-anchor="start" fill="#333">430</text><text x="8" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#555">2</text><circle cx="274.6" cy="18.5" r="4.4" fill="#6c757d" stroke="#111" stroke-width="1.6"/><text x="267.6" y="21.1" font-size="7.5" font-weight="700" text-anchor="end" fill="#333">436</text></svg>
                 <div class="muted">best 2 of 2</div>
             </div>

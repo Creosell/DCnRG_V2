@@ -262,6 +262,10 @@
         .attempt-badge.rescued { background: #28a745; color: #fff; }
         .attempt-badge.improved { background: #ffc107; color: #533f03; }
         .attempt-badge.same { background: #adb5bd; color: #fff; }
+        .attempt-tag { margin-left: 3px; font-size: 8.5px; font-weight: 700; }
+        .attempt-tag.rescued { color: #1e7e34; }
+        .attempt-tag.improved { color: #9a6b00; }
+        .attempt-tag.same { color: #8a9099; font-weight: 400; }
         .attempt-point { margin: 2px 0 4px; font-size: 9.5px; }
         .attempt-point .top { display: flex; justify-content: space-between; gap: 6px; }
         .attempt-point .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -737,7 +741,7 @@
     <div class="attempts-kpis">
         <div class="attempts-kpi" title="{{ attempts_stats.kpis.devices_percent }}% of the devices of the report"><b>{{ attempts_stats.kpis.devices }} <small>of {{ attempts_stats.kpis.total_devices }}</small></b><span>devices measured again</span></div>
         <div class="attempts-kpi" title="{{ attempts_stats.kpis.attempts_average }} attempts on average"><b>{{ attempts_stats.kpis.points }}</b><span>points measured again</span></div>
-        <div class="attempts-kpi" title="The first attempt had a remark, the best has none"><b>{{ attempts_stats.kpis.rescued }} <small>of {{ attempts_stats.kpis.points }}</small></b><span>points fixed</span></div>
+        <div class="attempts-kpi" title="Fixed: the first attempt had a remark, the best has none. Improved: the best is better than the first, {{ attempts_stats.kpis.improved }} points"><b>{{ attempts_stats.kpis.rescued }} <small>of {{ attempts_stats.kpis.points }}</small></b><span>points fixed</span></div>
         {% if attempts_stats.kpis.gain_average is not none %}
         <div class="attempts-kpi" title="Average brightness gain, first attempt to best"><b>{{ '%+d' | format(attempts_stats.kpis.gain_average) }} <small>cd/m²</small></b><span>average gain</span></div>
         {% endif %}
@@ -751,16 +755,16 @@
         <span class="zone" style="background:#f1f3f5;"></span>no spec
         <br>
         <b>Fixed</b>: the first attempt had a remark, the best has none.
-        <b>Improved</b>: the best is better than the first.
-        <b>No effect</b>: the first attempt was already the best or within the spec.
+        <b>Improved</b>: the best is better than the first, inside the spec too.
+        <b>No effect</b>: the first attempt is the best.
     </div>
     <div class="attempts-grid">
         {% for card in attempts_stats.cards %}
         <div class="attempt-card">
-            <h4><span class="attempt-sn">{{ card.serial }}</span><span class="attempt-badge {{ card.outcome }}">{{ card.outcome_text }}</span></h4>
+            <h4><span class="attempt-sn">{{ card.serial }}</span><span class="attempt-badge {{ card.outcome }}">{{ card.summary }}</span></h4>
             {% for point in card.points %}
             <div class="attempt-point">
-                <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
+                <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span> <span class="attempt-tag {{ point.outcome }}">{{ point.outcome_text }}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
                 {{ point.svg | safe }}
                 <div class="muted">best {{ point.best }} of {{ point.attempts }}</div>
             </div>

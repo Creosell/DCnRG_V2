@@ -45,7 +45,7 @@ def test_a_file_without_attempts_is_ignored():
     ([attempt(392), attempt(456)], "rescued", 2),            # outside the spec, then within
     ([attempt(378), attempt(385), attempt(392)], "improved", 3),  # better each time, still outside the spec
     ([attempt(388), attempt(387), attempt(389)], "improved", 3),  # barely better
-    ([attempt(472), attempt(468), attempt(475)], "same", 3),      # the first was already good: the repeats were not needed
+    ([attempt(472), attempt(468), attempt(475)], "improved", 3),  # the first was already good, a brighter one still counts
     ([attempt(458), attempt(441), attempt(449)], "same", 1),      # the first is the best
     ([attempt(398), attempt(462), attempt(441)], "rescued", 2),   # the best is the second of three
 ])
@@ -92,15 +92,15 @@ def test_the_numbers_of_the_section():
     assert kpis["gain_average"] == round((64 + 0) / 2)  # white points only, first -> best: 392 -> 456 and 472 -> 472 (the best of two good ones is the brighter)
 
 
-def test_the_card_badge_is_the_outcome_of_all_its_points():
+def test_the_card_summary_counts_the_outcomes_of_its_points():
     result = build(
         device("A", WhiteColor=[attempt(392), attempt(456)]),
         device("B", WhiteColor=[attempt(392), attempt(456)], BlackColor=[attempt(0.06), attempt(0.061)]),
         device("C", WhiteColor=[attempt(472), attempt(470)]),
     )
 
-    badges = {c["serial"]: c["outcome"] for c in result["cards"]}
-    assert badges == {"A": "rescued", "B": "improved", "C": "same"}  # B: the rescued white and the black that did not get darker
+    summaries = {c["serial"]: c["summary"] for c in result["cards"]}
+    assert summaries == {"A": "1 fixed", "B": "1 fixed", "C": "No effect"}  # B: the black did not get darker
 
 
 def test_the_strip_draws_every_attempt_and_rings_the_best_one():
