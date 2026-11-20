@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Display Analysis Report</title>
+    <title>{{ report_title }}</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f9f9f9; }
         h1 { text-align: center; color: #333; }
@@ -270,6 +270,7 @@
         .attempt-point .top { display: flex; justify-content: space-between; gap: 6px; }
         .attempt-point .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
         .attempt-point .muted { color: #777; }
+        .attempt-strip text { font-family: Consolas, "Cascadia Mono", "Courier New", monospace; }  /* digits of equal width: the values line up */
         .attempt-strip { display: block; width: 100%; max-width: 250px; height: auto; }
 
         /* Page Break for printing/PDF generation */
@@ -369,7 +370,7 @@
             .attempts-kpi b { font-size: 17px; }
             .attempts-kpi b small { font-size: 9px; }
             .attempts-kpi span { font-size: 10.5px; }
-            .attempt-strip text { font-size: 8.4px; }  /* the strip is scaled down in print: keep the digits readable */
+            .attempt-strip text { font-size: 9.4px; }  /* the strip is scaled down in print: keep the digits readable */
             .best-line { display: none; }  /* the ringed dot and the bold number already say which attempt is the best */
             .attempt-card h4 { gap: 4px; }
             .attempt-sn { font-size: 9px; padding: 1px 6px; letter-spacing: 0; }

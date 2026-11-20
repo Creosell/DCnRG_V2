@@ -1,5 +1,6 @@
 # helpers.py
 import json
+import re
 import sys
 import yaml
 import zipfile
@@ -164,6 +165,11 @@ def collect_tolerance_legend(main_report_data: dict, ufn_mapping: dict) -> dict:
     return dict(sorted(tolerance_groups.items(), key=lambda x: x[0], reverse=True))
 
 
+def config_display_name(device_name: str) -> str:
+    """The name of a device configuration as the report shows it: the file name without the subfolder an older measurement file may carry."""
+    return re.split(r"[\\/]+", device_name.strip())[-1] or device_name
+
+
 def create_html_report(
         input_file: Path,
         output_file: Path,
@@ -320,6 +326,7 @@ def create_html_report(
     inspection_date = get_inspection_date_range(device_reports_data_filtered)
     colorimeter_summary = get_colorimeter_summary(device_reports_data_filtered)
 
+    config_name = config_display_name(current_device_name)
     context = {
         "main_report": main_report_filtered,
         "raw_svg_background": raw_svg_background,
@@ -327,7 +334,8 @@ def create_html_report(
         "plot_triangles_checked": plot_triangles_checked,
         "plot_calibration_json": plot_calibration_json,
         'device_reports': device_reports_filtered,
-        'current_device_name': current_device_name,
+        'current_device_name': config_name,
+        'report_title': f"{config_name} Display Analysis Report",
         'inspection_date': inspection_date,
         'colorimeter': colorimeter_summary,
         'app_version': app_version,
