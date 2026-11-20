@@ -22,7 +22,7 @@ POINT_ORDER = list(POINT_NAMES)
 COLOR_KEYS = {"RedColor": "Red", "GreenColor": "Green", "BlueColor": "Blue"}
 
 # Strip plot geometry (SVG user units; the strip scales with the card)
-STRIP_WIDTH, GUTTER, ROW_HEIGHT, ROW_PAD = 220, 11, 12, 2
+STRIP_WIDTH, GUTTER, ROW_HEIGHT, ROW_PAD = 220, 11, 13, 6
 FONT_SIZE, CHAR_WIDTH = 8.8, 5.6  # the type of the strip (SVG units) and the width the plate of a value reserves per character
 STATUS_COLORS = {"ok": "#28a745", "warning": "#e0a800", "fail": "#dc3545", "none": "#6c757d"}
 BAND_COLORS = {"ok": "#e6f4ea", "warning": "#fff3cd", "fail": "#ffdddd", "none": "#f1f3f5"}
@@ -157,7 +157,7 @@ def _strip_svg(metric: _Metric, values: list, statuses: list, best: int, low: fl
     row_y = lambda i: ROW_PAD + ROW_HEIGHT * i + ROW_HEIGHT / 2
     parts = [f'<svg class="attempt-strip" viewBox="0 0 {STRIP_WIDTH} {height}" role="img">']
     for start, end, name in metric.bands(low, high):
-        parts.append(f'<rect x="{scale(start):.1f}" y="{ROW_PAD}" width="{scale(end) - scale(start):.1f}" height="{rows * ROW_HEIGHT}" fill="{BAND_COLORS[name]}"/>')
+        parts.append(f'<rect x="{scale(start):.1f}" y="0" width="{scale(end) - scale(start):.1f}" height="{height}" fill="{BAND_COLORS[name]}"/>')
     xs = [scale(v) for v in values]
     parts.append('<polyline points="' + " ".join(f"{x:.1f},{row_y(i):.1f}" for i, x in enumerate(xs)) + '" fill="none" stroke="#9aa4b2" stroke-width="0.8" stroke-dasharray="2 2"/>')
     for i, x in enumerate(xs):
