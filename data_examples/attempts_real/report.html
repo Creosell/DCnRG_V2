@@ -246,8 +246,8 @@
 
 
         /* Repeated measurements: a card per serial number with a strip plot of every repeated point */
-        .attempts-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 10px; }
-        .attempts-kpi { border: 1px solid #dee2e6; border-radius: 6px; padding: 8px 10px; background: #fafbfc; display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+        .attempts-kpis { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; margin: 0 0 10px; }
+        .attempts-kpi { border: 1px solid #dee2e6; border-radius: 6px; padding: 8px 10px; background: #fafbfc; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 7px; min-width: 0; }
         .attempts-kpi b { font-size: 24px; line-height: 1; color: #222; white-space: nowrap; }
         .attempts-kpi b small { font-size: 12px; font-weight: 400; color: #666; }
         .attempts-kpi span { font-size: 15px; line-height: 1.15; font-weight: 500; color: #333; }
@@ -258,7 +258,7 @@
         .attempt-card h4 { margin: 0 0 3px; display: flex; justify-content: space-between; align-items: center; }
         .attempt-sn { font-family: Consolas, "Cascadia Mono", monospace; font-weight: 700; font-size: 11.5px; letter-spacing: .2px;
                       background: #eef1f5; border: 1px solid #d3dae3; border-radius: 10px; padding: 1px 9px; color: #222; }
-        .attempt-badge { border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+        .attempt-badge { border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; white-space: nowrap; }
         .attempt-badge.rescued { background: #28a745; color: #fff; }
         .attempt-badge.improved { background: #ffc107; color: #533f03; }
         .attempt-badge.same { background: #adb5bd; color: #fff; }
@@ -2855,7 +2855,8 @@
     <div class="attempts-kpis">
         <div class="attempts-kpi" title="70% of the devices of the report"><b>7 <small>of 10</small></b><span>devices measured again</span></div>
         <div class="attempts-kpi" title="3.5 attempts on average"><b>20</b><span>points measured again</span></div>
-        <div class="attempts-kpi" title="Fixed: the first attempt had a remark, the best has none. Improved: the best is better than the first, 14 points"><b>0 <small>of 20</small></b><span>points fixed</span></div>
+        <div class="attempts-kpi" title="The first attempt had a remark, the best has none"><b>0 <small>of 20</small></b><span>points fixed</span></div>
+        <div class="attempts-kpi" title="The best attempt is better than the first, inside the spec too"><b>14 <small>of 20</small></b><span>points improved</span></div>
         
         <div class="attempts-kpi" title="Average brightness gain, first attempt to best"><b>+24 <small>cd/m²</small></b><span>average gain</span></div>
         
