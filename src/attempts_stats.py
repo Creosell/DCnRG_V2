@@ -28,6 +28,7 @@ STATUS_COLORS = {"ok": "#28a745", "warning": "#e0a800", "fail": "#dc3545", "none
 BAND_COLORS = {"ok": "#e6f4ea", "warning": "#fff3cd", "fail": "#ffdddd", "none": "#f1f3f5"}
 
 OUTCOMES = {"rescued": "Fixed", "improved": "Improved", "same": "No effect"}
+TONE_ORDER = ("fail", "warning", "ok", "none")  # the worst first: the tone of a card is the worst tone of its points
 
 
 class _Metric:
@@ -132,6 +133,19 @@ def _outcome(metric: _Metric, statuses: list, values: list, best: int) -> str:
     return "improved" if better else "same"
 
 
+def _verdict(outcome: str, first: str, final: str) -> tuple:
+    """
+    The words and the tone of a point. The words say what the repeats did (Fixed, Improved, No effect) and, while the point still has
+    a remark, where it stays (still warn, still fail); the tone is the state of the point now, the colour of its dot on the strip.
+    A point that is fine and did not change has the neutral tone.
+    """
+    words = OUTCOMES[outcome]
+    if final in ("warning", "fail") and outcome != "rescued":
+        words += ", now warn" if (outcome == "improved" and first == "fail" and final == "warning") else f", still {'warn' if final == 'warning' else 'fail'}"
+    tone = final if final in ("warning", "fail") or (final == "ok" and outcome != "same") else "none"
+    return words, tone
+
+
 def _strip_svg(metric: _Metric, values: list, statuses: list, best: int, low: float, high: float) -> str:
     """
     The strip plot: the spec zones run through one row per attempt (1, 2, 3 ...), so attempts with close values never overlap;
@@ -215,6 +229,7 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
     for serial, location, metric, values, statuses, best, attempts in entries:
         low, high = scales[location]
         outcome = _outcome(metric, statuses, values, best)
+        words, tone = _verdict(outcome, statuses[0], statuses[best])
         cards.setdefault(serial, []).append({
             "location": location,
             "name": POINT_NAMES[location],
@@ -226,8 +241,8 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
             "best_value": metric.format(values[best]),
             "delta": metric.delta(values[0], values[best]),
             "outcome": outcome,
-            "outcome_text": OUTCOMES[outcome],
-            "still_fail": outcome == "improved" and statuses[best] == "fail",  # better than the first attempt, yet still outside min/max
+            "outcome_text": words,
+            "tone": tone,
             "svg": _strip_svg(metric, values, statuses, best, low, high),
             "gain": values[best] - values[0] if metric.kind == "spec" else None,
         })
@@ -238,7 +253,8 @@ def build_attempts_stats(devices: list, expected_values: dict, total_devices: in
         outcomes = [p["outcome"] for p in points]
         overall = "rescued" if "rescued" in outcomes else "improved" if "improved" in outcomes else "same"
         counts = [f"{outcomes.count(o)} {OUTCOMES[o].lower()}" for o in ("rescued", "improved") if o in outcomes]
-        ordered.append({"serial": serial, "outcome": overall, "summary": " · ".join(counts) or OUTCOMES["same"], "points": points})
+        tone = min((p["tone"] for p in points), key=TONE_ORDER.index)
+        ordered.append({"serial": serial, "outcome": overall, "tone": tone, "summary": " · ".join(counts) or OUTCOMES["same"], "points": points})
 
     points_total = [p for card in ordered for p in card["points"]]
     gains = [p["gain"] for p in points_total if p["gain"] is not None]

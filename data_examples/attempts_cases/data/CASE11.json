@@ -1,0 +1,166 @@
+{
+  "SerialNumber": "CASE11",
+  "DeviceConfiguration": "SDF-75UQM8000MBAC_CH31",
+  "IsTV": true,
+  "MeasurementDateTime": "20261118_195000",
+  "Colorimeter": {
+    "Model": "CA-410",
+    "ProbeSN": "81026182",
+    "Channel": 2
+  },
+  "Measurements": [
+    {
+      "Location": "TopLeft",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 452,
+      "T": 9100
+    },
+    {
+      "Location": "TopCenter",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 468,
+      "T": 9100
+    },
+    {
+      "Location": "TopRight",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 455,
+      "T": 9100
+    },
+    {
+      "Location": "MiddleLeft",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 460,
+      "T": 9100
+    },
+    {
+      "Location": "Center",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 472,
+      "T": 9100
+    },
+    {
+      "Location": "MiddleRight",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 463,
+      "T": 9100
+    },
+    {
+      "Location": "BottomLeft",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 450,
+      "T": 9100
+    },
+    {
+      "Location": "BottomCenter",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 466,
+      "T": 9100
+    },
+    {
+      "Location": "BottomRight",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 454,
+      "T": 9100
+    },
+    {
+      "Location": "WhiteColor",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 478,
+      "T": 9100
+    },
+    {
+      "Location": "BlackColor",
+      "x": 0.28,
+      "y": 0.29,
+      "Lv": 0.06,
+      "T": 0
+    },
+    {
+      "Location": "RedColor",
+      "x": 0.672,
+      "y": 0.311,
+      "Lv": 120,
+      "T": 9100,
+      "Attempts": [
+        {
+          "x": 0.692,
+          "y": 0.32,
+          "Lv": 120,
+          "T": 9100,
+          "Best": false
+        },
+        {
+          "x": 0.69,
+          "y": 0.318,
+          "Lv": 120,
+          "T": 9100,
+          "Best": false
+        },
+        {
+          "x": 0.672,
+          "y": 0.311,
+          "Lv": 120,
+          "T": 9100,
+          "Best": true
+        }
+      ]
+    },
+    {
+      "Location": "GreenColor",
+      "x": 0.285,
+      "y": 0.652,
+      "Lv": 120,
+      "T": 9100,
+      "Attempts": [
+        {
+          "x": 0.29,
+          "y": 0.65,
+          "Lv": 120,
+          "T": 9100,
+          "Best": false
+        },
+        {
+          "x": 0.285,
+          "y": 0.652,
+          "Lv": 120,
+          "T": 9100,
+          "Best": true
+        }
+      ]
+    },
+    {
+      "Location": "BlueColor",
+      "x": 0.15,
+      "y": 0.06,
+      "Lv": 120,
+      "T": 9100,
+      "Attempts": [
+        {
+          "x": 0.15,
+          "y": 0.06,
+          "Lv": 120,
+          "T": 9100,
+          "Best": true
+        },
+        {
+          "x": 0.152,
+          "y": 0.062,
+          "Lv": 120,
+          "T": 9100,
+          "Best": false
+        }
+      ]
+    }
+  ]
+}

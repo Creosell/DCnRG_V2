@@ -259,14 +259,15 @@
         .attempt-sn { font-family: Consolas, "Cascadia Mono", monospace; font-weight: 700; font-size: 11.5px; letter-spacing: .2px;
                       background: #eef1f5; border: 1px solid #d3dae3; border-radius: 10px; padding: 1px 9px; color: #222; }
         .attempt-badge { border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700; white-space: nowrap; }
-        .attempt-badge.rescued { background: #28a745; color: #fff; }
-        .attempt-badge.improved { background: #ffc107; color: #533f03; }
-        .attempt-badge.same { background: #adb5bd; color: #fff; }
+        .attempt-badge.tone-ok { background: #28a745; color: #fff; }
+        .attempt-badge.tone-warning { background: #ffc107; color: #533f03; }
+        .attempt-badge.tone-fail { background: #dc3545; color: #fff; }
+        .attempt-badge.tone-none { background: #adb5bd; color: #fff; }
         .attempt-tag { margin-left: 3px; font-size: 8.5px; font-weight: 700; }
-        .attempt-tag.rescued { color: #1e7e34; }
-        .attempt-tag.improved { color: #a87800; }
-        .attempt-tag.same { color: #8a9099; font-weight: 400; }
-        .attempt-tag.still { color: #d9480f; }
+        .attempt-tag.tone-ok { color: #1e7e34; }
+        .attempt-tag.tone-warning { color: #a87800; }
+        .attempt-tag.tone-fail { color: #c82333; }
+        .attempt-tag.tone-none { color: #8a9099; font-weight: 400; }
         .attempt-point { margin: 0 0 6px; padding: 4px 6px 5px; font-size: 9.5px; background: #fafbfc; border: 1px solid #e9ecef; border-radius: 5px; }
         .attempt-point:last-child { margin-bottom: 0; }
         .attempt-point .top { display: flex; justify-content: space-between; gap: 6px; }
@@ -769,14 +770,20 @@
         <b>Fixed</b>: the first attempt had a remark, the best has none.
         <b>Improved</b>: the best is better than the first, inside the spec too.
         <b>No effect</b>: the first attempt is the best.
+        <br>
+        The colour of a label is the state of the point now:
+        <b style="color:#1e7e34;">OK</b>,
+        <b style="color:#a87800;">warn</b> (<i>now warn</i>: it was fail; <i>still warn</i>),
+        <b style="color:#c82333;">fail</b> (<i>still fail</i>);
+        <b style="color:#8a9099;">grey</b>: nothing to fix, or no spec.
     </div>
     <div class="attempts-grid">
         {% for card in attempts_stats.cards %}
         <div class="attempt-card">
-            <h4><span class="attempt-sn">{{ card.serial }}</span><span class="attempt-badge {{ card.outcome }}">{{ card.summary }}</span></h4>
+            <h4><span class="attempt-sn">{{ card.serial }}</span><span class="attempt-badge tone-{{ card.tone }}">{{ card.summary }}</span></h4>
             {% for point in card.points %}
             <div class="attempt-point">
-                <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span> <span class="attempt-tag {{ point.outcome }}{% if point.still_fail %} still{% endif %}">{{ point.outcome_text }}{% if point.still_fail %}, still fail{% endif %}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
+                <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span> <span class="attempt-tag tone-{{ point.tone }}">{{ point.outcome_text }}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
                 {{ point.svg | safe }}
             </div>
             {% endfor %}

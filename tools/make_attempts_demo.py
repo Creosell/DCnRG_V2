@@ -2,7 +2,8 @@
 Builds a demo of the "Repeated measurements" section: ten measurement files of one TV configuration with different histories of
 repeated measurements, and the report generated from them.
 
-    python tools/make_attempts_demo.py
+    python tools/make_attempts_demo.py          the ten devices below
+    python tools/make_attempts_demo.py --cases  one device per transition of a point (first attempt -> best attempt), see CASES
 
 Writes the files to data_examples/attempts_demo/data and the report to data_examples/attempts_demo/report.html. The configuration
 of the demo is a copy of a real one with a tighter color tolerance, so the color points can fail.
@@ -88,6 +89,28 @@ SCENARIOS = {
 }
 
 
+# One device per transition of a point between the states of its spec (the white point: fail below 400, warn below 450, ok from 450)
+CASES = {
+    "CASE01": {"WhiteColor": white(392, 456)},             # fail -> ok            Fixed
+    "CASE02": {"WhiteColor": white(431, 462)},             # warn -> ok            Fixed
+    "CASE03": {"WhiteColor": white(378, 436)},             # fail -> warn          Improved, now warn
+    "CASE04": {"WhiteColor": white(378, 385, 392)},        # fail -> fail, better  Improved, still fail
+    "CASE05": {"WhiteColor": white(430, 441)},             # warn -> warn, better  Improved, still warn
+    "CASE06": {"WhiteColor": white(455, 470)},             # ok -> ok, better      Improved
+    "CASE07": {"TopLeft": grid("TopLeft", 392, 404),       # no spec, better       Improved (neutral)
+               "BlackColor": black(0.094, 0.058)},
+    "CASE08": {"WhiteColor": white(395, 380, 372)},        # first is the best, fail  No effect, still fail
+    "CASE09": {"WhiteColor": white(441, 430, 436)},        # first is the best, warn  No effect, still warn
+    "CASE10": {"WhiteColor": white(470, 458, 462),         # first is the best, ok    No effect (neutral)
+               "BlackColor": black(0.058, 0.061)},
+    "CASE11": {"RedColor": color("RedColor", (0.692, 0.320), (0.690, 0.318), (0.672, 0.311)),    # colors: fail -> ok
+               "GreenColor": color("GreenColor", (0.290, 0.650), (0.285, 0.652)),                 # fail -> fail, better
+               "BlueColor": color("BlueColor", (0.150, 0.060), (0.152, 0.062))},                  # ok, the first is the best
+    "CASE12": {"WhiteColor": white(378, 392), "RedColor": color("RedColor", (0.692, 0.320), (0.690, 0.318)),  # the worst card: everything stays bad
+               "BlackColor": black(0.058, 0.094), "TopLeft": grid("TopLeft", 392, 380)},
+}
+
+
 def best_index(location: str, attempts: list) -> int:
     """The index the report generator picks; the demo takes it from the generator itself."""
     sys.path.insert(0, str(ROOT))
@@ -133,7 +156,9 @@ def prepare_config(workdir: Path) -> Path:
 
 
 def main() -> int:
-    global DEMO_CONFIG
+    global DEMO_CONFIG, DEMO, SCENARIOS
+    if "--cases" in sys.argv:
+        DEMO, SCENARIOS = ROOT / "data_examples" / "attempts_cases", CASES
     with tempfile.TemporaryDirectory(prefix="attempts_demo_") as tmp:
         work = Path(tmp)
         shutil.copytree(ROOT / "src", work / "src", ignore=shutil.ignore_patterns("tests", "__pycache__"))

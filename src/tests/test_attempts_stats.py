@@ -112,13 +112,29 @@ def test_the_strip_draws_every_attempt_and_rings_the_best_one():
     assert svg.startswith("<svg") and svg.endswith("</svg>")
 
 
-def test_an_improved_point_that_is_still_outside_the_spec_says_so():
-    result = build(device("SN1", WhiteColor=[attempt(378), attempt(392)]), device("SN2", WhiteColor=[attempt(392), attempt(456)]), device("SN3", WhiteColor=[attempt(430), attempt(441)]))
+@pytest.mark.parametrize("lvs, words, tone", [
+    ([392, 456], "Fixed", "ok"),                              # fail -> ok
+    ([431, 462], "Fixed", "ok"),                              # warn -> ok
+    ([378, 436], "Improved, now warn", "warning"),            # fail -> warn
+    ([378, 392], "Improved, still fail", "fail"),             # fail -> fail, better
+    ([430, 441], "Improved, still warn", "warning"),          # warn -> warn, better
+    ([455, 470], "Improved", "ok"),                           # ok -> ok, better
+    ([395, 380, 372], "No effect, still fail", "fail"),       # the first is the best, fail
+    ([441, 430, 436], "No effect, still warn", "warning"),    # the first is the best, warn
+    ([470, 458, 462], "No effect", "none"),                   # the first is the best, ok: nothing to fix
+])
+def test_the_words_and_the_tone_of_every_transition_of_the_white_point(lvs, words, tone):
+    p = point(build(device("SN1", WhiteColor=[attempt(v) for v in lvs])), "SN1", "WhiteColor")
 
-    assert point(result, "SN1", "WhiteColor")["still_fail"] is True  # 378 -> 392: better, below the min of 400
-    assert point(result, "SN2", "WhiteColor")["still_fail"] is False  # fixed
-    assert point(result, "SN3", "WhiteColor")["still_fail"] is False  # better, below typ but inside the limits
-    assert ", still fail" in render_section(result)
+    assert (p["outcome_text"], p["tone"]) == (words, tone)
+
+
+def test_a_point_without_a_spec_is_neutral_and_the_card_takes_the_worst_tone_of_its_points():
+    result = build(device("SN1", BlackColor=[attempt(0.094), attempt(0.058)], WhiteColor=[attempt(378), attempt(392)]))
+
+    assert point(result, "SN1", "BlackColor")["tone"] == "none"
+    assert result["cards"][0]["tone"] == "fail"
+    assert "Improved, still fail" in render_section(result)
 
 
 def test_attempts_with_equal_values_sit_in_rows_of_their_own():
@@ -161,7 +177,7 @@ def test_the_section_is_drawn_for_a_point_measured_again():
     html = render_section(build(device("SN1", WhiteColor=[attempt(392), attempt(456)])))
 
     assert "Repeated measurements" in html and "attempt-card" in html and "SN1" in html
-    assert 'class="attempt-badge rescued"' in html
+    assert 'class="attempt-badge tone-ok"' in html
     assert "best 2 of 2" not in html and "cd/m²" in html and "<svg" in html  # the ringed dot says which attempt is the best
 
 
