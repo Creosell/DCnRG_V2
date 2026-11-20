@@ -371,7 +371,6 @@
             .attempts-kpi b small { font-size: 9px; }
             .attempts-kpi span { font-size: 10.5px; }
             .attempt-strip text { font-size: 9.4px; }  /* the strip is scaled down in print: keep the digits readable */
-            .best-line { display: none; }  /* the ringed dot and the bold number already say which attempt is the best */
             .attempt-card h4 { gap: 4px; }
             .attempt-sn { font-size: 9px; padding: 1px 6px; letter-spacing: 0; }
             .attempt-badge { font-size: 9px; padding: 1px 4px; }
@@ -775,7 +774,6 @@
             <div class="attempt-point">
                 <div class="top"><span><b>{{ point.name }}</b> <span class="muted">{{ point.scale }}</span> <span class="attempt-tag {{ point.outcome }}">{{ point.outcome_text }}</span></span><span class="num">{{ point.first }} &rarr; <b>{{ point.best_value }}</b> <span class="muted">{{ point.delta }}</span></span></div>
                 {{ point.svg | safe }}
-                <div class="muted best-line">best {{ point.best }} of {{ point.attempts }}</div>
             </div>
             {% endfor %}
         </div>

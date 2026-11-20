@@ -153,7 +153,7 @@ def test_the_section_is_drawn_for_a_point_measured_again():
 
     assert "Repeated measurements" in html and "attempt-card" in html and "SN1" in html
     assert 'class="attempt-badge rescued"' in html
-    assert "best 2 of 2" in html and "cd/m²" in html and "<svg" in html
+    assert "best 2 of 2" not in html and "cd/m²" in html and "<svg" in html  # the ringed dot says which attempt is the best
 
 
 def test_the_section_is_not_drawn_without_repeated_measurements():
