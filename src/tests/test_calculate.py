@@ -83,15 +83,14 @@ def test_contrast_logic(mock_tv_data, mock_display_data):
     # Case 1: TV (is_tv = True). Contrast = WhiteColor (200.0) / BlackColor
     # REFACTORED: Pass dict
     contrast_tv = calculate.contrast(mock_tv_data, is_tv=True)
-    # The function now rounds to 2 decimal places
-    expected_tv = round(200.0 / black_lv, 2) # 323.44
+    # The ratio is not rounded: the report rounds once, when the value is shown and judged
+    expected_tv = 200.0 / black_lv
     assert contrast_tv == pytest.approx(expected_tv)
 
     # Case 2: Not-TV (is_tv = False). Contrast = Center Lv (159.7) / BlackColor
     # REFACTORED: Pass dict
     contrast_nottv = calculate.contrast(mock_display_data, is_tv=False)
-    # The function now rounds to 2 decimal places
-    expected_nottv = round(159.7 / black_lv, 2) # 258.26
+    expected_nottv = 159.7 / black_lv
     assert contrast_nottv == pytest.approx(expected_nottv)
 
 
@@ -212,7 +211,7 @@ def test_run_calculations_fulltest(mock_display_data):
 
     # Check a few values
     assert results["brightness"] == pytest.approx(159.7)
-    assert results["contrast"] == pytest.approx(round(159.7 / 0.6183643, 2))
+    assert results["contrast"] == pytest.approx(159.7 / 0.6183643)
     assert results["temperature"] == 6752
 
 

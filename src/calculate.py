@@ -299,7 +299,7 @@ def contrast(device_report, is_tv):
     if black_lv == 0.0 or numerator_lv == 0.0:
         return 0.0
 
-    return round(numerator_lv / black_lv, 2)
+    return numerator_lv / black_lv
 
 
 def temperature(device_report):
@@ -389,7 +389,7 @@ def delta_e(device_report):
     if not delta_e_values:
         raise ValueError("No valid Delta E values calculated.")
     avg_delta_e = sum(delta_e_values) / len(delta_e_values)
-    return round(avg_delta_e, 2)
+    return avg_delta_e
 
 def run_calculations(device_report, is_tv):
     """
