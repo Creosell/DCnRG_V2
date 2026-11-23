@@ -121,6 +121,36 @@ def test_evaluate_uniformity_below_spec_fails(mock_tv_data):
     assert check["locations"] == ["TopLeft"]
 
 
+def _uniformity_check(mock_tv_data, **lv):
+    """The uniformity check of a device whose nine points all read 320 cd/m2, except the given ones."""
+    data = copy.deepcopy(mock_tv_data)
+    for measurement in data["Measurements"]:
+        if measurement["Location"] in ev.UNIFORMITY_LOCATIONS:
+            measurement["Lv"] = lv.get(measurement["Location"], 320.0)
+    return checks_by_key(ev.evaluate(data, SPEC))["Brightness_uniformity"]
+
+
+def test_a_uniformity_shortfall_asks_to_measure_the_dimmest_point_and_never_the_brightest(mock_tv_data):
+    """The uniformity is the darkest point over the brightest one: only the darkest point limits it from below, the brightest one (the center) from above."""
+    check = _uniformity_check(mock_tv_data, Center=350.0, TopCenter=200.0)  # 200 / 350 = 57 %
+
+    assert check["status"] == ev.STATUS_FAIL
+    assert check["locations"] == ["TopCenter"]  # the point to measure again, not the brightest Center
+
+
+def test_measuring_the_dimmest_point_again_can_only_help_and_the_brightest_one_can_only_hurt(mock_tv_data):
+    base = _uniformity_check(mock_tv_data, Center=350.0, TopCenter=200.0)["value"]
+
+    assert _uniformity_check(mock_tv_data, Center=350.0, TopCenter=210.0)["value"] > base  # a brighter dimmest point raises the minimum
+    assert _uniformity_check(mock_tv_data, Center=360.0, TopCenter=200.0)["value"] < base  # a brighter center raises the maximum
+
+
+def test_the_center_is_the_point_to_measure_only_when_it_is_the_darkest(mock_tv_data):
+    check = _uniformity_check(mock_tv_data, Center=100.0, TopCenter=166.0)
+
+    assert check["locations"] == ["Center"]
+
+
 def test_evaluate_temperature_without_a_valid_value_is_unavailable(mock_tv_data):
     data = copy.deepcopy(mock_tv_data)
     next(m for m in data["Measurements"] if m["Location"] == "Center")["T"] = None
