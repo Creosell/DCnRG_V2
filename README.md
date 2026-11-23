@@ -125,6 +125,19 @@ Red_x:
 
 -----
 
+## Precision of the verdict
+
+A value is judged against its specification **as it is shown in the report**: it is rounded half up (as Excel does) to the precision of its metric, and that number is compared with `min`, `typ` and `max`. The number on the screen is the number the device is accepted by. The measured values themselves are never rounded before this step (the measurement files carry the digits of the analyzer, the calculations of contrast and color difference are not rounded); `REPORT_PRECISION` in `src/report.py` is the only table.
+
+| Metric | Decimals | What the rounding allows |
+|---|---|---|
+| Brightness, contrast, color temperature | 0 | ±0.5 of the unit (about 0.15% of a brightness of 350 cd/m²) |
+| Brightness uniformity, gamut area and coverage, ΔE | 1 | ±0.05 |
+| Coordinates (x, y of red, green, blue, white, center) | 3 | ±0.0005 |
+| Black luminance (no specification, shown only) | 4 | ±0.00005 cd/m² |
+
+A new metric needs an entry in `REPORT_PRECISION`; a test fails when a metric of the example specification has none.
+
 ## Release & Deployment
 
 The project uses `tools/release/release_manager.py` to build the executable (via PyInstaller), package it, and upload it to the Nextcloud server. This script manages its own dependencies using `uv`.

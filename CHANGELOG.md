@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `tools/make_attempts_demo.py` builds ten demo measurement files with different histories of repeats (all bad and a little better, bad and stayed bad, rescued, good from the start, the best is the second or the first attempt, black, colors) in `data_examples/attempts_demo/data` and the report from them
 
 ### Changed
+- Contrast and ΔE are no longer rounded to two decimals inside the calculations: a value is rounded once, when it is shown and judged (as before, to the precision of its metric in `REPORT_PRECISION`). The README states the precision table of the verdict, and a test fails when a metric of the example specification has no precision
 - The best attempt of the black point is the darkest one (the lower the luminance, the better); for the other points it is still the brighter one after the status and the distance from the typical coordinates
 
 ## [1.5.0] - 2026-11-17

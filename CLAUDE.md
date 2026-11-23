@@ -118,7 +118,7 @@ report_archive/*.zip (Archive)
 - `json_report()`: Creates individual device report JSON structure
 - `calculate_full_report() -> bool`: Aggregates multiple device reports, returns `True` on success, `False` on error
 - `generate_comparison_report() -> bool`: Compares measurements against YAML standards, returns `True` on success
-- Contains `REPORT_PRECISION` dict for metric rounding
+- Contains `REPORT_PRECISION` dict for metric rounding: the only table of the precision a value is shown and judged at (see "Precision of the verdict" in the README); the calculations of contrast and ΔE are not rounded
 - TV-specific tolerances: `CONTRAST_TOLERANCE_FOR_TV`, `AVG_FAIL_SKIP_KEYS_FOR_TV`, `MAJORITY_TYP_CHECK_KEYS_FOR_TV`
 - Corporate device rules: `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE` + `CONTRAST_TYP_SKIP_CONFIGS` (skip TYP/avg for specific device configs), `CORPORATE_DEVICES_TYP_TOLERANCE_LIST`, `CORPORATE_DEVICES_CG_TOLERANCE_LIST`
 - `generate_comparison_report()` accepts `device_config_name` and threads it into `check_general_test_status()` for device-specific rule dispatch
