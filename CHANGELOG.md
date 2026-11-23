@@ -4,15 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
-
-### Added
-- "Repeated measurements" section of the HTML report after the Device reports: when the measurement files carry an `Attempts` list for a point measured more than once, a card per serial number shows every repeated point on a strip plot of its spec (numbered attempts in the order they were measured, the best one ringed, the spec zones in the background) with `first -> best`, the gain and `best №N of M`, and a badge per device (Fixed: the first attempt had a remark and the best has none; Improved: the best is better than the first, inside the spec too; No effect: the first attempt is the best). Every point carries its own outcome next to its name and the badge of the card sums them up (for example `2 improved`). A summary line counts the devices with repeats, the repeated points, the attempts per point, the fixed points and the average brightness gain. The best attempt is the one `evaluate.best_attempt_index` chooses. The section is not drawn when no point was measured again; in print every card is kept whole (three per row) and the plots are vector. New module `src/attempts_stats.py`
-- `tools/make_attempts_demo.py` builds ten demo measurement files with different histories of repeats (all bad and a little better, bad and stayed bad, rescued, good from the start, the best is the second or the first attempt, black, colors) in `data_examples/attempts_demo/data` and the report from them
+## [1.5.1] - 2026-11-23
 
 ### Changed
 - Contrast and ΔE are no longer rounded to two decimals inside the calculations: a value is rounded once, when it is shown and judged (as before, to the precision of its metric in `REPORT_PRECISION`). The README states the precision table of the verdict, and a test fails when a metric of the example specification has no precision
-- The best attempt of the black point is the darkest one (the lower the luminance, the better); for the other points it is still the brighter one after the status and the distance from the typical coordinates
 
 ## [1.5.0] - 2026-11-17
 
@@ -21,8 +16,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Attempts of a point in `--evaluate`: a measurement of the device JSON may carry an optional `Attempts` list (each with `x`, `y`, `Lv`, `T`). The point is evaluated by its best attempt: the best status of the point's own checks first (pass, then warning, then fail), then for the red/green/blue points the smaller distance from the typical coordinates, then the higher luminance (for the black point the lower luminance: the darker the black, the better). The result gets `attempts: {location: {count, best, deviated}}` (`best` is the index in `Attempts`, `deviated` tells whether any attempt had a remark against the spec). Files without `Attempts` behave as before and the report generation ignores the list
 - New module `src/evaluate.py` with the per-device rules (`get_cell_status`, `evaluate`, `verdict_of`, `required_locations`); `tests/test_evaluate.py` includes a test that the statuses of `--evaluate` equal the cell highlighting of the HTML report
 - Device verdict in the HTML report: the Serial Number cell of every device row is highlighted red (a failing cell) or yellow (a cell below typ) according to the worst cell status of the device, with the verdict in the tooltip
+- "Repeated measurements" section of the HTML report after the Device reports: when the measurement files carry an `Attempts` list for a point measured more than once, a card per serial number shows every repeated point on a strip plot of its spec (numbered attempts in the order they were measured, the best one ringed, the spec zones in the background) with `first -> best`, the gain and `best №N of M`, and a badge per device (Fixed: the first attempt had a remark and the best has none; Improved: the best is better than the first, inside the spec too; No effect: the first attempt is the best). Every point carries its own outcome next to its name and the badge of the card sums them up (for example `2 improved`). A summary line counts the devices with repeats, the repeated points, the attempts per point, the fixed points and the average brightness gain. The best attempt is the one `evaluate.best_attempt_index` chooses. The section is not drawn when no point was measured again; in print every card is kept whole (three per row) and the plots are vector. New module `src/attempts_stats.py`
+- `tools/make_attempts_demo.py` builds ten demo measurement files with different histories of repeats (all bad and a little better, bad and stayed bad, rescued, good from the start, the best is the second or the first attempt, black, colors) in `data_examples/attempts_demo/data` and the report from them
 
 ### Changed
+- The best attempt of the black point is the darkest one (the lower the luminance, the better); for the other points it is still the brighter one after the status and the distance from the typical coordinates
 - Color Temperature is no longer highlighted yellow when it is below `typ`: it is checked against `min`/`max` only (as in the verdict rules), so a value inside the window is not flagged
 - The cell status rules moved from `helpers.py` to `src/evaluate.py`; `helpers._get_cell_status` stays as an alias, report output is unchanged
 
