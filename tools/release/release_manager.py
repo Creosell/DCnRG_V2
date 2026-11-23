@@ -16,6 +16,7 @@
 # ]
 # ///
 
+import asyncio
 import os
 import sys
 import json
@@ -23,13 +24,10 @@ import hashlib
 import argparse
 import subprocess
 import zipfile
-import concurrent.futures
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from loguru import logger
 from dotenv import load_dotenv
-from nc_py_api import Nextcloud, NextcloudException
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+from nc_py_api import AsyncNextcloud, NextcloudException
 
 # Импортируем PyInstaller напрямую для вызова из кода
 import PyInstaller.__main__
@@ -41,6 +39,7 @@ NC_URL = os.environ["NC_URL"]
 NC_USER = os.environ["NC_USER"]
 NC_PASS = os.environ["NC_PASS"]
 MAX_WORKERS = 20
+UPLOAD_RETRIES = 3
 
 # --- LOGGING ---
 logger.remove()
@@ -49,6 +48,7 @@ logger.add(Path(__file__).parent / "release.log", rotation="5 MB", level="DEBUG"
 
 # --- GLOBAL CACHE ---
 _DIR_CACHE = set()
+_DIR_LOCK: asyncio.Lock | None = None
 
 
 # --- HELPERS ---
@@ -61,13 +61,11 @@ def get_sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def get_nc_client() -> Nextcloud:
-    retry = Retry(total=3, status_forcelist=[500, 502, 503, 504], allowed_methods=["PUT", "GET", "MKCOL"])
-    adapter = HTTPAdapter(max_retries=retry)
-    nc = Nextcloud(nextcloud_url=NC_URL, nc_auth_user=NC_USER, nc_auth_pass=NC_PASS,
-                   session_args={"verify": True, "http_adapter": adapter})
+async def get_nc_client() -> AsyncNextcloud:
+    """Creates an authenticated async Nextcloud client; exits the process on auth failure."""
+    nc = AsyncNextcloud(nextcloud_url=NC_URL, nc_auth_user=NC_USER, nc_auth_pass=NC_PASS)
     try:
-        nc.users.get_user(NC_USER)  # Test auth
+        await nc.users.get_user(NC_USER)  # Test auth
         return nc
     except Exception:
         logger.critical("Nextcloud auth failed")
@@ -76,41 +74,42 @@ def get_nc_client() -> Nextcloud:
 
 # --- CORE LOGIC ---
 
-def ensure_remote_dir(nc: Nextcloud, remote_path: str):
-    """Recursively creates directories with caching."""
-    remote_path = remote_path.replace("\\", "/").lstrip("/")
-    parent = str(Path(remote_path).parent).replace("\\", "/")
+async def ensure_remote_dir(nc: AsyncNextcloud, remote_path: str):
+    """Recursively creates the parent directories of a remote path with caching."""
+    parent = PurePosixPath(remote_path.replace("\\", "/")).parent
 
-    if parent == "." or parent in _DIR_CACHE:
+    if parent.parts in ((), ("/",)) or str(parent) in _DIR_CACHE:
         return
 
-    parts = parent.split("/")
-    current = ""
-    for part in parts:
-        current = f"{current}/{part}" if current else part
-        if current in _DIR_CACHE: continue
+    async with _DIR_LOCK:
+        for current in reversed([parent, *parent.parents]):
+            current = str(current).lstrip("/")
+            if current in ("", ".") or current in _DIR_CACHE: continue
 
-        try:
-            nc.files.mkdir(current)
-            _DIR_CACHE.add(current)
-        except NextcloudException as e:
-            err = str(e)
-            if any(x in err for x in ["already exists", "405", "409", "423"]):
+            try:
+                await nc.files.mkdir(current)
                 _DIR_CACHE.add(current)
-            else:
-                logger.warning(f"Mkdir error ({current}): {e}")
+            except NextcloudException as e:
+                if any(x in str(e) for x in ["already exists", "405", "409", "423"]):
+                    _DIR_CACHE.add(current)
+                else:
+                    logger.warning(f"Mkdir error ({current}): {e}")
 
 
-def upload_chunked(nc: Nextcloud, local: Path, remote: str) -> bool:
-    """Uploads file using a stream."""
-    try:
-        ensure_remote_dir(nc, remote)
-        with open(local, "rb") as f:
-            nc.files.upload_stream(remote, f)
-        return True
-    except Exception as e:
-        logger.error(f"Upload failed [{local.name}]: {e}")
-        return False
+async def upload_chunked(nc: AsyncNextcloud, local: Path, remote: str) -> bool:
+    """Uploads a file as a stream, retrying on failure."""
+    for attempt in range(1, UPLOAD_RETRIES + 1):
+        try:
+            await ensure_remote_dir(nc, remote)
+            await nc.files.upload_stream(remote, local)
+            return True
+        except Exception as e:
+            if attempt == UPLOAD_RETRIES:
+                logger.error(f"Upload failed [{local.name}]: {e}")
+                return False
+            logger.debug(f"Upload retry {attempt} [{local.name}]: {e}")
+            await asyncio.sleep(attempt)
+    return False
 
 
 def prepare_package(mode, path, include_path, prod_id, ver, temp_dir):
@@ -228,37 +227,43 @@ def main():
 
     # 3. UPLOAD
     try:
-        nc = get_nc_client()
-        remote_root = f"SCT/Updater/versions/{args.product_id}/{args.version}"
-
-        # A. Manifest
-        logger.info("Uploading manifest...")
-        if not upload_chunked(nc, manifest, f"SCT/Updater/versions/{args.product_id}/{manifest.name}"):
-            sys.exit("Manifest upload failed")
-
-        # B. Content
-        logger.info(f"Uploading content ({args.mode})...")
-        failures = []
-
-        if len(upload_list) == 1:
-            local, remote = upload_list[0]
-            if not upload_chunked(nc, local, f"{remote_root}/{remote}"): failures.append(local)
-        else:
-            with concurrent.futures.ThreadPoolExecutor(MAX_WORKERS) as pool:
-                futures = {pool.submit(upload_chunked, nc, loc, f"{remote_root}/{rem}"): loc for loc, rem in
-                           upload_list}
-                for fut in concurrent.futures.as_completed(futures):
-                    if not fut.result(): failures.append(futures[fut])
-
-        if failures:
-            logger.error(f"Failed to upload {len(failures)} files.")
-            sys.exit(1)
-
-        logger.success("Done!")
-
+        asyncio.run(upload_all(args, manifest, upload_list))
+    except SystemExit:
+        raise
     except Exception as e:
         logger.critical(f"Fatal: {e}")
         sys.exit(1)
+
+
+async def upload_all(args, manifest: Path, upload_list: list):
+    """Uploads the manifest and then the package content with bounded concurrency."""
+    global _DIR_LOCK
+    _DIR_LOCK = asyncio.Lock()
+
+    nc = await get_nc_client()
+    remote_root = f"SCT/Updater/versions/{args.product_id}/{args.version}"
+
+    # A. Manifest
+    logger.info("Uploading manifest...")
+    if not await upload_chunked(nc, manifest, f"SCT/Updater/versions/{args.product_id}/{manifest.name}"):
+        sys.exit("Manifest upload failed")
+
+    # B. Content
+    logger.info(f"Uploading content ({args.mode})...")
+    sem = asyncio.Semaphore(MAX_WORKERS)
+
+    async def worker(loc: Path, rem: str) -> bool:
+        async with sem:
+            return await upload_chunked(nc, loc, f"{remote_root}/{rem}")
+
+    results = await asyncio.gather(*(worker(loc, rem) for loc, rem in upload_list))
+    failures = [loc for (loc, _), ok in zip(upload_list, results) if not ok]
+
+    if failures:
+        logger.error(f"Failed to upload {len(failures)} files.")
+        sys.exit(1)
+
+    logger.success("Done!")
 
 
 if __name__ == "__main__":
