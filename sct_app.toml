@@ -1,0 +1,25 @@
+id = "report_generator"
+python = "3.13"
+launcher = "ReportGenerator.exe"
+
+[[files]]
+src = "main.py"
+dst = "__main__.py"
+
+[[files]]
+src = "src"
+dst = "src"
+exclude = ["tests"]
+
+# Shared resources are read from <Updater root>/config (SCT_ROOT)
+[[files]]
+src = "config/report_template.html"
+target = "root"
+
+[[files]]
+src = "config/CIExy1931.svg"
+target = "root"
+
+[[files]]
+src = "config/configuration_example.yaml"
+target = "root"

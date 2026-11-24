@@ -366,3 +366,19 @@ else:
 3. **Add tests**: Create both success and failure test cases
 4. **Log errors**: Include context (device name, file paths) in error messages
 5. **Preserve data**: Never delete source files if downstream steps fail
+
+## Release (Screen Check Suite)
+
+This module is released through the shared tool in the SCT Updater repository (`tools/release/app_release.py`), not with `tools/release/release_manager.py` (kept only for the legacy PyInstaller `zip` releases until the migration is finished).
+
+Files that drive the release in this repository:
+- `sct_app.toml`: module id, Python minor version (3.13), `launcher` (the exe name users and scripts call; the Rust launcher is built and shipped by the tool), files to ship. `main.py` becomes `__main__.py`; `src/` (without `tests`) goes to `apps/report_generator/src`; the files of `config/` that the code reads (`report_template.html`, `CIExy1931.svg`, `configuration_example.yaml`) are installed with `target = "root"` into the shared `<Updater folder>/config`.
+- `requirements.in`: runtime dependencies only (numpy, shapely, openpyxl, colormath2, PyYAML, Jinja2, loguru). Release tooling and dev dependencies stay in `pyproject.toml`.
+- `requirements.lock`: exact versions with hashes. Regenerate with `app_release.py lock <this repo>` whenever `requirements.in` changes, and commit it.
+
+Rules:
+- All shared paths come from `src/paths.py` (`SCT_ROOT`, then frozen-exe folder, then the current directory). Never use `__file__` or `sys.executable` to find `config`.
+- The Python version is 3.13 for the whole suite (`.python-version`, `pyproject.toml` stays `>=3.11` only for tooling).
+- If a runtime dependency is added to `pyproject.toml`, add it to `requirements.in` too, otherwise the released module will not have it.
+
+Full process, layout and status: `docs/module-release.md` in the SCT Updater repository. Keep it and this section in sync.
