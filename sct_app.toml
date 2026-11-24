@@ -2,6 +2,7 @@ id = "report_generator"
 launcher = "Report Generator.exe"
 title = "Report Generator"
 icon = "assets/app.ico"
+obsolete = ["ReportGenerator.exe"]
 
 [[files]]
 src = "main.py"
