@@ -22,7 +22,7 @@ import yaml  # noqa: E402
 
 DEMO = ROOT / "data_examples" / "attempts_real"
 BATCH = Path(r"C:\Users\Pavel\Desktop\Excel_update\Tests\32pcs")
-CONFIG_SOURCE = Path(r"C:\Users\Pavel\source\repos\Creosell\WPF-LCD-Test\WPF LCD Test\bin\Debug\net8.0-windows\config\device_configs\CH32\SDF-50UQ7000MBA_CH32.yaml")
+CONFIG_SOURCE = Path(r"C:\Users\Pavel\source\repos\Creosell\sct-screen-checker\WPF LCD Test\bin\Debug\net8.0-windows\config\device_configs\CH32\SDF-50UQ7000MBA_CH32.yaml")
 BASE_COUNT = 10
 REPEATABLE = ["WhiteColor", "BlackColor", "RedColor", "GreenColor", "BlueColor", "TopLeft", "TopRight", "Center", "BottomLeft", "BottomRight"]
 KEYS = ("x", "y", "Lv", "T")

@@ -34,7 +34,7 @@ DEMO = ROOT / "data_examples" / "attempts_demo"
 CONFIG_NAME = "SDF-75UQM8000MBAC_CH31"
 # The measurement app of this project keeps the device configurations next to its executable; the demo needs one with the spec of a TV
 CONFIG_SOURCES = [
-    Path(r"C:\Users\Pavel\source\repos\Creosell\WPF-LCD-Test\WPF LCD Test\bin\Debug\net8.0-windows\config\device_configs\CH31") / f"{CONFIG_NAME}.yaml",
+    Path(r"C:\Users\Pavel\source\repos\Creosell\sct-screen-checker\WPF LCD Test\bin\Debug\net8.0-windows\config\device_configs\CH31") / f"{CONFIG_NAME}.yaml",
 ]
 
 GRID = ["TopLeft", "TopCenter", "TopRight", "MiddleLeft", "Center", "MiddleRight", "BottomLeft", "BottomCenter", "BottomRight"]
