@@ -31,7 +31,7 @@ a = Analysis(
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=None,
-    noarchive=False,
+    noarchive=True,
 )
 
 # --- 3. PYZ (Python-библиотеки) ---
