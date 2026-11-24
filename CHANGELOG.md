@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.6.0] - 2026-11-24
+
+### Changed
+- Released through the Screen Check Suite release tool as a module with its own wheels on the shared embedded Python; the launcher is `Report Generator.exe`
+
+### Removed
+- PyInstaller build and `release_manager.py`
+
 ## [1.5.1] - 2026-11-23
 
 ### Changed
