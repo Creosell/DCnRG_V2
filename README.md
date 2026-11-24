@@ -11,7 +11,7 @@ A comprehensive tool for analyzing display device test results (TVs, Monitors). 
 * **`test_reports/`**: Intermediate JSON aggregated reports.
 * **`report_archive/`**: Zipped archives of processed sessions.
 * **`main.py`**: Entry point of the application.
-* **`tools/release/release_manager.py`**: Script for building and uploading releases.
+* **`sct_app.toml`**, **`requirements.in`**, **`requirements.lock`**: Release descriptor and dependencies (released from the SCT Updater repository).
 
 ---
 
@@ -138,66 +138,6 @@ A value is judged against its specification **as it is shown in the report**: it
 
 A new metric needs an entry in `REPORT_PRECISION`; a test fails when a metric of the example specification has none.
 
-## Release & Deployment
-
-The project uses `tools/release/release_manager.py` to build the executable (via PyInstaller), package it, and upload it to the Nextcloud server. This script manages its own dependencies using `uv`.
-
-### Prerequisites
-
-Install `uv`:
-
-```bash
-    pip install uv
-```
-
-### Command Syntax
-
-```bash
-    uv run --active tools/release/release_manager.py [mode] [path] [product_id] [version] [flags]
-```
-
-**Arguments:**
-
-  * `mode`:
-      * `zip`: Archives the contents of `path` into a single `.zip` file and uploads it.
-      * `files`: Uploads files individually (preserves structure).
-  * `path`: Path to the build/dist directory (e.g., `dist/ReportGenerator`). **Note:** Contents are placed at the root of the release.
-  * `product_id`: Unique identifier (e.g., `report_generator`).
-  * `version`: Version string (e.g., `1.0.0`).
-
-**Flags:**
-  * `--active`: Runs UV using current .venv of a project.
-  * `--build`: Runs PyInstaller before packaging. It looks for a `.spec` file matching the folder name of your `path`.
-  * `--upload`: Uploads immediately without confirmation prompt.
-  * `--include [path]`: Adds a directory to the release (preserved as a subfolder).
-
-### Example: Build, Zip, and Upload
-
-This command builds the `.exe` from the spec file, zips the contents of `dist/ReportGenerator`, includes the `config` folder, and uploads it as version `1.0.0`.
-
-```bash
-    uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator 1.0.0 --include config --build --upload
-```
-
-### Example: Upload Files Only
-
-If you only want to upload the raw files without zipping:
-
-```bash
-    uv run --active tools/release/release_manager.py files build\dist\ReportGenerator report_generator 1.0.0 --upload
-```
-
-## Optimization: UPX Compression
-
-To significantly reduce the size of the generated `.exe` file (and consequently the final `.zip` archive), it is recommended to use **UPX** (Ultimate Packer for eXecutables).
-
-**Setup Steps:**
-1. Download the latest version of UPX from the official [GitHub releases page](https://github.com/upx/upx/releases).
-2. Extract the downloaded archive.
-3. Copy the `upx.exe` file directly into your virtual environment's scripts folder:
-   * **Path:** `.venv\Scripts\` (Windows)
-
-PyInstaller automatically detects UPX in this folder and will use it to compress the binary during the `--build` process.
 ## Release through the Screen Check Suite tool
 
 The module is described by `sct_app.toml`, `requirements.in` and `requirements.lock` in this repository. Releases are made from the SCT Updater repository:
@@ -206,6 +146,6 @@ The module is described by `sct_app.toml`, `requirements.in` and `requirements.l
 uv run tools/release/app_release.py app <path to this repo> 1.6.0 --upload
 ```
 
-The tool uploads the code and only the wheels that are missing on the server; the Updater installs them into `apps/report_generator` and the shared files into `config/`. The "Release & Deployment" section above describes the legacy PyInstaller `zip` release. Full process and rules: `docs/module-release.md` in the SCT Updater repository.
+The tool uploads the code and only the wheels that are missing on the server; the Updater installs them into `apps/report_generator` and the shared files into `config/`. Full process and rules: `docs/module-release.md` in the SCT Updater repository.
 
 To test the module the way clients get it, release it to the `dev` list (`app` with `--upload`) and update a test Updater running with `NC_CHANNEL=dev`.

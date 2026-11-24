@@ -30,3 +30,4 @@ graphify-out/cache/
 # Python bytecode
 __pycache__/
 *.pyc
+/Report Generator.exe

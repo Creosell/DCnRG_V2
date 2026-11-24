@@ -51,20 +51,8 @@ pytest -v src/tests/
 - `--evaluate PATH`: Evaluate one device JSON (`-` for stdin) against its spec and print the checks as JSON (no reports, no files written)
 - `--version`: Display application version and exit
 
-### Building Executable
-```bash
-# Install UV if not already installed
-pip install uv
-
-# Version is taken from APP_VERSION in main.py
-# Build, zip, and upload release (includes config folder)
-uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator <APP_VERSION> --include config --build --upload
-
-# Build only (no upload)
-uv run --active tools/release/release_manager.py zip build\dist\ReportGenerator report_generator <APP_VERSION> --include config --build
-```
-
-**Optional**: For smaller executables, place `upx.exe` in `.venv\Scripts\` for automatic compression during PyInstaller build.
+### Release
+See "Release (Screen Check Suite)" below: `app_release.py` in the SCT Updater repository builds the release (no PyInstaller).
 
 ## Project Map (graphify)
 
@@ -314,9 +302,8 @@ These tests ensure that exit codes are correctly propagated based on actual succ
 **Reporting**:
 - `Jinja2`: HTML template rendering
 
-**Build & Distribution**:
-- `PyInstaller`: Executable compilation (configured via `ReportGenerator.spec`)
-- `nc_py_api`, `requests`, `urllib3`: Nextcloud release uploads
+**Distribution**:
+- `nc_py_api`, `requests`, `urllib3`: Nextcloud access
 
 **Testing**:
 - `pytest`: Test framework
@@ -369,7 +356,7 @@ else:
 
 ## Release (Screen Check Suite)
 
-This module is released through the shared tool in the SCT Updater repository (`tools/release/app_release.py`), not with `tools/release/release_manager.py` (kept only for the legacy PyInstaller `zip` releases until the migration is finished).
+This module is released through the shared tool in the SCT Updater repository (`tools/release/app_release.py`) (the former PyInstaller `tools/release/release_manager.py` is removed).
 
 Files that drive the release in this repository:
 - `sct_app.toml`: module `id`, `launcher` (the exe name users and scripts call; the Rust launcher is built and shipped by the tool), `title` and `icon` (`assets/app.ico`, shown by Windows for the launcher), files to ship. `main.py` becomes `__main__.py`; `src/` (without `tests`) goes to `apps/report_generator/src`; the files of `config/` that the code reads (`report_template.html`, `CIExy1931.svg`, `configuration_example.yaml`) are installed with `target = "root"` into the shared `<Updater folder>/config`.

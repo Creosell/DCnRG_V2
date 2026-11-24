@@ -1,5 +1,5 @@
 id = "report_generator"
-launcher = "ReportGenerator.exe"
+launcher = "Report Generator.exe"
 title = "Report Generator"
 icon = "assets/app.ico"
 
