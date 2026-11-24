@@ -1,6 +1,7 @@
 id = "report_generator"
-python = "3.13"
 launcher = "ReportGenerator.exe"
+title = "Report Generator"
+icon = "assets/app.ico"
 
 [[files]]
 src = "main.py"

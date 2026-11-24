@@ -372,9 +372,9 @@ else:
 This module is released through the shared tool in the SCT Updater repository (`tools/release/app_release.py`), not with `tools/release/release_manager.py` (kept only for the legacy PyInstaller `zip` releases until the migration is finished).
 
 Files that drive the release in this repository:
-- `sct_app.toml`: module id, Python minor version (3.13), `launcher` (the exe name users and scripts call; the Rust launcher is built and shipped by the tool), files to ship. `main.py` becomes `__main__.py`; `src/` (without `tests`) goes to `apps/report_generator/src`; the files of `config/` that the code reads (`report_template.html`, `CIExy1931.svg`, `configuration_example.yaml`) are installed with `target = "root"` into the shared `<Updater folder>/config`.
+- `sct_app.toml`: module `id`, `launcher` (the exe name users and scripts call; the Rust launcher is built and shipped by the tool), `title` and `icon` (`assets/app.ico`, shown by Windows for the launcher), files to ship. `main.py` becomes `__main__.py`; `src/` (without `tests`) goes to `apps/report_generator/src`; the files of `config/` that the code reads (`report_template.html`, `CIExy1931.svg`, `configuration_example.yaml`) are installed with `target = "root"` into the shared `<Updater folder>/config`.
 - `requirements.in`: runtime dependencies only (numpy, shapely, openpyxl, colormath2, PyYAML, Jinja2, loguru). Release tooling and dev dependencies stay in `pyproject.toml`.
-- `requirements.lock`: exact versions with hashes. Regenerate with `app_release.py lock <this repo>` whenever `requirements.in` changes, and commit it.
+- `requirements.lock`: exact versions with hashes. It is updated automatically by `app_release.py app` whenever `requirements.in` changes (commit it); `app_release.py upgrade <this repo>` moves the versions forward.
 
 Rules:
 - All shared paths come from `src/paths.py` (`SCT_ROOT`, then frozen-exe folder, then the current directory). Never use `__file__` or `sys.executable` to find `config`.
