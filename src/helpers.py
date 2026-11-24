@@ -16,6 +16,7 @@ import src.graphics_helper as gfx  # Import our new helper
 import src.report as r
 import src.calculate as calc
 from src.evaluate import get_cell_status, verdict_of
+from src.paths import CONFIG_DIR
 
 HTML_TEMPLATE_NAME = "report_template.html"
 
@@ -286,26 +287,15 @@ def create_html_report(
     }
 
     # --- 3. Set up Jinja2 Environment ---
-    # Determine base directory: if frozen (compiled), use executable's parent folder
-    # Otherwise use project root (for development)
-    if getattr(sys, 'frozen', False):
-        # Running as compiled executable
-        base_dir = Path(sys.executable).parent
-    else:
-        # Running as script
-        base_dir = Path(__file__).parent.parent
-
-    template_dir = base_dir / "config"
-
     env = Environment(
-        loader=FileSystemLoader(template_dir),
+        loader=FileSystemLoader(CONFIG_DIR),
         autoescape=select_autoescape(['html', 'xml'])
     )
 
     try:
         template = env.get_template(HTML_TEMPLATE_NAME)
     except Exception as e:
-        logger.error(f"Error loading template '{HTML_TEMPLATE_NAME}' from '{template_dir}': {e}")
+        logger.error(f"Error loading template '{HTML_TEMPLATE_NAME}' from '{CONFIG_DIR}': {e}")
         return False
 
     # --- 4. Define Template Context ---

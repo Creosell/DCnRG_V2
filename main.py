@@ -13,6 +13,7 @@ import src.calculate as cal
 import src.evaluate as ev
 import src.helpers as h
 import src.parse as parse
+import src.paths as paths
 import src.report as r
 
 # --- Constants & Configuration ---
@@ -32,7 +33,7 @@ REPORT_DIR = Path("test_reports")
 ARCHIVE_DIR = Path("report_archive")
 LOG_DIR = Path("logs")
 RESULT_DIR = Path("results")
-CONFIG_DIR = Path("config")
+CONFIG_DIR = paths.CONFIG_DIR
 
 CIE_BG_SVG = CONFIG_DIR / "CIExy1931.svg"
 DEFAULT_EXPECTED_YAML = CONFIG_DIR / "configuration_example.yaml"
