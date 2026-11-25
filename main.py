@@ -17,7 +17,7 @@ import src.paths as paths
 import src.report as r
 
 # --- Constants & Configuration ---
-APP_VERSION = "1.5.2"
+APP_VERSION = "1.5.3"
 
 
 class ExitCode(IntEnum):

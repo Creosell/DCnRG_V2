@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.5.3] - 2026-11-25
+
+### Changed
+- `requires-python` is `>=3.13` (the version of the shared embedded Python); `uv.lock` is resolved for it
+
+### Removed
+- The `sys.frozen` (PyInstaller) branch of `src/paths.py`: the root is `SCT_ROOT` set by the launcher, else the current directory
+- Unused `nc_py_api`, `requests` and `urllib3` from `pyproject.toml`
+
 ## [1.5.2] - 2026-11-24
 
 ### Changed
@@ -11,7 +20,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 - PyInstaller build and `release_manager.py`
-- The `sys.frozen` (PyInstaller) branch of `src/paths.py`: the root is `SCT_ROOT` set by the launcher, else the current directory
 
 ## [1.5.1] - 2026-11-23
 
