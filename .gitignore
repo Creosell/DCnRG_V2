@@ -18,7 +18,8 @@
 /.claude/settings.local.json
 /config/device_configs/*
 !/config/device_configs/.gitkeep
-graphify-out/cache/
+graphify-out/*
+!graphify-out/graph.json
 
 # Python bytecode
 __pycache__/
