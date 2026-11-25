@@ -13,6 +13,7 @@ Sheet layout (per 9-row block, two samples side by side, columns offset by +6):
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -240,7 +241,7 @@ def generate_report(json_files: list[Path], name: str, yaml_path: Path, output_d
 
         subprocess.run(
             [sys.executable, str(PROJECT_ROOT / "main.py"), "--no-timestamp", "--noclean"],
-            cwd=work, check=True,
+            cwd=work, check=True, env={**os.environ, "PYTHONUTF8": "1"},
         )
         html = work / "results" / f"{name}.html"
         if not html.is_file():
@@ -251,6 +252,8 @@ def generate_report(json_files: list[Path], name: str, yaml_path: Path, output_d
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("xlsx_file", type=Path, help="Path to the manually filled Excel file")
     config_help = (

@@ -85,6 +85,16 @@ fi
 
 -----
 
+## Tools
+
+Helper scripts in `tools/` (run with `uv run python tools/<script>.py`; they are development tools and are not shipped with the module):
+
+* **`excel_to_report.py`**: turns a manually filled "9 points" Excel sheet into JSON device reports (`data/*.json`-style) and an HTML report. Without a config argument the expected values come from the Spec table of the `Statistics` sheet (`--spec-from-xlsx`, the device YAML is built from it); `--device-config` takes an existing device config (name or `.yaml` path) instead. `main.py` runs in a temporary folder and the HTML is put next to the JSON files, so `data/` and `results/` stay untouched. `--monitor` marks the device as a monitor (the default is a TV). The Claude Code skill `.claude/skills/excel-to-report` describes the full workflow.
+* **`report_to_excel.py`**: the reverse of `excel_to_report.py`: fills a blank "9 points" Excel template from JSON device reports (`json_dir template_xlsx output_xlsx`).
+* **`validate_device_configs.py`**: checks `config/device_configs/*.yaml` against `config/configuration_example.yaml` (ASCII file names, keys, `{min, typ, max}` values, coordinate tolerance). Run it after adding or editing device configs; it accepts file or folder paths.
+
+---
+
 ## Device Configuration
 
 Each device model is configured via a YAML file in `config/device_configs/`. The file name must match the `DeviceConfiguration` field in the measurement JSON (e.g., `SDX-43U4169.yaml`). If no matching file is found, `config/configuration_example.yaml` is used as a fallback.

@@ -17,11 +17,13 @@ python -m venv .venv
 .venv\Scripts\activate  # Windows
 source .venv/bin/activate  # macOS/Linux
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (uv.lock, Python 3.13)
+uv sync
 ```
 
 ### Running
+**When running `main.py` by hand, ALWAYS pass `--noclean --no-timestamp`**: otherwise the run archives and deletes the user's data.
+
 ```bash
 # Run the application
 python main.py
@@ -50,6 +52,9 @@ pytest -v src/tests/
 - `--no-timestamp`: Generate output files without timestamp for easier regeneration
 - `--evaluate PATH`: Evaluate one device JSON (`-` for stdin) against its spec and print the checks as JSON (no reports, no files written)
 - `--version`: Display application version and exit
+
+### Tools
+`tools/` holds development helpers, run as `uv run python tools/<script>.py` (not shipped with the module; descriptions in the README, section "Tools"): `excel_to_report.py` ("9 points" Excel sheet → `data/*.json`, the device YAML and the HTML report; skill `.claude/skills/excel-to-report`), `report_to_excel.py` (JSON reports → "9 points" template), `validate_device_configs.py` (checks `config/device_configs/*.yaml` against the reference schema).
 
 ### Release
 See "Release (Screen Check Suite)" below: `app_release.py` in the SCT Updater repository builds the release (no PyInstaller).
@@ -302,9 +307,6 @@ These tests ensure that exit codes are correctly propagated based on actual succ
 **Reporting**:
 - `Jinja2`: HTML template rendering
 
-**Distribution**:
-- `nc_py_api`, `requests`, `urllib3`: Nextcloud access
-
 **Testing**:
 - `pytest`: Test framework
 - `pytest-mock`: Mocking utilities
@@ -350,7 +352,7 @@ Files that drive the release in this repository:
 
 Rules:
 - All shared paths come from `src/paths.py` (`SCT_ROOT`, then the current directory). Never use `__file__` or `sys.executable` to find `config`.
-- The Python version is 3.13 for the whole suite (`.python-version`, `pyproject.toml` stays `>=3.11` only for tooling).
+- The Python version is 3.13 for the whole suite (`.python-version`, `requires-python` in `pyproject.toml` is `>=3.13` too).
 - If a runtime dependency is added to `pyproject.toml`, add it to `requirements.in` too, otherwise the released module will not have it.
 
 Full process, layout and status: `docs/module-release.md` in the SCT Updater repository. Keep it and this section in sync.

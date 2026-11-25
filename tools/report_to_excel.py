@@ -1,5 +1,5 @@
 """Converts DCnRG_V2 data/*.json optical measurement reports back into a "9 points"
-Excel template (reverse of excel_converter.py).
+Excel template (reverse of excel_to_report.py).
 
 Sheet layout (per 9-row block, two samples side by side, columns offset by +6):
     row+0, col A/G       -> sample index (idx, already pre-filled in template)

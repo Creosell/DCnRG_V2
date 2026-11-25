@@ -7,9 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.5.3] - 2026-11-25
 
 ### Changed
+- Tools renamed to say what they do: `excel_converter.py` -> `excel_to_report.py`, `excel_export.py` -> `report_to_excel.py`; the skill `excel-converter` -> `excel-to-report`; the tools are described in the README and `CLAUDE.md`
 - `requires-python` is `>=3.13` (the version of the shared embedded Python); `uv.lock` is resolved for it
 
 ### Removed
+- `tools/make_attempts_demo.py` and `tools/make_attempts_real_demo.py` (demo generators tied to paths of one machine)
 - The `sys.frozen` (PyInstaller) branch of `src/paths.py`: the root is `SCT_ROOT` set by the launcher, else the current directory
 - Unused `nc_py_api`, `requests` and `urllib3` from `pyproject.toml`
 

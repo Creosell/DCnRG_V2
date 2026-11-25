@@ -1,9 +1,9 @@
 ---
-name: excel-converter
+name: excel-to-report
 description: Converts manually filled "9 points" Excel measurement sheets (workbook has sheets "Statistics"/"Gamma"/"9 points"/"5_13 points"; filename often like "<Model> ORDER x SCREEN CHECK vX.X.xlsx" or "<Model>亮度表.xlsx") into DCnRG_V2 data/*.json files, wires up the matching device YAML config, and runs the report pipeline. Use when the user hands over such an Excel file and wants a report generated.
 ---
 
-# Excel Converter ("9 points" sheet → data/*.json → report)
+# Excel to report ("9 points" sheet → data/*.json → report)
 
 ## Когда использовать
 
@@ -16,13 +16,13 @@ description: Converts manually filled "9 points" Excel measurement sheets (workb
 
 ## Сквозной workflow
 
-1. **Конвертировать** через `tools/excel_converter.py`:
+1. **Конвертировать** через `tools/excel_to_report.py`:
    ```bash
-   python tools/excel_converter.py "<путь к .xlsx>" --output-dir data
+   uv run python tools/excel_to_report.py "<путь к .xlsx>" --output-dir data
    ```
    Быстрый путь — одной командой JSON + HTML-отчёт в выходной папке:
    ```bash
-   python tools/excel_converter.py "<путь к .xlsx>" --output-dir <папка> --device-config "<путь к .yaml или имя из config/device_configs>"
+   uv run python tools/excel_to_report.py "<путь к .xlsx>" --output-dir <папка> --device-config "<путь к .yaml или имя из config/device_configs>"
    ```
    `--device-config` задаёт `DeviceConfiguration` (имя yaml без расширения) и
    запускает `main.py` во временной папке; HTML кладётся рядом с JSON,
@@ -34,7 +34,7 @@ description: Converts manually filled "9 points" Excel measurement sheets (workb
    uniformity / Contrast / Color gamut, ... / Color temperature / Red X ... White Y;
    допуск координат в `O1`, подпись в `M1`), конвертер собирает device-YAML сам:
    ```bash
-   python tools/excel_converter.py "<путь к .xlsx>" <DeviceConfiguration> --spec-from-xlsx --output-dir <папка>
+   uv run python tools/excel_to_report.py "<путь к .xlsx>" <DeviceConfiguration> --spec-from-xlsx --output-dir <папка>
    ```
    Без второго позиционного аргумента (и без `--device-config`) этот режим
    включается **автоматически**, а имя берётся из имени файла (до слова
@@ -87,8 +87,13 @@ description: Converts manually filled "9 points" Excel measurement sheets (workb
    могут одновременно лежать данные по другим моделям — см. ниже про
    `data/`):
    ```bash
-   python main.py --verbose --device "<DeviceConfiguration>"
+   uv run python main.py --verbose --noclean --no-timestamp --device "<DeviceConfiguration>"
    ```
+   По умолчанию запускать именно так (с `--noclean`): исходные JSON остаются
+   в `data/`. Если пользователю нужна другая схема (без `--noclean` с
+   архивацией и очисткой, с timestamp в именах), сначала спросить, какой
+   вызов нужен.
+
    Проверить лог на `Failed '...' calculation` (ожидаемо для `delta_e`, см.
    ограничения ниже) и что в конце `Report generated: results\...html`.
 
@@ -106,13 +111,10 @@ description: Converts manually filled "9 points" Excel measurement sheets (workb
   ```
   Не удалять и не трогать чужие файлы без явного запроса пользователя —
   просто сообщить, что они там есть, и спросить, что с ними делать.
-- После **успешной** генерации отчёта `main.py` сам архивирует и удаляет
-  обработанные исходные JSON из `data/` (см. `CLAUDE.md` про
-  `archive_specific_files`/`clear_specific_files`). Значит после первого
-  успешного прогона файлы, созданные конвертером, из `data/` исчезнут —
-  это нормально, результат смотреть в `results/*.html` и
-  `report_archive/*.zip`. Если нужно перегенерировать — либо конвертировать
-  Excel заново, либо распаковать нужный `report_archive/*.zip`.
+- `main.py` всегда запускать с `--noclean --no-timestamp`: без `--noclean`
+  он после успешного отчёта архивирует и удаляет обработанные JSON из
+  `data/` (`archive_specific_files`/`clear_specific_files`), то есть данные
+  пользователя. С флагами файлы остаются, результат — `results/<имя>.html`.
 
 ## Формат листа "9 points" (для доработки/отладки скрипта)
 
@@ -176,5 +178,5 @@ Red/Green/Blue/White), и пайплайн падал в `helpers.process_device
 из локаций `Red/Green/Blue/White/Center` отсутствует `x` или `y` — при
 конвертации из Excel такое происходит для `Center`.
 
-`tools/excel_converter.py` и этот фикс уже закоммичены — при следующем запуске
+`tools/excel_to_report.py` и этот фикс уже закоммичены — при следующем запуске
 просто пользоваться ими, не пересоздавать.
