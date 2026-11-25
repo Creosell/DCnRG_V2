@@ -886,6 +886,14 @@ def test_colorimeter_summary_lists_unique_devices():
     )
 
 
+def test_colorimeter_summary_appends_channel_name():
+    """The user-defined channel name follows the channel number in parentheses."""
+    named = {"Model": "CA-410", "ProbeSN": "81026182", "Channel": 2, "ChannelName": "Lab TV"}
+    main_data, *_ = helpers.process_device_reports([_report_with("A", named)], helpers.UFN_MAPPING, {})
+
+    assert helpers.get_colorimeter_summary(main_data) == "Konica Minolta CA-410, S/N 81026182, Channel 2 (Lab TV)"
+
+
 def test_colorimeter_summary_is_empty_for_legacy_reports():
     """Old files without the Colorimeter header produce no header line."""
     main_data, *_ = helpers.process_device_reports([_report_with("SN1")], helpers.UFN_MAPPING, {})

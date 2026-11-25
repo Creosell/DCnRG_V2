@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.5.3] - 2026-11-25
 
+### Added
+- The optional `ChannelName` of the `Colorimeter` object follows the channel number in the report header (`Channel 2 (Lab TV)`).
+
 ### Changed
 - Tools renamed to say what they do: `excel_converter.py` -> `excel_to_report.py`, `excel_export.py` -> `report_to_excel.py`; the skill `excel-converter` -> `excel-to-report`; the tools are described in the README and `CLAUDE.md`
 - `requires-python` is `>=3.13` (the version of the shared embedded Python); `uv.lock` is resolved for it

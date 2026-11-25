@@ -625,6 +625,22 @@ def get_day_suffix(day):
     return 'th'
 
 
+def _format_channel(colorimeter: dict):
+    """
+    Builds the channel part of the colorimeter description.
+
+    Args:
+        colorimeter: The "Colorimeter" object of a measurement JSON.
+
+    Returns:
+        str | None: "Channel 2" or "Channel 2 (name)" when the user-defined channel name is set; None without a channel.
+    """
+    if colorimeter.get("Channel") is None:
+        return None
+    name = str(colorimeter.get("ChannelName") or "").strip()
+    return f"Channel {colorimeter['Channel']} ({name})" if name else f"Channel {colorimeter['Channel']}"
+
+
 def get_colorimeter_summary(all_device_reports_data: dict) -> str:
     """
     Builds the header description of the colorimeters used for the reported devices.
@@ -643,7 +659,7 @@ def get_colorimeter_summary(all_device_reports_data: dict) -> str:
             continue
         parts = [f"Konica Minolta {colorimeter['Model']}" if colorimeter.get("Model") else None,
                  f"S/N {colorimeter['ProbeSN']}" if colorimeter.get("ProbeSN") else None,
-                 f"Channel {colorimeter['Channel']}" if colorimeter.get("Channel") is not None else None]
+                 _format_channel(colorimeter)]
         description = ", ".join(p for p in parts if p)
         if description:
             descriptions.append(description)
