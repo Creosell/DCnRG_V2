@@ -153,9 +153,9 @@ A new metric needs an entry in `REPORT_PRECISION`; a test fails when a metric of
 The module is described by `sct_app.toml`, `requirements.in` and `requirements.lock` in this repository. Releases are made from the SCT Updater repository:
 
 ```bash
-uv run tools/release/app_release.py app <path to this repo> 1.5.2 --upload
+uv run tools/release/app_release.py app <path to this repo> --upload
 ```
 
-The tool uploads the code and only the wheels that are missing on the server; the Updater installs them into `apps/report_generator` and the shared files into `config/`. Full process and rules: `docs/module-release.md` in the SCT Updater repository.
+The version is taken from `pyproject.toml` and `APP_VERSION` (they must agree; a version can still be passed as the last argument). The tool uploads the code and only the wheels that are missing on the server; the Updater installs them into `apps/report_generator` and the shared files into `config/`. Full process and rules: `docs/module-release.md` in the SCT Updater repository.
 
 To test the module the way clients get it, release it to the `dev` list (`app` with `--upload`) and update a test Updater running with `NC_CHANNEL=dev`.
