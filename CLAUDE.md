@@ -123,7 +123,7 @@ report_archive/*.zip (Archive)
 - `should_display_metric()`: Determines metric visibility based on expected values in YAML config
 - `UFN_MAPPING`: Maps technical metric names to user-friendly display names
 - `DYNAMIC_VISIBILITY_KEYS`: Metrics requiring expected values to be displayed (e.g., color gamut)
-- **Handles both development and compiled (PyInstaller) modes for config path resolution using `sys.frozen` detection**
+- **Resolves the shared `config` folder through `src/paths.py` (`SCT_ROOT` set by the launcher)**
 
 **evaluate.py** - Per-device rules (single source for the report highlighting and the `--evaluate` mode)
 - `get_cell_status()`: fail (outside min/max) / warning (below typ) / None for one value, compared rounded to `REPORT_PRECISION`
@@ -179,7 +179,7 @@ config/configuration_example.yaml (default fallback)
 
 **Legacy Compatibility**: `YAML_TO_JSON_KEY_MAP` in `report.py` maintains backward compatibility with older snake_case YAML keys (e.g., `Brightness_uniformity` → `BrightnessUniformity`, `White_x` → `Center_x`).
 
-**Path Resolution for Compiled Executables**: When running as a PyInstaller-compiled executable (`sys.frozen == True`), the application resolves paths relative to the executable location rather than the Python script location. This ensures that the `config/` folder (included via `--include config` during build) is correctly located in production deployments.
+**Path Resolution**: shared files (`config/`) are found through `SCT_ROOT`, which the Rust launcher sets to the Updater folder; without it the current directory is used (development). `src/paths.py` is the single place that decides this.
 
 ## Error Handling & Return Values
 
@@ -318,21 +318,6 @@ These tests ensure that exit codes are correctly propagated based on actual succ
 
 **Solution**: All report generation functions now return `True`/`False`. The `main.py` checks these return values and only increments `processed_count` on success. Exit code is `NO_DATA_FOUND (2)` if no groups complete successfully.
 
-### Issue: Template Not Found in Compiled Executable
-**Symptom**: `'report_template.html' not found in search path` when running the `.exe` file.
-
-**Root Cause**: PyInstaller changes how file paths are resolved. Using `Path(__file__).parent` in compiled mode points to temporary extraction directory, not the executable's directory.
-
-**Solution**: Check `sys.frozen` flag:
-```python
-if getattr(sys, 'frozen', False):
-    base_dir = Path(sys.executable).parent  # Compiled: use exe location
-else:
-    base_dir = Path(__file__).parent.parent  # Development: use script location
-```
-
-The `config/` folder must be included in releases using `--include config` flag.
-
 ### Issue: Files Not Cleaned Up After Processing
 **Symptom**: Intermediate JSON files remain in `test_reports/` and `data/` after successful runs.
 
@@ -364,7 +349,7 @@ Files that drive the release in this repository:
 - `requirements.lock`: exact versions with hashes. It is updated automatically by `app_release.py app` whenever `requirements.in` changes (commit it); `app_release.py upgrade <this repo>` moves the versions forward.
 
 Rules:
-- All shared paths come from `src/paths.py` (`SCT_ROOT`, then frozen-exe folder, then the current directory). Never use `__file__` or `sys.executable` to find `config`.
+- All shared paths come from `src/paths.py` (`SCT_ROOT`, then the current directory). Never use `__file__` or `sys.executable` to find `config`.
 - The Python version is 3.13 for the whole suite (`.python-version`, `pyproject.toml` stays `>=3.11` only for tooling).
 - If a runtime dependency is added to `pyproject.toml`, add it to `requirements.in` too, otherwise the released module will not have it.
 

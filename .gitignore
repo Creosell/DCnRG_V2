@@ -10,13 +10,7 @@
 /dist/
 /build/
 /logs/
-/ReportGenerator.exe
 
-/release_artifacts/
-/release.log
-/tools/release/release.log
-/tools/release/.env
-/LatesRelease_ReportGenerator.exe
 /config/color_space.yaml
 /config/main.yaml
 /config/space.png
@@ -24,7 +18,6 @@
 /.claude/settings.local.json
 /config/device_configs/*
 !/config/device_configs/.gitkeep
-/docs/
 graphify-out/cache/
 
 # Python bytecode

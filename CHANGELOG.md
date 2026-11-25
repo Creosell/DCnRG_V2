@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 - PyInstaller build and `release_manager.py`
+- The `sys.frozen` (PyInstaller) branch of `src/paths.py`: the root is `SCT_ROOT` set by the launcher, else the current directory
 
 ## [1.5.1] - 2026-11-23
 
