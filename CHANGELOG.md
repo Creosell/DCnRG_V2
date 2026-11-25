@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Removed
+- The disabled TV "majority" check (`MAJORITY_TYP_CHECK_KEYS_FOR_TV`, `MAJORITY_TYP_TOLERANCE`, the `majority_check_data` argument of `check_general_test_status`, the `is_tv_majority_report` blocks); it was never agreed with the customer after SUPPLYCC-3063
+
+### Fixed
+- `docs/validation_exceptions.md` matches `report.py` (TV color gamut is not min-only, current `Cg_*` keys, Temperature handler, SDNB Contrast exception)
+
 ## [1.5.3] - 2026-11-25
 
 ### Added

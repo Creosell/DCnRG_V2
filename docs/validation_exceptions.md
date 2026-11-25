@@ -30,6 +30,9 @@ effective_typ = expected_typ × (1.0 − 0.065)
 The avg check is then: `actual_avg >= effective_typ`.
 
 > Applies only to: `Contrast`
+>
+> Source: SUPPLYCC-3063 (tolerance agreed with BU, QA, QC and production; the TV quality standard
+> only says "< original OC specification").
 
 ---
 
@@ -42,53 +45,25 @@ Only the **min** threshold is enforced:
 
 | Metric              | JSON Key          |
 |---------------------|-------------------|
-| Brightness Uniformity | `BrightnessUniformity` |
-| sRGB Gamut Area     | `CgByAreaRGB`     |
-| NTSC Gamut Area     | `CgByAreaNTSC`    |
-| DCI-P3 Gamut Area   | `CgByAreaDCI-P3`  |
-| sRGB Gamut Coverage | `CgRGB`           |
-| NTSC Gamut Coverage | `CgNTSC`          |
-| DCI-P3 Coverage     | `CgDCI-P3`        |
-| Color Temperature   | `Temperature`     |
+| Brightness Uniformity | `Brightness_uniformity` |
 
 **Pass condition**: `actual_min >= expected_min`
 
-> Note: Temperature has its own dedicated logic (see Section 3.1).
-> Its presence in this list is effectively overridden by the Temperature-specific handler.
+> `Temperature` is also listed in `AVG_FAIL_SKIP_KEYS_FOR_TV`, but it is handled earlier by its own
+> min/max logic (see Section 3.1), so this entry has no effect.
+
+> Color gamut metrics are **not** in this list: for TVs they use the standard
+> check (`actual_min >= expected_min` and `actual_avg >= expected_typ`), as the
+> TV quality standard requires gamut "according to specification".
 
 ---
 
-### 1.3 Majority Logic — Per-Device Typ Check (Currently Disabled)
+### 1.3 Color Temperature Brightness Compensation — Not Applied
 
-**Constants**:
-- `MAJORITY_TYP_CHECK_KEYS_FOR_TV`
-- `MAJORITY_TYP_TOLERANCE = 0.01` (1%)
-
-> **STATUS: DISABLED** — The flag `is_tv_majority_report` is hardcoded to `False`
-> in `report.py:733`. This logic is not active in production.
-
-**Intended behavior** (when enabled):
-
-Instead of checking the aggregated average, each individual device's value is compared
-against `expected_typ × (1.0 − 0.01)`. A PASS is granted if the **majority** of devices pass:
-
-```
-majority_needed = (total_device_count // 2) + 1
-devices_passed >= majority_needed → PASS
-```
-
-**Metrics affected** (when enabled):
-
-| Metric              | JSON Key          |
-|---------------------|-------------------|
-| Brightness          | `Brightness`      |
-| Brightness Uniformity | `BrightnessUniformity` |
-| sRGB Gamut Area     | `CgByAreaRGB`     |
-| NTSC Gamut Area     | `CgByAreaNTSC`    |
-| DCI-P3 Gamut Area   | `CgByAreaDCI-P3`  |
-| sRGB Gamut Coverage | `CgRGB`           |
-| NTSC Gamut Coverage | `CgNTSC`          |
-| DCI-P3 Coverage     | `CgDCI-P3`        |
+The TV quality standard (15.7) states: if the color temperature is outside 7300~11300 K,
+brightness should be +10 nit for each 500 K of difference. The standard does not define
+the base value for this addition, so the rule is **not implemented**; `Temperature` is checked
+by min/max bounds only (see Section 3.1).
 
 ---
 
@@ -148,6 +123,16 @@ effective_typ = expected_typ × (1.0 − 0.02)
 | `Cg_rgb`         | sRGB Gamut Coverage (%) |
 | `Cg_ntsc`        | NTSC Gamut Coverage (%) |
 | `Cg_dcip3`       | DCI-P3 Coverage (%)    |
+
+---
+
+### 2.3 Contrast — Min-Only for Specific Configs
+
+**Constants**: `AVG_FAIL_SKIP_KEYS_FOR_CORPORATE`, `CONTRAST_TYP_SKIP_CONFIGS`
+
+For device configs matching `CONTRAST_TYP_SKIP_CONFIGS` (`SDNB-16iA`, `SDNB-M16iA`; matched by
+`startswith`, so factory suffixes like `SDNB-16iA_CH19` also match) the avg/typ check of `Contrast`
+is skipped; only `actual_min >= expected_min` is enforced. Other non-TV devices keep the 5% typ tolerance.
 
 ---
 
@@ -214,8 +199,8 @@ The HTML report uses color-coded cells. Rules differ by metric category:
 Color gamut metrics are **hidden** from the report if no expected values
 (`min`, `typ`, `max`) are defined in the device YAML config.
 
-**Affected keys**: `CgByAreaRGB`, `CgByAreaNTSC`, `CgByAreaDCI-P3`,
-`CgRGB`, `CgNTSC`, `CgDCI-P3`
+**Affected keys**: all `Cg_<color space>_area`, `Cg_<color space>`, `Cg_<color space>_uv_area`,
+`Cg_<color space>_uv` keys (`CG_METRIC_KEYS`, one set per registered color space, e.g. `Cg_rgb_area`, `Cg_ntsc`, `Cg_dcip3`)
 
 If all three expected values are `None` or absent for a gamut metric,
 it is excluded from both the summary table and the CIE diagram legend.
@@ -227,8 +212,7 @@ it is excluded from both the summary table and the CIE diagram legend.
 | Rule                          | Applies to     | Metrics                                       | Detail                                      |
 |-------------------------------|----------------|-----------------------------------------------|---------------------------------------------|
 | Contrast 6.5% tolerance       | TV only        | Contrast                                      | `effective_typ = typ × 0.935`              |
-| Skip avg/typ, check min only  | TV only        | Uniformity, all gamut, Temperature            | Only `actual_min >= expected_min`          |
-| Majority logic (disabled)     | TV only        | Brightness, Uniformity, all gamut             | `>50%` of devices must pass `typ × 0.99`  |
+| Skip avg/typ, check min only  | TV only        | Uniformity                                    | Only `actual_min >= expected_min`          |
 | Measurement point differs     | TV only        | Brightness, Contrast                          | `WhiteColor` instead of `Center`           |
 | 5% typ tolerance              | Corporate only | Brightness, Uniformity, Contrast              | `effective_typ = typ × 0.95`              |
 | 2% typ tolerance              | Corporate only | All gamut metrics                             | `effective_typ = typ × 0.98`              |

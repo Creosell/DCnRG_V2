@@ -134,12 +134,11 @@ def test_json_report_includes_rec2020():
 
 def test_cg_metric_keys_include_all_registered_color_spaces():
     """Tests that the generated CG_METRIC_KEYS registry covers Rec.2020
-    and feeds REPORT_PRECISION / MAJORITY_TYP_CHECK_KEYS_FOR_TV / CORPORATE_DEVICES_CG_TOLERANCE_LIST."""
+    and feeds REPORT_PRECISION / CORPORATE_DEVICES_CG_TOLERANCE_LIST."""
     rec2020_keys = {"Cg_rec2020_area", "Cg_rec2020", "Cg_rec2020_uv_area", "Cg_rec2020_uv"}
 
     assert rec2020_keys.issubset(report.CG_METRIC_KEYS)
     assert rec2020_keys.issubset(report.REPORT_PRECISION.keys())
-    assert rec2020_keys.issubset(report.MAJORITY_TYP_CHECK_KEYS_FOR_TV)
     assert rec2020_keys.issubset(report.CORPORATE_DEVICES_CG_TOLERANCE_LIST)
 
 
@@ -807,7 +806,7 @@ def test_corporate_typ_tolerance_adjusted_typ_is_rounded(yaml_key, typ):
     raw = typ * (1 - report.CORPORATE_DEVICES_TYP_TOLERANCE)
     actual = {"avg": typ * 2, "min": typ}
     expected = {"min": 0.0, "typ": float(typ)}
-    _, _, tol = report.check_general_test_status(yaml_key, actual, expected, is_tv_flag=False, majority_check_data={})
+    _, _, tol = report.check_general_test_status(yaml_key, actual, expected, is_tv_flag=False)
     assert tol is not None
     assert tol["adjusted_typ"] == _corporate_adjusted(yaml_key, typ, report.CORPORATE_DEVICES_TYP_TOLERANCE)
     # Verify rounding actually changed the value when there was a FP artifact
@@ -824,7 +823,7 @@ def test_corporate_cg_tolerance_adjusted_typ_is_rounded(yaml_key, typ):
     """adjusted_typ for CG tolerance is rounded to 1 decimal, not raw float."""
     actual = {"avg": typ * 2, "min": 0.0}
     expected = {"min": 0.0, "typ": float(typ)}
-    _, _, tol = report.check_general_test_status(yaml_key, actual, expected, is_tv_flag=False, majority_check_data={})
+    _, _, tol = report.check_general_test_status(yaml_key, actual, expected, is_tv_flag=False)
     assert tol is not None
     assert tol["adjusted_typ"] == _corporate_adjusted(yaml_key, typ, report.CORPORATE_DEVICES_CG_TOLERANCE)
 
@@ -833,7 +832,7 @@ def test_corporate_tolerance_not_applied_for_tv():
     """Corporate tolerance must not be applied when is_tv_flag=True."""
     actual = {"avg": 50.0, "min": 50.0}
     expected = {"min": 0.0, "typ": 83.0}
-    _, _, tol = report.check_general_test_status("Brightness", actual, expected, is_tv_flag=True, majority_check_data={})
+    _, _, tol = report.check_general_test_status("Brightness", actual, expected, is_tv_flag=True)
     assert tol is None
 
 
@@ -847,7 +846,7 @@ def test_corporate_contrast_skip_typ_pass_on_min(device_name):
     actual = {"avg": 500.0, "min": 850.0}  # avg below typ, min above threshold
     expected = {"min": 800.0, "typ": 1000.0}
     status, reason, tol = report.check_general_test_status(
-        "Contrast", actual, expected, is_tv_flag=False, majority_check_data={},
+        "Contrast", actual, expected, is_tv_flag=False,
         device_config_name=device_name
     )
     assert status == "PASS"
@@ -865,7 +864,7 @@ def test_corporate_contrast_skip_typ_fail_on_min(device_name):
     actual = {"avg": 1200.0, "min": 700.0}  # avg passes but min fails
     expected = {"min": 800.0, "typ": 1000.0}
     status, reason, tol = report.check_general_test_status(
-        "Contrast", actual, expected, is_tv_flag=False, majority_check_data={},
+        "Contrast", actual, expected, is_tv_flag=False,
         device_config_name=device_name
     )
     assert status == "FAIL"
@@ -878,7 +877,7 @@ def test_corporate_contrast_skip_not_applied_for_tv():
     actual = {"avg": 950.0, "min": 850.0}  # avg passes TV-adjusted typ (1000 * 0.935 = 935)
     expected = {"min": 800.0, "typ": 1000.0}
     status, reason, tol = report.check_general_test_status(
-        "Contrast", actual, expected, is_tv_flag=True, majority_check_data={},
+        "Contrast", actual, expected, is_tv_flag=True,
         device_config_name="SDNB-16iA"
     )
     # TV contrast tolerance applies: adjusted typ = 935.0; avg=950 passes
@@ -891,7 +890,7 @@ def test_corporate_contrast_skip_not_applied_for_other_devices():
     actual = {"avg": 500.0, "min": 850.0}  # avg below typ — FAIL without skip, PASS with skip
     expected = {"min": 800.0, "typ": 1000.0}
     status, reason, tol = report.check_general_test_status(
-        "Contrast", actual, expected, is_tv_flag=False, majority_check_data={},
+        "Contrast", actual, expected, is_tv_flag=False,
         device_config_name="SomeOtherDevice"
     )
     assert status == "FAIL"

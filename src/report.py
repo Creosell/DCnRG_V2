@@ -12,7 +12,7 @@ from src.calculate import COLOR_SPACE_KEY_SUFFIX
 # JSON/YAML metric key families for color gamut: "Cg_<suffix>_area", "Cg_<suffix>",
 # "Cg_<suffix>_uv_area", "Cg_<suffix>_uv" - one set per registered color space
 # (see calculate.COLOR_SPACE_KEY_SUFFIX). Adding a color space there automatically
-# extends REPORT_PRECISION / MAJORITY_TYP_CHECK_KEYS_FOR_TV / CORPORATE_DEVICES_CG_TOLERANCE_LIST below.
+# extends REPORT_PRECISION / CORPORATE_DEVICES_CG_TOLERANCE_LIST below.
 CG_METRIC_KEYS = {
     key
     for suffix in COLOR_SPACE_KEY_SUFFIX.values()
@@ -47,12 +47,6 @@ AVG_FAIL_SKIP_KEYS_FOR_TV = {  # Keys which we skip while checking for FAIL by a
     "Brightness_uniformity",
     "Temperature"
 }
-
-MAJORITY_TYP_CHECK_KEYS_FOR_TV = {
-    "Brightness",
-    "Brightness_uniformity",
-} | CG_METRIC_KEYS
-MAJORITY_TYP_TOLERANCE = 0.01
 
 CORPORATE_DEVICES_TYP_TOLERANCE = 0.05
 CORPORATE_DEVICES_CG_TOLERANCE = 0.02
@@ -512,7 +506,7 @@ def check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max):
 
 # Helper function for general test checks
 def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_values_dict, is_tv_flag,
-                              majority_check_data, device_config_name=None):
+                              device_config_name=None):
     """
     Checks general tests (avg/typ/min-threshold) for rule compliance.
     Returns (status, reason, tolerance_info).
@@ -522,7 +516,6 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
         actual_data_dict_for_test (dict): Actual test data.
         expected_values_dict (dict): Expected test data.
         is_tv_flag (bool): Whether the device under test is TV or not.
-        majority_check_data (dict): Data for the new "majority" logic.
         device_config_name (str | None): DeviceConfiguration name; used to apply device-specific rules.
 
     Returns:
@@ -531,39 +524,7 @@ def check_general_test_status(yaml_key, actual_data_dict_for_test, expected_valu
     expected_typ = expected_values_dict.get("typ")
     tolerance_info = None  # Default: no tolerance applied
 
-    # --- 1. "MAJORITY" LOGIC ---
-    # This logic redefines the standard avg/typ checks for specific keys on TV.
-    majority_data = majority_check_data or {}
-    if majority_data.get("active"):
-
-        if expected_typ is None:
-            return "N/A", "Expected 'typ' value missing in YAML (required for TV majority check).", None
-        if not isinstance(expected_typ, (int, float)):
-            return "N/A", f"Non-numeric 'typ' value ({expected_typ}) in YAML (required for TV majority check).", None
-
-        devices_values_list = majority_data.get("devices_values", [])
-        majority_needed = majority_data.get("majority_needed", 0)
-
-        if not devices_values_list:
-            return "FAIL", f"(TV Majority) No individual device data found for {yaml_key}.", None
-
-        # Calculate expected typical with a threshold
-        typ_with_threshold = expected_typ * (1.0 - MAJORITY_TYP_TOLERANCE)
-
-        devices_passed_count = sum(1 for val in devices_values_list if val >= typ_with_threshold)
-
-        if devices_passed_count >= majority_needed:
-            return "PASS", (
-                f"(TV Majority) PASS. {devices_passed_count}/{len(devices_values_list)} devices "
-                f">= typ wih threshold 1% ({typ_with_threshold:.2f}). Major quantity is {majority_needed} devices"
-            ), None
-        else:
-            return "FAIL", (
-                f"(TV Majority) FAIL. {devices_passed_count}/{len(devices_values_list)} devices "
-                f"with values >= expected typical with threshold 1% ({typ_with_threshold:.2f}). Major quantity is {majority_needed} devices"
-            ), None
-
-    # --- 2. STANDARD LOGIC (if MAJORITY LOGIC isn't active) ---
+    # --- STANDARD LOGIC ---
 
     actual_avg = actual_data_dict_for_test.get("avg")
     actual_min_val = actual_data_dict_for_test.get("min")
@@ -758,40 +719,6 @@ def generate_comparison_report(
         write_error_report(output_json_file, error_report, "YAML parsing failure")
         return False
 
-    # --- 2. MAJORITY CHECK ---
-    # Pending customer confirmation before enabling in production inspections.
-    is_tv_majority_report = False
-
-    devices_values_map = defaultdict(list)
-    total_device_count = 0
-    majority_needed = 0
-
-    if is_tv_majority_report and device_reports:
-        logger.debug("TV flag is ON. Loading individual reports for 'majority' logic...")
-
-        total_device_count = len(device_reports)
-
-        if total_device_count > 0:
-            majority_needed = (total_device_count // 2) + 1
-            logger.debug(f"Total devices: {total_device_count}, Majority needed: {majority_needed}")
-
-            for data in device_reports:
-                if not data or "Results" not in data:
-                    logger.warning(f"Skipping device report: {data.get('SerialNumber')} (invalid or no 'Results')")
-                    continue
-
-                current_device_results = data.get("Results", {})
-
-                for yaml_key in MAJORITY_TYP_CHECK_KEYS_FOR_TV:
-                    value = current_device_results.get(yaml_key)
-                    if isinstance(value, (int, float)):
-                        devices_values_map[yaml_key].append(value)
-                    else:
-                        logger.debug(f"Value for {yaml_key} in {data.get('SerialNumber')} is missing or not numeric.")
-
-        else:
-            logger.warning("TV 'majority' logic active, but no individual reports found matching pattern")
-
     full_report = {}
 
     # --- 4. MAIN COMPARISON LOOP ---
@@ -844,11 +771,7 @@ def generate_comparison_report(
             continue
 
         # C. DETERMINE STATUS (using helper functions)
-        if is_tv_majority_report and is_coordinate_test:
-            status = "SKIPPED"
-            reason = "Skipped for TV"
-            tolerance_info = None
-        elif is_coordinate_test:
+        if is_coordinate_test:
             actual_min = actual_test_details.get("min")
             actual_max = actual_test_details.get("max")
             expected_min = expected_test_data.get("min")
@@ -857,20 +780,12 @@ def generate_comparison_report(
             # Helper function: check_coordinate_bounds(...)
             status, reason, tolerance_info = check_coordinate_bounds(actual_min, actual_max, expected_min, expected_max)
         else:
-            # --- TV MAJORITY LOGIC PREPARATION ---
-            majority_check_data = {"active": False}
-            if is_tv_majority_report and test_name in MAJORITY_TYP_CHECK_KEYS_FOR_TV:
-                majority_check_data["active"] = True
-                majority_check_data["devices_values"] = devices_values_map.get(test_name, [])
-                majority_check_data["majority_needed"] = majority_needed
-
             # Helper function: check_general_test_status(...)
             status, reason, tolerance_info = check_general_test_status(
                 test_name,
                 actual_test_details,
                 expected_test_data,
                 is_tv_flag,
-                majority_check_data,
                 device_config_name=device_config_name
             )
 
